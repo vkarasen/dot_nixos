@@ -1,6 +1,9 @@
 btw I use Nix
 
 # Bootstrapping
+
+## non nixOS
+
 Install Nix: https://nixos.org/download/
 
-`nix run home-manager -- switch --flake github:vkarasen/dot_nixos#vkarasen`
+`nix run nixpkgs#nh -- home switch github:vkarasen/dot_nixos#vkarasen`
