@@ -7,6 +7,7 @@
 	imports = [
 		./shellPackages.nix
 		./ssh.nix
+		./git.nix
 	];
 
 	config = {
