@@ -6,6 +6,7 @@
 
 	imports = [
 		./shellPackages.nix
+		./ssh.nix
 	];
 
 	config = {
