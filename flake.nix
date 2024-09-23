@@ -4,6 +4,8 @@
 	inputs = {
 		nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
 
+		catppuccin.url = "github:catppuccin/nix";
+
 		home-manager = {
 			url = "github:nix-community/home-manager/master";
 			inputs.nixpkgs.follows = "nixpkgs";
@@ -19,6 +21,7 @@
 		nixpkgs,
 		home-manager,
 		nix-index-database,
+		catppuccin,
 		...
 	}: let
 
@@ -36,6 +39,7 @@
 			  ./home-manager
 			  nix-index-database.hmModules.nix-index
 			  { programs.nix-index-database.comma.enable = true; }
+			  catppuccin.homeManagerModules.catppuccin
 			];
 
 		};
