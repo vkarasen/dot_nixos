@@ -8,6 +8,7 @@
 		./shellPackages.nix
 		./ssh.nix
 		./git.nix
+		./bash.nix
 	];
 
 	config = {
