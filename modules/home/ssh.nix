@@ -16,6 +16,13 @@
 					user = "git";
 					identityFile = "~/.ssh/id_ed25519";
 				};
+				gentian = {
+					hostname = "zqnr.de";
+					user = "vkarasen";
+					identityFile = "~/.ssh/id_ed25519";
+					forwardAgent = true;
+					forwardX11 = true;
+				};
 			};
 		};
 	};
