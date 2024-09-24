@@ -3,7 +3,6 @@
 	config = {
 
 		home.packages = with pkgs; [
-			bash
 		];
 
 		programs = {

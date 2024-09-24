@@ -11,10 +11,6 @@
 			bat
 			gnused
 			tig
-			fzf
-			starship
-			eza
-			direnv
 			dua
 			duf
 		];
