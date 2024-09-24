@@ -10,6 +10,7 @@
 		./git.nix
 		./bash.nix
 		./tmux
+		./neovim
 	];
 
 	config = {
