@@ -1,4 +1,4 @@
-{lib, pkgs, ...}: {
+{pkgs, ...}: {
 	programs.neovim = {
 		plugins = with pkgs.vimPlugins; [
 			(
@@ -9,7 +9,16 @@
 			nvim-treesitter-context
 		];
 		extraLuaConfig = /* lua */ ''
-			require("nvim-treesitter").setup()
+			require'nvim-treesitter.configs'.setup{
+				highlight = {
+				    enable = true,
+				},
+				indent = {
+				    enable = true,
+				    disable = {},
+				},
+
+			}
 			require("treesitter-context").setup()
 		'';
 	};
