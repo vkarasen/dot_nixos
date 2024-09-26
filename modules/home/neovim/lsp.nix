@@ -1,8 +1,11 @@
-{ lib, pkgs, ... }:
 {
+  lib,
+  pkgs,
+  ...
+}: {
   home.packages = with pkgs; [
     nil
-    nixfmt-rfc-style
+    alejandra
     nodePackages.bash-language-server
     shfmt
   ];
@@ -13,26 +16,28 @@
         nvim-lspconfig
       ];
 
-      extraLuaConfig = # lua
+      extraLuaConfig =
+        # lua
         ''
-                    require('lspconfig').nil_ls.setup{
-                        settings = {
-                    	    ['nil'] = {
-          			formatting = {
-          			    command = { "nixfmt" }
-          			}
-                    	    }
-                        }
-                    }
-		    require('lspconfig').bashls.setup{
-                        settings = {
-                    	    ['bashls'] = {
-          			formatting = {
-          			    command = { "shfmt" }
-          			}
-                    	    }
-                        }
-		    }
+
+          require('lspconfig').nil_ls.setup{
+              settings = {
+          	    ['nil'] = {
+          	formatting = {
+          	    command = { "alejandra", "-qq" }
+          	}
+          	    }
+              }
+          }
+                 require('lspconfig').bashls.setup{
+          	settings = {
+          		['bashls'] = {
+          	    formatting = {
+          		command = { "shfmt" }
+          	    }
+          		}
+          	}
+                   }
         '';
     };
   };
