@@ -1,67 +1,67 @@
-{lib, pkgs, ...}: {
+{
+  lib,
+  pkgs,
+  ...
+}: {
+  config = {
+    home.packages = with pkgs; [
+    ];
 
-	config = {
+    programs = {
+      bash = {
+        enable = true;
+        enableCompletion = true;
+        historySize = 10000;
 
-		home.packages = with pkgs; [
-		];
+        initExtra = ''
+          set -o vi
+          HISTCONTROL='ignoreboth'
+        '';
 
-		programs = {
+        shellAliases = {
+          cat = "bat";
 
-			bash = {
-				enable = true;
-				enableCompletion = true;
-				historySize = 10000;
+          grep = "rg";
 
-				initExtra = ''
-					set -o vi
-					HISTCONTROL='ignoreboth'
-				'';
+          #lists only directories (no files)
+          ld = "eza -lD";
 
-				shellAliases = {
-					cat = "bat";
+          #lists only files (no directories)
+          lf = "eza -lF --color=always | rg -v /";
 
-					grep = "rg";
+          #lists only hidden files (no directories)
+          lh = "eza -dl .* --group-directories-first";
 
-					#lists only directories (no files)
-					ld = "eza -lD";
+          #lists everything with directories first
+          ll = "eza -al --group-directories-first";
 
-					#lists only files (no directories)
-					lf = "eza -lF --color=always | rg -v /";
+          #lists only files sorted by size
+          ls = "eza -alF --color=always --sort=size | rg -v /";
 
-					#lists only hidden files (no directories)
-					lh = "eza -dl .* --group-directories-first";
+          #lists everything sorted by time updated
+          lt = "eza -al --sort=modified";
+        };
+      };
 
-					#lists everything with directories first
-					ll = "eza -al --group-directories-first";
+      fzf = {
+        enableBashIntegration = true;
+      };
 
-					#lists only files sorted by size
-					ls = "eza -alF --color=always --sort=size | rg -v /";
+      starship = {
+        enableBashIntegration = true;
+        settings = {
+          add_newline = true;
+        };
+      };
 
-					#lists everything sorted by time updated
-					lt = "eza -al --sort=modified";
-				};
-			};
+      eza = {
+        enableBashIntegration = true;
+        git = true;
+      };
 
-			fzf = {
-				enableBashIntegration = true;
-			};
-
-			starship = {
-				enableBashIntegration = true;
-				settings = {
-					add_newline = true;
-				};
-			};
-
-			eza = {
-				enableBashIntegration = true;
-				git = true;
-			};
-
-			direnv = {
-				enableBashIntegration = true;
-			};
-		};
-	};
+      direnv = {
+        enableBashIntegration = true;
+      };
+    };
+  };
 }
-

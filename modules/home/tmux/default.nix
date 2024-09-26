@@ -1,32 +1,33 @@
-{lib, pkgs, ...}: {
-	config = {
+{
+  lib,
+  pkgs,
+  ...
+}: {
+  config = {
+    home.packages = with pkgs; [
+      tmux
+    ];
 
-		home.packages = with pkgs; [
-			tmux
-		];
+    programs = {
+      tmux = {
+        enable = true;
+        clock24 = true;
+        historyLimit = 10000;
+        prefix = "^A";
+        keyMode = "vi";
 
-		programs = {
+        plugins = with pkgs.tmuxPlugins; [
+          sensible
+          yank
+        ];
 
-			tmux = {
-				enable = true;
-				clock24 = true;
-				historyLimit = 10000;
-				prefix = "^A";
-				keyMode = "vi";
+        extraConfig = ''
+          set -g base-index 1
+          set -g renumber-windows on
+        '';
+      };
 
-				plugins = with pkgs.tmuxPlugins; [
-					sensible
-					yank
-				];
-
-				extraConfig = ''
-					set -g base-index 1
-					set -g renumber-windows on
-				'';
-
-			};
-
-			fzf.tmux.enableShellIntegration = true;
-		};
-	};
+      fzf.tmux.enableShellIntegration = true;
+    };
+  };
 }
