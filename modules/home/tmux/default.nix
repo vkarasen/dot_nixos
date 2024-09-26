@@ -19,6 +19,7 @@
         plugins = with pkgs.tmuxPlugins; [
           sensible
           yank
+	  tmux-fzf
         ];
 
         extraConfig = ''
