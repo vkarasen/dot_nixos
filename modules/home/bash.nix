@@ -27,7 +27,7 @@
           ld = "eza -lD";
 
           #lists only files (no directories)
-          lf = "eza -lF --color=always | rg -v /";
+          lf = "eza -lf --color=always";
 
           #lists only hidden files (no directories)
           lh = "eza -dl .* --group-directories-first";
@@ -35,8 +35,7 @@
           #lists everything with directories first
           ll = "eza -al --group-directories-first";
 
-          #lists only files sorted by size
-          ls = "eza -alF --color=always --sort=size | rg -v /";
+          ls = "eza --color=always --long --git --no-filesize --icons=always --no-time --no-user --no-permissions";
 
           #lists everything sorted by time updated
           lt = "eza -al --sort=modified";
