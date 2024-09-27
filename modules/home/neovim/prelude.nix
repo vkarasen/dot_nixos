@@ -6,7 +6,6 @@
       vim.g.mapleader = ';'
       vim.g.maplocalleader = ' '
       vim.o.number = true
-      vim.o.relativenumber = true
       vim.o.cursorline = true
       vim.o.list = true
       vim.opt.listchars = {
@@ -17,8 +16,10 @@
           tab = '▏┈',
           leadmultispace = '▏┈',
       }
-      vim.o.sts = 4
       vim.o.sw = 4
+      vim.o.shiftround = true
+
+      vim.o.smartindent = true
 
       vim.o.infercase = true
       vim.o.ignorecase = true
