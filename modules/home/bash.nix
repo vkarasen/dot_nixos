@@ -5,7 +5,7 @@
 }: {
   config = {
     home.packages = with pkgs; [
-	    fzf-git-sh
+      fzf-git-sh
     ];
 
     programs = {
@@ -15,10 +15,10 @@
         historySize = 10000;
 
         initExtra = ''
-          set -o vi
-          HISTCONTROL='ignoreboth'
+                 set -o vi
+                 HISTCONTROL='ignoreboth'
 
-	  source ${pkgs.fzf-git-sh}/share/fzf-git-sh/fzf-git.sh
+          source ${pkgs.fzf-git-sh}/share/fzf-git-sh/fzf-git.sh
         '';
 
         shellAliases = {
