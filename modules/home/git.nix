@@ -24,6 +24,7 @@
         delta = {
           navigate = true;
           features = "side-by-side line-numbers decorations";
+          syntax-theme = "Catppuccin Mocha";
         };
         merge = {
           conflictstyle = "diff3";
