@@ -1,6 +1,4 @@
-{pkgs, ...}: let
-  fzf_default_cmd = "fd --hidden --strip-cwd-prefix --exclude .git";
-in {
+{pkgs, ...}: {
   config = {
     home.packages = with pkgs; [
       nh
@@ -20,10 +18,10 @@ in {
     ];
 
     programs = {
-      fzf = {
+      fzf = rec {
         enable = true;
-        defaultCommand = fzf_default_cmd;
-        changeDirWidgetCommand = fzf_default_cmd + " --type=d";
+        defaultCommand = "fd --hidden --strip-cwd-prefix --exclude .git";
+        changeDirWidgetCommand = defaultCommand + " --type=d";
       };
       starship.enable = true;
       eza.enable = true;
