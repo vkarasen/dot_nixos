@@ -26,6 +26,8 @@
 
           grep = "rg";
 
+          cd = "z";
+
           #lists only directories (no files)
           ld = "eza -lD";
 
@@ -46,6 +48,10 @@
       };
 
       fzf = {
+        enableBashIntegration = true;
+      };
+
+      zoxide = {
         enableBashIntegration = true;
       };
 

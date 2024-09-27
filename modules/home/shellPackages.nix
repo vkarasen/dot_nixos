@@ -31,6 +31,7 @@ in {
         enable = true;
         nix-direnv.enable = true;
       };
+      zoxide.enable = true;
       bat = {
         enable = true;
         themes = {
