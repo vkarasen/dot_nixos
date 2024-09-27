@@ -16,6 +16,7 @@ in {
       dua
       duf
       fd
+      tldr
     ];
 
     programs = {
