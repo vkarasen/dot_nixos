@@ -6,5 +6,12 @@
       diffview.enable = true;
       web-devicons.enable = true;
     };
+    keymaps = [
+      {
+        mode = "n";
+        key = "<leader>ng";
+        action = ":Neogit<cr>";
+      }
+    ];
   };
 }

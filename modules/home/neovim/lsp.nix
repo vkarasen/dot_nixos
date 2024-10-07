@@ -18,7 +18,8 @@ in {
           enable = true;
           keymaps = {
             lspBuf = {
-              "<leader>fc" = "format";
+              "<leader>cf" = "format";
+              "<leader>ca" = "code_action";
             };
           };
           servers = {

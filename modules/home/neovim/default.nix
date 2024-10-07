@@ -28,13 +28,11 @@
         cursorline = true;
         list = true;
         clipboard = "";
-        listchars = rec {
+        listchars = {
           trail = "␣";
           extends = "⇉";
           precedes = "⇇";
           nbsp = "·";
-          #tab = "▏┈";
-          #leadmultispace = tab;
         };
 
         sw = 4;
@@ -110,12 +108,21 @@
           key = "<c-l>";
           action = "gt";
         }
+        {
+          mode = "n";
+          key = "<leader>nt";
+          action = ":Neotree<cr>";
+        }
       ];
 
       plugins = {
         lualine.enable = true;
         indent-blankline.enable = true;
         bufferline.enable = true;
+        neo-tree = {
+          enable = true;
+          sources = ["filesystem"];
+        };
       };
     };
   };
