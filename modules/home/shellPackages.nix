@@ -4,6 +4,7 @@
       nh
       nix-output-monitor
       nix-prefetch-git
+	    nix-search-cli
       nvd
       ripgrep
       curl
@@ -15,6 +16,9 @@
       duf
       fd
       tldr
+	    snakemake
+	    yq
+	    jq
     ];
 
     programs = {
