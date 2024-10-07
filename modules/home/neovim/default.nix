@@ -4,6 +4,7 @@
     ./lsp.nix
     ./treesitter.nix
     ./telescope.nix
+    ./markdown.nix
   ];
 
   programs = {
