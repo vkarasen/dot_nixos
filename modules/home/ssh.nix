@@ -1,16 +1,14 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}: {
+{pkgs, ...}: {
   config = {
     home.packages = with pkgs; [
       openssh
     ];
 
+    services.ssh-agent.enable = true;
+
     programs.ssh = {
       enable = true;
+      addKeysToAgent = "yes";
 
       matchBlocks = {
         github = {
@@ -23,7 +21,7 @@
           user = "vkarasen";
           identityFile = "~/.ssh/id_ed25519";
           forwardAgent = true;
-          forwardX11 = true;
+          forwardX11Trusted = true;
         };
       };
     };

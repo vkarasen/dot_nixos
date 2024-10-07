@@ -1,8 +1,4 @@
-{
-  lib,
-  pkgs,
-  ...
-}: {
+{pkgs, ...}: {
   config = {
     home.packages = with pkgs; [
       fzf-git-sh
@@ -15,8 +11,10 @@
         historySize = 10000;
 
         initExtra = ''
-                 set -o vi
-                 HISTCONTROL='ignoreboth'
+          set -o vi
+          HISTCONTROL='ignoreboth'
+
+          eval `ssh-agent`
 
           source ${pkgs.fzf-git-sh}/share/fzf-git-sh/fzf-git.sh
         '';
