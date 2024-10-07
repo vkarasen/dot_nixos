@@ -15,7 +15,7 @@ Use alacritty as terminal to start WSL
 Use
 [Noto Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/Noto.zip)
 
-Alacritty config on windows goes into `%AppData%/alacritty/alacritty.yml`
+Alacritty config on windows goes into `%AppData%/alacritty/alacritty.yml` ( or `/mnt/c/Users/<windows_username>/AppData/Roaming/alacritty/alacritty.yml` under WSL)
 
 Relevant example config:
 
@@ -26,5 +26,11 @@ font:
 shell:
     program: 'wsl.exe'
     args:
-        - '~ -u <username>'
+        - '~ -u <wsl_username>'
 ```
+
+# TODO
+
+- Autocompletion, maybe [nvim-cmp](https://nix-community.github.io/nixvim/plugins/cmp/index.html) or [blink.cmp](https://github.com/Saghen/blink.cmp) or [coq](https://nix-community.github.io/nixvim/plugins/coq-nvim/index.html#coq-nvim)
+- Add configurability for extendability in other flakes
+- Figure out how to do a portable install
