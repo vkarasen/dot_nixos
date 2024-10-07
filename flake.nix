@@ -15,13 +15,19 @@
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nixvim = {
+      url = "github:nix-community/nixvim";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = inputs @ {
+  outputs = {
     nixpkgs,
     home-manager,
     nix-index-database,
     catppuccin,
+    nixvim,
     ...
   }: let
     system = "x86_64-linux";
@@ -36,6 +42,7 @@
         nix-index-database.hmModules.nix-index
         {programs.nix-index-database.comma.enable = true;}
         catppuccin.homeManagerModules.catppuccin
+        nixvim.homeManagerModules.nixvim
       ];
     };
 

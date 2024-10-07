@@ -1,44 +1,38 @@
-{
-  lib,
-  pkgs,
-  ...
-}: {
-  home.packages = with pkgs; [
-    nil
-    alejandra
-    nodePackages.bash-language-server
-    shfmt
+{pkgs, ...}: let
+  nodepkgs = with pkgs.nodePackages; [
+    bash-language-server
   ];
+in {
+  home.packages = with pkgs;
+    [
+      nil
+      alejandra
+      shfmt
+    ]
+    ++ nodepkgs;
 
   programs = {
-    neovim = {
-      plugins = with pkgs.vimPlugins; [
-        nvim-lspconfig
-      ];
-
-      extraLuaConfig =
-        # lua
-        ''
-
-          require('lspconfig').nil_ls.setup{
-              settings = {
-          	    ['nil'] = {
-          	formatting = {
-          	    command = { "alejandra", "-qq" }
-          	}
-          	    }
-              }
-          }
-                 require('lspconfig').bashls.setup{
-          	settings = {
-          		['bashls'] = {
-          	    formatting = {
-          		command = { "shfmt" }
-          	    }
-          		}
-          	}
-                   }
-        '';
+    nixvim = {
+      plugins = {
+        lsp = {
+          enable = true;
+          keymaps = {
+            lspBuf = {
+              "<leader>fc" = "format";
+            };
+          };
+          servers = {
+            bashls = {
+              enable = true;
+              settings.formatting.command = ["shfmt"];
+            };
+            nil-ls = {
+              enable = true;
+              settings.formatting.command = ["alejandra" "-qq"];
+            };
+          };
+        };
+      };
     };
   };
 }
