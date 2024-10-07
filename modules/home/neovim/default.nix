@@ -29,11 +29,13 @@
         cursorline = true;
         list = true;
         clipboard = "";
+        showbreak = "↪ ";
         listchars = {
           trail = "␣";
-          extends = "⇉";
-          precedes = "⇇";
+          extends = "⟩";
+          precedes = "⟨";
           nbsp = "·";
+          tab = "→ ";
         };
 
         sw = 4;
