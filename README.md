@@ -8,7 +8,7 @@ Install Nix: https://nixos.org/download/
 
 Make sure to enable experimental features:
 
-`sudo echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf`
+`echo "experimental-features = nix-command flakes" | sudo tee -a /etc/nix/nix.conf`
 
 `nix run nixpkgs#nh -- home switch github:vkarasen/dot_nixos -c vkarasen`
 
