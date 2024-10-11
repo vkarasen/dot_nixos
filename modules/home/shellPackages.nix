@@ -11,7 +11,6 @@
       wget
       bat
       gnused
-      tig
       dua
       duf
       fd

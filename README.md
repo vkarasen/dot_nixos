@@ -6,7 +6,11 @@ btw I use Nix
 
 Install Nix: https://nixos.org/download/
 
-`nix run nixpkgs#nh -- home switch github:vkarasen/dot_nixos#vkarasen`
+Make sure to enable experimental features:
+
+`sudo echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf`
+
+`nix run nixpkgs#nh -- home switch github:vkarasen/dot_nixos -c vkarasen`
 
 ### WSL
 
@@ -23,6 +27,9 @@ Relevant example config:
 font:
     normal:
         family: 'NotoMono Nerd Font Mono'
+
+size: 10.0
+
 shell:
     program: 'wsl.exe'
     args:
