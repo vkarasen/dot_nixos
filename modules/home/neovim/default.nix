@@ -39,6 +39,7 @@
         };
 
         sw = 4;
+        ts = 4;
         shiftround = true;
         smartindent = true;
 
