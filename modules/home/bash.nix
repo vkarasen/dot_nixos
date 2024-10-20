@@ -1,4 +1,14 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  config,
+  lib,
+  ...
+}: let
+  bashprivate =
+    if config.my.is_private
+    then "eval $(ssh-agent)"
+    else "";
+in {
   config = {
     home.packages = with pkgs; [
       fzf-git-sh
@@ -10,14 +20,18 @@
         enableCompletion = true;
         historySize = 10000;
 
-        initExtra = ''
-          set -o vi
-          HISTCONTROL='ignoreboth'
+        initExtra =
+          lib.strings.concatLines
+          [
+            bashprivate
+            ''
+              set -o vi
+              HISTCONTROL='ignoreboth'
 
-          eval `ssh-agent`
 
-          source ${pkgs.fzf-git-sh}/share/fzf-git-sh/fzf-git.sh
-        '';
+              source ${pkgs.fzf-git-sh}/share/fzf-git-sh/fzf-git.sh
+            ''
+          ];
 
         shellAliases = {
           cat = "bat";

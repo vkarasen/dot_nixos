@@ -1,14 +1,22 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  config,
+  lib,
+  ...
+}: {
   config = {
     home.packages = with pkgs; [
       openssh
     ];
 
-    services.ssh-agent.enable = true;
+    services.ssh-agent.enable = config.my.is_private;
 
     programs.ssh = {
       enable = true;
-      addKeysToAgent = "yes";
+      addKeysToAgent =
+        if config.my.is_private
+        then "yes"
+        else "no";
 
       matchBlocks = {
         github = {
@@ -16,7 +24,7 @@
           user = "git";
           identityFile = "~/.ssh/id_ed25519";
         };
-        gentian = {
+        gentian = lib.mkIf config.my.is_private {
           hostname = "zqnr.de";
           user = "vkarasen";
           identityFile = "~/.ssh/id_ed25519";

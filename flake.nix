@@ -33,17 +33,22 @@
     system = "x86_64-linux";
 
     pkgs = nixpkgs.legacyPackages.${system};
-  in {
+  in rec {
+    homeManagerModules = [
+      ./home-manager
+      nix-index-database.hmModules.nix-index
+      {programs.nix-index-database.comma.enable = true;}
+      catppuccin.homeManagerModules.catppuccin
+      nixvim.homeManagerModules.nixvim
+      ({lib, ...}: {
+        config.my.is_private = lib.mkForce true;
+      })
+    ];
+
     homeConfigurations.vkarasen = home-manager.lib.homeManagerConfiguration {
       inherit pkgs;
 
-      modules = [
-        ./home-manager
-        nix-index-database.hmModules.nix-index
-        {programs.nix-index-database.comma.enable = true;}
-        catppuccin.homeManagerModules.catppuccin
-        nixvim.homeManagerModules.nixvim
-      ];
+      modules = homeManagerModules;
     };
 
     formatter.${system} = pkgs.alejandra;
