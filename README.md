@@ -36,8 +36,13 @@ shell:
         - '~ -u <wsl_username>'
 ```
 
+### Nix portable
+
+Follow install instructions for [nix-portable](https://github.com/DavHau/nix-portable)
+
+For home config, a new option is provided at `options.my.portable` Override in config to get access to a `nix_activate` bash function that will activate a nixified virtual environment
+
+
 # TODO
 
 - Autocompletion, maybe [nvim-cmp](https://nix-community.github.io/nixvim/plugins/cmp/index.html) or [blink.cmp](https://github.com/Saghen/blink.cmp) or [coq](https://nix-community.github.io/nixvim/plugins/coq-nvim/index.html#coq-nvim)
-- Add configurability for extendability in other flakes
-- Figure out how to do a portable install
