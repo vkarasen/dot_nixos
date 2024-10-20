@@ -8,6 +8,18 @@
     if config.my.is_private
     then "eval $(ssh-agent)"
     else "";
+  bashportable =
+    if config.my.portable.enable
+    then ''
+      if [ ! -d /nix ]; then
+      	nix_activate () {
+      		NP_LOCATION=${config.my.portable.path}
+      		NP_RUNTIME=proot
+      		''${NP_LOCATION}/nix-portable nix shell nixpkgs#{bashInteractive,nix} -c bash
+      	}
+      fi
+    ''
+    else "";
 in {
   config = {
     home.packages = with pkgs; [
@@ -24,6 +36,7 @@ in {
           lib.strings.concatLines
           [
             bashprivate
+            bashportable
             ''
               set -o vi
               HISTCONTROL='ignoreboth'
