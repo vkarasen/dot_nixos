@@ -40,15 +40,18 @@
       {programs.nix-index-database.comma.enable = true;}
       catppuccin.homeManagerModules.catppuccin
       nixvim.homeManagerModules.nixvim
-      ({lib, ...}: {
-        config.my.is_private = lib.mkForce true;
-      })
     ];
 
     homeConfigurations.vkarasen = home-manager.lib.homeManagerConfiguration {
       inherit pkgs;
 
-      modules = homeManagerModules;
+      modules =
+        homeManagerModules
+        ++ [
+          ({lib, ...}: {
+            config.my.is_private = lib.mkForce true;
+          })
+        ];
     };
 
     formatter.${system} = pkgs.alejandra;
