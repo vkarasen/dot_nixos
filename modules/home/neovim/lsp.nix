@@ -27,7 +27,7 @@ in {
               enable = true;
               settings.formatting.command = ["shfmt"];
             };
-            nil-ls = {
+            nil_ls = {
               enable = true;
               settings.formatting.command = ["alejandra" "-qq"];
             };
