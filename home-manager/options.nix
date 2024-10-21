@@ -9,7 +9,7 @@
       default = false;
     };
     path = lib.mkOption {
-      type = lib.types.string;
+      type = lib.types.nonEmptyStr;
       default = "~/nix/nix-portable";
     };
   };
