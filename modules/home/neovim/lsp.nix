@@ -5,7 +5,7 @@
 in {
   home.packages = with pkgs;
     [
-      nil
+      nixd
       alejandra
       shfmt
     ]
@@ -27,9 +27,12 @@ in {
               enable = true;
               settings.formatting.command = ["shfmt"];
             };
-            nil_ls = {
+            nixd = {
               enable = true;
-              settings.formatting.command = ["alejandra" "-qq"];
+              settings = {
+                formatting.command = ["alejandra" "-qq"];
+                nixpkgs.expr = "import <nixpkgs> {}";
+              };
             };
           };
         };
