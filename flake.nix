@@ -42,10 +42,10 @@
       nixvim.homeManagerModules.nixvim
     ];
 
+    nix.nixPath = ["nixpkgs=${pkgs}"];
+
     homeConfigurations.vkarasen = home-manager.lib.homeManagerConfiguration {
       inherit pkgs;
-
-  		nix.nixPath = ["nixpkgs=${pkgs}"];
 
       modules =
         homeManagerModules
