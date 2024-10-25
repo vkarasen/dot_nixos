@@ -1,6 +1,6 @@
 {...}: {
   imports = [
-	./options.nix
+    ./options.nix
     ../modules/home
   ];
 
