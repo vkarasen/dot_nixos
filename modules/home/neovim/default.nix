@@ -48,6 +48,7 @@
         smartcase = true;
         gdefault = true;
         linebreak = true;
+		acd = true;
       };
 
       keymaps = [
