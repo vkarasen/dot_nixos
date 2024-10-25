@@ -5,7 +5,7 @@
 in {
   home.packages = with pkgs;
     [
-      nixd
+      nil
       alejandra
       shfmt
     ]
@@ -27,7 +27,7 @@ in {
               enable = true;
               settings.formatting.command = ["shfmt"];
             };
-            nixd = {
+            nil_ls = {
               enable = true;
               settings = {
                 formatting.command = ["alejandra" "-qq"];
