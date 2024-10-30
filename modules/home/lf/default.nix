@@ -22,7 +22,7 @@
       enable = true;
       settings = {
         preview = true;
-        hidden = true;
+        hidden = false;
         drawbox = true;
         icons = true;
         ignorecase = true;
@@ -66,13 +66,20 @@
                           --preview='bat --color=always --highlight-line={2} -- {1}'
           }}
         '';
-        mkdirfile = ''
+        mkdir = ''
           ''${{
                 printf "File: "
                 read DIR
-                mk $DIR
+                mkdir $DIR
           	}}
         '';
+		mkfile = ''
+          ''${{
+                printf "File: "
+                read FILE
+				touch "$FILE"
+          	}}
+				'';
       };
 
       previewer.source = config.xdg.dataFile."lf/pv.sh".source;
@@ -80,7 +87,8 @@
       keybindings = {
         "gff" = ":fzf_jump";
         "gfg" = ":fzf_search";
-        "A" = "mkdirfile";
+        "A" = "mkdir";
+        "a" = "mkfile";
         "." = "set hidden!";
         "D" = "delete";
       };
