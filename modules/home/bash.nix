@@ -56,13 +56,13 @@ in {
           cd = "z";
 
           #lists only directories (no files)
-          ld = "eza -lD";
+          ldo = "eza -lD";
 
           #lists only files (no directories)
-          lf = "eza -lf --color=always";
+          lfo = "eza -lf --color=always";
 
           #lists only hidden files (no directories)
-          lh = "eza -dl .* --group-directories-first";
+          lho = "eza -dl .* --group-directories-first";
 
           #lists everything with directories first
           ll = "eza -al --group-directories-first";
@@ -85,7 +85,7 @@ in {
       starship = {
         enableBashIntegration = true;
         settings = {
-          add_newline = true;
+          add_newline = false;
         };
       };
 
