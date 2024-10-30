@@ -11,27 +11,38 @@
       text =
         #bash
         ''
-        #!/usr/bin/env bash
-        bat --color=always "$1"
+          #!/usr/bin/env bash
+          bat --color=always "$1"
         '';
     };
+
+    xdg.configFile."lf/icons".source = ./icons;
+
     programs.lf = {
       enable = true;
+      settings = {
+        preview = true;
+        hidden = true;
+        drawbox = true;
+        icons = true;
+        ignorecase = true;
+      };
+
       # taken from https://github.com/gokcehan/lf/wiki/Integrations
       commands = {
-        "z" = ''
+        z = ''
           %{{
               result="$(zoxide query --exclude "$PWD" "$@" | sed 's/\\/\\\\/g;s/"/\\"/g')"
               lf -remote "send $id cd \"$result\""
           }}
         '';
-        "zi" = ''
+        zi = ''
           ''${{
             result="$(zoxide query -i | sed 's/\\/\\\\/g;s/"/\\"/g')"
             lf -remote "send $id cd \"$result\""
           }}
         '';
-        "fzf_jump" = ''
+        fzf_jump = ''
           ''${{
                 res="$(find . -maxdepth 1 | fzf --reverse --header="Jump to location")"
                 if [ -n "$res" ]; then
@@ -45,7 +56,7 @@
               fi
           }}
         '';
-        "fzf_search" = ''
+        fzf_search = ''
           ''${{
                   cmd="rg --column --line-number --no-heading --color=always --smart-case"
                   fzf --ansi --disabled --layout=reverse --header="Search in files" --delimiter=: \
@@ -55,12 +66,25 @@
                           --preview='bat --color=always --highlight-line={2} -- {1}'
           }}
         '';
+        mkdirfile = ''
+          ''${{
+                printf "File: "
+                read DIR
+                mk $DIR
+          	}}
+        '';
       };
+
       previewer.source = config.xdg.dataFile."lf/pv.sh".source;
+
       keybindings = {
         "gff" = ":fzf_jump";
         "gfg" = ":fzf_search";
+        "A" = "mkdirfile";
+        "." = "set hidden!";
+        "D" = "delete";
       };
+
       extraConfig =
         # put on-cd/on-select cmd extensions here
         ''

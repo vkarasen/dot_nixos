@@ -10,7 +10,7 @@
     ./bash.nix
     ./tmux
     ./neovim
-    ./lf.nix
+    ./lf
   ];
 
   config = {
