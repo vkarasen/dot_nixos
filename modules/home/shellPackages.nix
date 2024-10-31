@@ -18,6 +18,9 @@
       snakemake
       yq
       jq
+      patool
+      sd
+      file
     ];
 
     programs = {
