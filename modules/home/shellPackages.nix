@@ -15,7 +15,6 @@
       duf
       fd
       tldr
-      snakemake
       yq
       jq
       patool
