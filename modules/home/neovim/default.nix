@@ -5,6 +5,7 @@
     ./treesitter.nix
     ./telescope.nix
     ./markdown.nix
+    ./lint.nix
   ];
 
   programs = {
