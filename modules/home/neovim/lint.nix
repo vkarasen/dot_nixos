@@ -14,7 +14,7 @@
             python = ["pylint"];
           };
           customLinters.nagelfar = {
-            cmd = "nagelfar";
+            cmd = "${pkgs.nagelfar}/bin/nagelfar";
             stdin = false;
             args = ["-quiet"];
             parser =
