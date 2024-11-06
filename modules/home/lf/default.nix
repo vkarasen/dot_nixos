@@ -97,6 +97,7 @@
         };
 
         previewer.source = config.xdg.dataFile."lf/pv.sh".source;
+        previewer.keybinding = "i";
 
         keybindings = {
           "gff" = ":fzf_jump";
