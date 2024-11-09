@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{pkgs, lib, ...}: {
   config = {
     home.packages = with pkgs; [
       nagelfar
@@ -16,7 +16,8 @@
           customLinters.nagelfar = {
             cmd = "${pkgs.nagelfar}/bin/nagelfar";
             stdin = false;
-            args = ["-quiet"];
+            args = [ "-quiet" ];
+            ignore_exitcode = true;
             parser =
               #lua
               ''
