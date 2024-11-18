@@ -1,9 +1,38 @@
-{pkgs, lib, ...}: {
-  config = {
-    home.packages = with pkgs; [
+{
+  pkgs,
+  lib,
+  ...
+}: let
+  nagelfar_wrapped = pkgs.writeShellApplication {
+    name = "nagelfar_wrapped";
+    runtimeInputs = with pkgs; [
       nagelfar
-      pylint
+      tcl
     ];
+    text =
+      #bash
+      ''
+        args=()
+
+        if [[ -v NAGELFAR_SYNTAX_PATH ]] ; then
+        	mapfile <<<"$NAGELFAR_SYNTAX_PATH" -td :
+        	for syntaxdb in "''${MAPFILE[@]%$'\n'}" ; do
+        		args+=("-s" "$syntaxdb")
+        	done
+        fi
+
+        args+=("$@")
+
+        nagelfar "''${args[@]}"
+      '';
+  };
+in {
+  config = {
+    home.packages = with pkgs;
+      [
+        pylint
+      ]
+      ++ [nagelfar_wrapped];
 
     programs.nixvim = {
       plugins = {
@@ -14,9 +43,9 @@
             python = ["pylint"];
           };
           customLinters.nagelfar = {
-            cmd = "${pkgs.nagelfar}/bin/nagelfar";
+            cmd = "${nagelfar_wrapped}/bin/nagelfar_wrapped";
             stdin = false;
-            args = [ "-quiet" ];
+            args = ["-quiet"];
             ignore_exitcode = true;
             parser =
               #lua
