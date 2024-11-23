@@ -94,6 +94,10 @@
         }
       ];
 
+      filetype.pattern = {
+        "Snakefile.*" = "snakemake";
+      };
+
       plugins = {
         lualine.enable = true;
         indent-blankline.enable = true;
