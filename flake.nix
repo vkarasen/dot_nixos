@@ -56,6 +56,13 @@
         ];
     };
 
+    templates = {
+      py-venv = {
+        path = ./templates/py-venv;
+        description = "Python/Snakemake development environment";
+      };
+    };
+
     formatter.${system} = pkgs.alejandra;
   };
 }
