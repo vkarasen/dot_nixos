@@ -6,6 +6,7 @@
     ./telescope.nix
     ./markdown.nix
     ./lint.nix
+    ./latex.nix
   ];
 
   programs = {
