@@ -61,6 +61,10 @@
         path = ./templates/py-venv;
         description = "Python/Snakemake development environment";
       };
+      latex = {
+        path = ./templates/latex;
+        description = "latex development template";
+      };
     };
 
     formatter.${system} = pkgs.alejandra;
