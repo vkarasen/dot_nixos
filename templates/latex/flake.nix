@@ -38,16 +38,20 @@
             name = "latex flake template";
             src = self;
             phases = ["unpackPhase" "buildPhase" "installPhase"];
-            buildPhase = ''
-              export PATH="${pkgs.lib.makeBinPath buildInputs}"
-			  export HOME=.
-              env SOURCE_DATE_EPOCH=${toString self.lastModified} \
-              snakemake -c 1
-            '';
-            installPhase = ''
-              mkdir -p $out
-              cp KarasenkoPhD.pdf outline.pdf $out/
-            '';
+            buildPhase =
+              #bash
+              ''
+                export PATH="${pkgs.lib.makeBinPath buildInputs}"
+                export HOME=.
+                env SOURCE_DATE_EPOCH=${toString self.lastModified} \
+                  snakemake -c 1
+              '';
+            installPhase =
+              #bash
+              ''
+                mkdir -p $out
+                cp KarasenkoPhD.pdf outline.pdf $out/
+              '';
           };
         };
         defaultPackage = packages.document;
