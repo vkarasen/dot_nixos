@@ -6,11 +6,9 @@ btw I use Nix
 
 Install Nix: https://nixos.org/download/
 
-Make sure to enable experimental features:
+`nix --experimental-features 'nix-command flakes' run nixpkgs#nh -- home switch github:vkarasen/dot_nixos -c vkarasen -- --experimental-features 'nix-command flakes'`
 
-`echo "experimental-features = nix-command flakes" | sudo tee -a /etc/nix/nix.conf`
-
-`nix run nixpkgs#nh -- home switch github:vkarasen/dot_nixos -c vkarasen`
+The common `experimental-features` flags will be written to the user specifig nix config (default `~/.config/nix/nix.conf`), so the `--experimental-features` argument is only needed for the initial invocation
 
 ### WSL
 
