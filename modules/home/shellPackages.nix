@@ -20,6 +20,7 @@
       patool
       sd
       file
+      openssl
     ];
 
     programs = {
