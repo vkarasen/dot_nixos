@@ -21,6 +21,8 @@
         ]
         ++ (with pkgs.python312Packages; [
           numpy
+          pandas
+          matplotlib
         ]);
       shellHook =
         #bash
