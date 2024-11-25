@@ -39,6 +39,7 @@ in {
           [
             bashprivate
             bashportable
+            #bash
             ''
               set -o vi
               HISTCONTROL='ignoreboth'
