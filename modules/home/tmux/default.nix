@@ -15,6 +15,7 @@
         historyLimit = 10000;
         prefix = "^A";
         keyMode = "vi";
+        newSession = true;
 
         plugins = with pkgs.tmuxPlugins; [
           sensible
@@ -22,10 +23,13 @@
           tmux-fzf
         ];
 
-        extraConfig = ''
-          set -g base-index 1
-          set -g renumber-windows on
-        '';
+        extraConfig =
+          #tmux
+          ''
+            set -g base-index 1
+            set -g renumber-windows on
+            bind f run -b "${pkgs.tmuxPlugins.tmux-fzf}/share/tmux-plugins/tmux-fzf/scripts/window.sh switch"
+          '';
       };
 
       fzf.tmux.enableShellIntegration = true;
