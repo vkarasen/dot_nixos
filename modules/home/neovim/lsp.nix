@@ -63,6 +63,24 @@ in {
         };
         luasnip.enable = true;
         friendly-snippets.enable = true;
+        rustaceanvim = {
+          enable = true;
+          settings = {
+            rust-analyzer = {
+              check = {
+                command = "clippy";
+              };
+              inlayHints = {
+                lifetimeElisionHints = {
+                  enable = "always";
+                };
+              };
+              cargo = {
+                allFeatures = true;
+              };
+            };
+          };
+        };
       };
       extraConfigLua =
         #lua
