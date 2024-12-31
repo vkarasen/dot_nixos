@@ -17,7 +17,7 @@
       tldr
       yq
       jq
-      patool
+      stable.patool
       sd
       file
       openssl
