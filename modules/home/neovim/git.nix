@@ -1,7 +1,10 @@
-{...}: {
+{pkgs, ...}: {
   programs.nixvim = {
     plugins = {
-      neogit.enable = true;
+      neogit = {
+        enable = true;
+        package = pkgs.stable.vimPlugins.neogit;
+      };
       gitsigns.enable = true;
       diffview.enable = true;
       web-devicons.enable = true;
