@@ -3,6 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    nixpkgs-stable.url = "github:nixos/nixpkgs?ref=nixos-24.11";
 
     catppuccin.url = "github:catppuccin/nix";
 
@@ -24,6 +25,7 @@
 
   outputs = {
     nixpkgs,
+    nixpkgs-stable,
     home-manager,
     nix-index-database,
     catppuccin,
@@ -33,6 +35,11 @@
     system = "x86_64-linux";
 
     pkgs = nixpkgs.legacyPackages.${system};
+    overlay-stable = final: prev: {
+      stable = import nixpkgs-stable {
+        inherit system;
+      };
+    };
   in rec {
     homeManagerModules = [
       ./home-manager
@@ -40,6 +47,17 @@
       {programs.nix-index-database.comma.enable = true;}
       catppuccin.homeManagerModules.catppuccin
       nixvim.homeManagerModules.nixvim
+      (
+        {
+          config,
+          pkgs,
+          ...
+        }: {
+          nixpkgs.overlays = [
+            overlay-stable
+          ];
+        }
+      )
     ];
 
     nix.nixPath = ["nixpkgs=${pkgs}"];
