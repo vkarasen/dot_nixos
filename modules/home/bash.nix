@@ -30,6 +30,9 @@ in {
               set -o vi
 
               source ${pkgs.fzf-git-sh}/share/fzf-git-sh/fzf-git.sh
+
+              eval "$(batpipe)"
+              eval "$(batman --export-env)"
             ''
           ];
 

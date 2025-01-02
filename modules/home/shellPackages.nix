@@ -52,7 +52,12 @@
         config = {
           theme = "Catppuccin Mocha";
         };
+        extraPackages = with pkgs.bat-extras; [batdiff batgrep batwatch batpipe batman];
       };
+    };
+
+    home.sessionVariables = {
+      BATDIFF_USE_DELTA = "true";
     };
   };
 }
