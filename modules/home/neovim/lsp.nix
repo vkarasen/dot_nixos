@@ -13,6 +13,20 @@ in {
 
   programs = {
     nixvim = {
+      extraPlugins = [
+        (pkgs.vimUtils.buildVimPlugin {
+          name = "colorful-menu";
+          src =
+            pkgs.nix-gitignore.gitignoreSourcePure [
+              "repro.lua"
+            ] (pkgs.fetchFromGitHub {
+              owner = "xzbdmw";
+              repo = "colorful-menu.nvim";
+              rev = "6a818a5e9fe0b0b09655bd4822ec0cb5c0a8dd91";
+              hash = "sha256-x9H7mNCB5UBWd7Sog9SDdHyM8XlR15vVGgtGM5/qucw=";
+            });
+        })
+      ];
       plugins = {
         lsp = {
           enable = true;
@@ -73,6 +87,33 @@ in {
               "<C-p>" = "cmp.mapping(cmp.mapping.select_prev_item(), {'i', 's'})";
               "<Tab>" = "cmp.mapping.confirm({ select = true })";
             };
+            formatting.fields = [
+              "kind"
+              "abbr"
+            ];
+          };
+        };
+        lspkind = {
+          enable = true;
+          mode = "symbol";
+          cmp = {
+            maxWidth = 30;
+            after =
+              #lua
+              ''
+                function(entry, vim_item, kind)
+                    local highlights_info = require("colorful-menu").cmp_highlights(entry)
+
+                    -- if highlight_info==nil, which means missing ts parser, let's fallback to use default `vim_item.abbr`.
+                    -- What this plugin offers is two fields: `vim_item.abbr_hl_group` and `vim_item.abbr`.
+                    if highlights_info ~= nil then
+                      vim_item.abbr_hl_group = highlights_info.highlights
+                      vim_item.abbr = highlights_info.text
+                    end
+
+                    return vim_item
+                end
+              '';
           };
         };
         luasnip.enable = true;
