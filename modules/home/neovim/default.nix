@@ -27,6 +27,16 @@
       };
 
       opts = {
+        updatetime = 100; # Faster completion
+        shell = "~/.nix-profile/bin/bash";
+        hidden = true; # Keep closed buffer open in the background
+
+        mouse = "a"; # Enable mouse control
+        mousemodel = "extend"; # Mouse right-click extends the current selection
+        swapfile = false; # Disable the swap file
+        undofile = false; # Automatically save and restore undo history
+        backup = false; # Automatically save and restore undo history
+        incsearch = true; # Incremental search: show match for partly typed search command
         number = true;
         cursorline = true;
         list = true;
@@ -42,8 +52,12 @@
 
         sw = 4;
         ts = 4;
+        softtabstop = 4;
         shiftround = true;
+        expandtab = true;
         smartindent = true;
+        autoindent = true; # Do clever autoindenting
+        smarttab = true;
 
         infercase = true;
         ignorecase = true;
