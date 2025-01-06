@@ -54,7 +54,6 @@
         ts = 4;
         softtabstop = 4;
         shiftround = true;
-        expandtab = true;
         smartindent = true;
         autoindent = true; # Do clever autoindenting
         smarttab = true;
@@ -121,6 +120,7 @@
           enable = true;
           sources = ["filesystem"];
         };
+        guess-indent.enable = true;
       };
     };
   };
