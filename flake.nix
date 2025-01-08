@@ -56,6 +56,11 @@
           nixpkgs.overlays = [
             overlay-stable
           ];
+          nix = {
+            registry = {
+              nixpkgs.flake = nixpkgs;
+            };
+          };
         }
       )
     ];
