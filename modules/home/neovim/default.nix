@@ -7,6 +7,7 @@
     ./markdown.nix
     ./lint.nix
     ./latex.nix
+    ./mini.nix
   ];
 
   programs = {
@@ -101,11 +102,6 @@
           key = "U";
           action = "<c-r>";
         }
-        {
-          mode = "n";
-          key = "<leader>nt";
-          action = ":Neotree<cr>";
-        }
       ];
 
       filetype.pattern = {
@@ -116,10 +112,6 @@
         lualine.enable = true;
         indent-blankline.enable = true;
         bufferline.enable = true;
-        neo-tree = {
-          enable = true;
-          sources = ["filesystem"];
-        };
         guess-indent.enable = true;
       };
     };
