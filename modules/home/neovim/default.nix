@@ -8,6 +8,7 @@
     ./lint.nix
     ./latex.nix
     ./mini.nix
+    ./which-key.nix
   ];
 
   programs = {
