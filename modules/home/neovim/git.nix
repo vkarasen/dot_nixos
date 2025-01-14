@@ -3,7 +3,6 @@
     plugins = {
       neogit = {
         enable = true;
-        package = pkgs.stable.vimPlugins.neogit;
       };
       gitsigns.enable = true;
       diffview.enable = true;
