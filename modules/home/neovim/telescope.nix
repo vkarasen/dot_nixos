@@ -11,6 +11,10 @@
             "<leader>fh" = "help_tags";
             "<leader>fo" = "oldfiles";
           };
+          extensions = {
+            fzf-native.enable = true;
+            live-grep-args.enable = true;
+          };
         };
         harpoon = {
           enable = true;
