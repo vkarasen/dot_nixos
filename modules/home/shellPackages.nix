@@ -21,6 +21,7 @@
       sd
       file
       openssl
+      ncurses
     ];
 
     programs = {
