@@ -13,6 +13,7 @@
       gnused
       dua
       duf
+      dutree
       fd
       tldr
       yq
