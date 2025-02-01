@@ -114,6 +114,12 @@
         indent-blankline.enable = true;
         bufferline.enable = true;
         guess-indent.enable = true;
+        ts-comments = {
+          enable = true;
+          settings.lang = {
+            snakemake = "# %s";
+          };
+        };
       };
     };
   };
