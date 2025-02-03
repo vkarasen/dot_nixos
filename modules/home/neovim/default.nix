@@ -103,6 +103,11 @@
           key = "U";
           action = "<c-r>";
         }
+        {
+          mode = "n";
+          key = "<leader>nt";
+          action = ":Neotree<cr>";
+        }
       ];
 
       filetype.pattern = {
@@ -119,6 +124,10 @@
           settings.lang = {
             snakemake = "# %s";
           };
+        };
+        neo-tree = {
+          enable = true;
+          sources = ["filesystem"];
         };
       };
     };
