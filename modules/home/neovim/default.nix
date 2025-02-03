@@ -1,4 +1,5 @@
-{...}: { imports = [
+{...}: {
+  imports = [
     ./git.nix
     ./lsp.nix
     ./treesitter.nix
@@ -110,7 +111,7 @@
       ];
 
       filetype.pattern = {
-        "Snakefile*" = "snakemake";
+        "Snakefile.*" = "snakemake";
       };
 
       plugins = {
