@@ -82,14 +82,14 @@
           '';
           mkdir = ''
             ''${{
-                  printf "File: "
+                  printf "Directory name: "
                   read DIR
                   mkdir $DIR
             	}}
           '';
           mkfile = ''
                   ''${{
-                        printf "File: "
+                        printf "File name: "
                         read FILE
             touch "$FILE"
                   	}}
