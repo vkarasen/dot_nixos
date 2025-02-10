@@ -88,6 +88,10 @@
         path = ./templates/latex;
         description = "latex development template";
       };
+      rust = {
+        path = ./templates/rust;
+        description = "rust template using naersk";
+      };
     };
 
     formatter.${system} = pkgs.alejandra;
