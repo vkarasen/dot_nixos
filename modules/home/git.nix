@@ -29,7 +29,7 @@
           syntax-theme = "Catppuccin Mocha";
         };
         merge = {
-          conflictstyle = "diff3";
+          conflictstyle = "zdiff3";
         };
         diff = {
           colorMoved = "default";
