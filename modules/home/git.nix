@@ -1,6 +1,7 @@
 {
   lib,
   pkgs,
+  config,
   ...
 }: {
   config = {
@@ -11,7 +12,7 @@
     programs.git = {
       enable = true;
 
-      userEmail = "vkarasen@gmail.com";
+      userEmail = config.my.git.email;
       userName = "Vitali Karasenko";
 
       extraConfig = {
