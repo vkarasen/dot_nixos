@@ -48,7 +48,7 @@
       ./home-manager
       nix-index-database.hmModules.nix-index
       {programs.nix-index-database.comma.enable = true;}
-      catppuccin.homeManagerModules.catppuccin
+      catppuccin.homeModules.catppuccin
       nixvim.homeManagerModules.nixvim
       (
         {
