@@ -52,6 +52,9 @@ in {
             pyright = {
               enable = true;
             };
+            clangd = {
+              enable = true;
+            };
           };
         };
         cmp = {
