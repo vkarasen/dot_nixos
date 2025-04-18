@@ -28,6 +28,11 @@
         maplocalleader = " ";
       };
 
+      diagnostics = {
+        virtual_lines = true;
+        virtual_text = false;
+      };
+
       opts = {
         updatetime = 100; # Faster completion
         shell = "~/.nix-profile/bin/bash";
