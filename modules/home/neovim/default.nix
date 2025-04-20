@@ -9,6 +9,7 @@
     ./latex.nix
     ./mini.nix
     ./which-key.nix
+    ./dap.nix
   ];
 
   programs = {
