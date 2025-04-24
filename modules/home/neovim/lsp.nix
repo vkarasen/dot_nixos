@@ -55,6 +55,9 @@ in {
             clangd = {
               enable = true;
             };
+            mesonlsp = {
+              enable = true;
+            };
           };
         };
         cmp = {
