@@ -95,6 +95,11 @@
         path = ./templates/rust;
         description = "rust template using naersk";
       };
+      jekyll = {
+        path = ./templates/jekyll;
+        description = "Jekyll template";
+      };
+
     };
 
     formatter.${system} = pkgs.alejandra;
