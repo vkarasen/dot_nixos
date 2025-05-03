@@ -14,9 +14,7 @@
       gems = pkgs.bundlerEnv {
         name = "gems";
         ruby = pkgs.ruby;
-        gemfile = ./Gemfile;
-        lockfile = ./Gemfile.lock;
-        gemset = ./gemset.nix;
+        gemdir = "./.";
       };
     in
       with pkgs; {
