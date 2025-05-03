@@ -29,7 +29,7 @@
         maplocalleader = " ";
       };
 
-      diagnostics = {
+      diagnostic.settings = {
         virtual_lines = true;
         virtual_text = false;
       };
