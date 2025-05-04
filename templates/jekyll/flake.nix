@@ -14,7 +14,7 @@
       gems = pkgs.bundlerEnv {
         name = "gems";
         ruby = pkgs.ruby;
-        gemdir = "./.";
+        gemdir = ./.;
       };
     in
       with pkgs; {
