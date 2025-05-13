@@ -76,7 +76,10 @@ in {
           add_newline = false;
         };
       };
-
+      carapace = {
+        enableBashIntegration = true;
+        enable = true;
+      };
       eza = {
         enableBashIntegration = true;
         git = true;
