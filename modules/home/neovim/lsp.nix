@@ -127,6 +127,9 @@ in {
         rustaceanvim = {
           enable = true;
           settings = {
+            dap = {
+              autoload_configurations = true;
+            };
             rust-analyzer = {
               check = {
                 command = "clippy";
