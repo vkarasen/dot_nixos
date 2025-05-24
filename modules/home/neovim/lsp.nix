@@ -142,7 +142,21 @@ in {
             };
           };
         };
+        aerial = {
+          enable = true;
+          settings = {
+            backends = ["treesitter" "lsp"];
+          };
+        };
       };
+      keymaps = [
+        {
+          mode = "n";
+          key = "<leader>a";
+          action = "<cmd>AerialToggle<CR>";
+          options.desc = "Toggle aerial window";
+        }
+      ];
       extraConfigLua =
         #lua
         ''
