@@ -30,7 +30,7 @@
     };
 
     home.sessionVariables = {
-      SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+      SSL_CERT_FILE = lib.mkIf config.my.is_private "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
     };
 
     catppuccin = {
