@@ -29,10 +29,6 @@
         '';
     };
 
-    home.sessionVariables = {
-      SSL_CERT_FILE = lib.mkIf config.my.is_private "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-    };
-
     catppuccin = {
       enable = true;
       flavor = "mocha";
