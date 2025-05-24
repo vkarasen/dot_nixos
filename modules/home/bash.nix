@@ -11,7 +11,6 @@
 in {
   config = {
     home.packages = with pkgs; [
-      fzf-git-sh
     ];
 
     programs = {
@@ -28,8 +27,6 @@ in {
             #bash
             ''
               set -o vi
-
-              source ${pkgs.fzf-git-sh}/share/fzf-git-sh/fzf-git.sh
 
               eval "$(batpipe)"
               eval "$(batman --export-env)"
@@ -62,8 +59,19 @@ in {
         };
       };
 
-      fzf = {
+      atuin = {
+        enable = true;
         enableBashIntegration = true;
+        daemon.enable = true;
+        settings = {
+          auto_sync = false;
+          style = "auto";
+          dialect = "uk";
+          filter_mode_shell_up_key_binding = "workspace";
+          keymap_mode = "auto";
+          update_check = false;
+          workspaces = true;
+        };
       };
 
       zoxide = {
