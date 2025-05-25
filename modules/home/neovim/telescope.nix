@@ -10,6 +10,7 @@
             "<leader>fb" = "buffers";
             "<leader>fh" = "help_tags";
             "<leader>fo" = "oldfiles";
+            "<leader>fs" = "lsp_document_symbols";
           };
           extensions = {
             fzf-native.enable = true;
