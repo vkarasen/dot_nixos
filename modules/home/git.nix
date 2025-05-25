@@ -20,6 +20,9 @@
           pager = "delta";
           fsmonitor = true;
           untrackedCache = true;
+          compression = 9;
+          whitespace = "error";
+          preloadindex = true;
         };
         interactive = {
           diffFilter = "delta --color-only";
@@ -45,6 +48,7 @@
           autoSquash = true;
           autoStash = true;
           updateRefs = true;
+          missingCommitsCheck = "warn";
         };
         push = {
           autoSetupRemote = true;
