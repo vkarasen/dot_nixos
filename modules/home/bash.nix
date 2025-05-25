@@ -71,6 +71,7 @@ in {
           keymap_mode = "auto";
           update_check = false;
           workspaces = true;
+          enter_accept = true;
         };
       };
 
