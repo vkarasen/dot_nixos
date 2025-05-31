@@ -135,11 +135,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1748680200,
-        "narHash": "sha256-TWMK7LRnPEpCye8NXHip9MCXpo7+/BuXYvMW3MjVZtI=",
+        "lastModified": 1748696737,
+        "narHash": "sha256-NcgP0GGd+ltlIKE4vAqkDkaoPytzX97k5TkzdxAo7HU=",
         "owner": "olafkfreund",
         "repo": "nix-ai-help",
-        "rev": "0deb0a41f97f23b928a11233b8bac6a7ca61deb6",
+        "rev": "5eff24b5fba3a0532c4429703db0d83479bc64b3",
         "type": "github"
       },
       "original": {
