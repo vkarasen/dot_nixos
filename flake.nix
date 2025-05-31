@@ -24,6 +24,11 @@
       url = "github:nix-community/nixvim";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nixai = {
+      url = "github:olafkfreund/nix-ai-help";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -33,6 +38,7 @@
     nix-index-database,
     catppuccin,
     nixvim,
+    nixai,
     ...
   }: let
     system = "x86_64-linux";
@@ -66,6 +72,13 @@
           };
         }
       )
+      nixai.homeManagerModules.default
+      {
+        services.nixai = {
+          enable = true;
+          mcp.enable = true;
+        };
+      }
     ];
 
     nix.nixPath = ["nixpkgs=${pkgs}"];

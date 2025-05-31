@@ -128,6 +128,26 @@
         "type": "github"
       }
     },
+    "nixai": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1748680200,
+        "narHash": "sha256-TWMK7LRnPEpCye8NXHip9MCXpo7+/BuXYvMW3MjVZtI=",
+        "owner": "olafkfreund",
+        "repo": "nix-ai-help",
+        "rev": "0deb0a41f97f23b928a11233b8bac6a7ca61deb6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "olafkfreund",
+        "repo": "nix-ai-help",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1748026106,
@@ -211,6 +231,7 @@
         "catppuccin": "catppuccin",
         "home-manager": "home-manager",
         "nix-index-database": "nix-index-database",
+        "nixai": "nixai",
         "nixpkgs": "nixpkgs",
         "nixpkgs-stable": "nixpkgs-stable",
         "nixvim": "nixvim"
