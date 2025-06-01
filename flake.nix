@@ -76,7 +76,11 @@
       {
         services.nixai = {
           enable = true;
-          mcp.enable = true;
+          mcp = {
+            enable = true;
+            socketPath = "$HOME/.local/share/nixai/mcp.sock";
+          };
+          neovimIntegration = true;
         };
       }
     ];
