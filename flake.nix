@@ -99,7 +99,7 @@
 
           # Neovim integration
           neovimIntegration = {
-            enable = true;
+            enable = false;
             useNixVim = true;
             autoStartMcp = true;
           };
