@@ -78,9 +78,31 @@
           enable = true;
           mcp = {
             enable = true;
+
+            # User-specific paths
             socketPath = "$HOME/.local/share/nixai/mcp.sock";
+            host = "localhost";
+            port = 8081;
+
+            # AI settings
+            aiProvider = "ollama";
+            aiModel = "llama3";
+
+            documentationSources = [
+              "https://wiki.nixos.org/wiki/NixOS_Wiki"
+              "https://nix.dev/manual/nix"
+              "https://nixos.org/manual/nixpkgs/stable/"
+              "https://nix.dev/manual/nix/2.28/language/"
+              "https://nix-community.github.io/home-manager/"
+            ];
           };
-          neovimIntegration = true;
+
+          # Neovim integration
+          neovimIntegration = {
+            enable = true;
+            useNixVim = true;
+            autoStartMcp = true;
+          };
         };
       }
     ];
