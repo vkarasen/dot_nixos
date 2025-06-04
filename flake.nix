@@ -72,7 +72,7 @@
           };
         }
       )
-      nixai.homeManagerModules.default
+      nixai.homeManagerModules.${system}.default
       {
         services.nixai = {
           enable = true;
