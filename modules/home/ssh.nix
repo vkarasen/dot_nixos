@@ -22,12 +22,12 @@
         github = {
           hostname = "github.com";
           user = "git";
-          identityFile = "~/.ssh/id_ed25519";
+          # identityFile = "~/.ssh/id_ed25519";
         };
         gentian = lib.mkIf config.my.is_private {
           hostname = "zqnr.de";
           user = "vkarasen";
-          identityFile = "~/.ssh/id_ed25519";
+          # identityFile = "~/.ssh/id_ed25519";
           forwardAgent = true;
           forwardX11Trusted = true;
         };
