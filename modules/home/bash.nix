@@ -72,7 +72,6 @@ in {
           update_check = false;
           workspaces = true;
           enter_accept = true;
-          daemon.systemd_socket = true;
         };
       };
 
