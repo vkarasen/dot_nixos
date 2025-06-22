@@ -36,7 +36,6 @@
 
       opts = {
         updatetime = 100; # Faster completion
-        shell = "~/.nix-profile/bin/bash";
         hidden = true; # Keep closed buffer open in the background
 
         mouse = "a"; # Enable mouse control
