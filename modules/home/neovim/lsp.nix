@@ -69,7 +69,6 @@ in {
               {name = "nvim_lsp";}
               {name = "luasnip";}
               {name = "path";}
-              {name = "buffer";}
               {
                 name = "buffer";
                 # Words from other open buffers can also be suggested.
