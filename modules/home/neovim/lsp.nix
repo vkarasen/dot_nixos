@@ -151,7 +151,7 @@ in {
       keymaps = [
         {
           mode = "n";
-          key = "<leader>a";
+          key = "<leader>A";
           action = "<cmd>AerialToggle<CR>";
           options.desc = "Toggle aerial window";
         }
