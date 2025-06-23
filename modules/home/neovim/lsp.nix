@@ -66,6 +66,7 @@ in {
 
           settings = {
             sources = [
+              {name = "copilot";}
               {name = "nvim_lsp";}
               {name = "luasnip";}
               {name = "path";}
@@ -98,9 +99,24 @@ in {
             ];
           };
         };
+        copilot-lua = {
+          enable = true;
+        };
+        copilot-cmp = {
+          enable = true;
+        };
+        avante = {
+          enable = true;
+          settings = {
+            provider = "copilot";
+          };
+        };
         lspkind = {
           enable = true;
           mode = "symbol";
+          symbolMap = {
+            Copilot = "";
+          };
           cmp = {
             maxWidth = 30;
             after =
