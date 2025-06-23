@@ -23,6 +23,7 @@
       file
       openssl
       ncurses
+      tabiew
     ];
 
     programs = {

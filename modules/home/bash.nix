@@ -34,6 +34,7 @@ in {
           ];
 
         shellAliases = {
+          tw = "tw --theme catppuccin";
           cat = "bat";
 
           grep = "rg";
