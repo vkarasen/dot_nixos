@@ -23,17 +23,6 @@
             };
           };
         };
-        # harpoon = {
-        #   enable = true;
-        #   enableTelescope = true;
-        #   keymaps = {
-        #     addFile = "<leader>ha";
-        #     navNext = "<leader>hn";
-        #     navPrev = "<leader>hp";
-        #     toggleQuickMenu = "<leader>fp";
-        #     cmdToggleQuickMenu = "<leader>fP";
-        #   };
-        # };
       };
     };
   };
