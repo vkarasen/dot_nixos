@@ -12,6 +12,22 @@
             "<leader>fo" = "oldfiles";
             "<leader>fs" = "lsp_document_symbols";
           };
+          settings = {
+            pickers = {
+              buffers = {
+                mappings = {
+                  n = {
+                    "dd".__raw = "require('telescope.actions').delete_buffer";
+                    "<c-h>".__raw = "function(bn) require('telescope.actions').extensions.file_browser.actions.toggle_hidden(bn) end";
+                  };
+                };
+              };
+            };
+            defaults = {
+              path_display = ["truncate"];
+              initial_mode = "normal";
+            };
+          };
           extensions = {
             fzf-native.enable = true;
             live-grep-args.enable = true;
