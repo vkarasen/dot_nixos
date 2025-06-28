@@ -32,9 +32,18 @@ in {
           enable = true;
           inlayHints = true;
           keymaps = {
+            diagnostic = {
+              "<leader>cj" = "goto_next";
+              "<leader>ck" = "goto_prev";
+            };
             lspBuf = {
               "<leader>cf" = "format";
               "<leader>ca" = "code_action";
+              "<leader>cK" = "hover";
+              "<leader>cD" = "references";
+              "<leader>cd" = "definition";
+              "<leader>ci" = "implementation";
+              "<leader>ct" = "type_definition";
             };
           };
           servers = {
