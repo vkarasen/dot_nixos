@@ -118,6 +118,7 @@ in {
           enable = true;
           settings = {
             provider = "copilot";
+            providers.copilot.model = "claude-sonnet-4";
           };
         };
         lspkind = {
