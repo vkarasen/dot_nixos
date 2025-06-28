@@ -14,7 +14,13 @@
           };
           settings = {
             pickers = {
+              oldfiles = {
+                initial_mode = "normal";
+              };
               buffers = {
+                sort_lastused = true;
+                sort_mru = true;
+                initial_mode = "normal";
                 mappings = {
                   n = {
                     "dd".__raw = "require('telescope.actions').delete_buffer";
@@ -25,7 +31,6 @@
             };
             defaults = {
               path_display = ["truncate"];
-              initial_mode = "normal";
             };
           };
           extensions = {
