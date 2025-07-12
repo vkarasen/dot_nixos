@@ -1,4 +1,4 @@
-{pkgs, ...}: let
+{pkgs, config, ...}: let
   nodepkgs = with pkgs.nodePackages; [
     bash-language-server
   ];
@@ -51,11 +51,17 @@ in {
               enable = true;
               settings.formatting.command = ["shfmt"];
             };
-            nil_ls = {
+            nixd = {
               enable = true;
               settings = {
-                formatting.command = ["alejandra" "-qq"];
-                nixpkgs.expr = "import <nixpkgs> {}";
+                formatting.command = [
+                  "alejandra"
+                  "-qq"
+                ];
+                nixpkgs.expr = ''import (builtins.getFlake (toString ./.)).inputs.nixpkgs { }'';
+                options = {
+                  home_manager.expr = ''(builtins.getFlake (toString ./.)).homeConfigurations.${config.my.homeConfigurationName}.options'';
+                };
               };
             };
             pyright = {

@@ -17,4 +17,11 @@
       default = "~/nix/nix-portable";
     };
   };
+  options.my.homeConfigurationName = lib.mkOption {
+    type = lib.types.nonEmptyStr;
+    default = let
+      user = builtins.getEnv "USER";
+    in if user != "" then user else "vkarasen";
+    description = "Name of the home configuration to use for LSP settings";
+  };
 }
