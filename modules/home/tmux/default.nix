@@ -1,7 +1,4 @@
-{
-  pkgs,
-  ...
-}: {
+{pkgs, ...}: {
   config = {
     home.packages = with pkgs; [
       tmux
@@ -10,14 +7,14 @@
     catppuccin.tmux.extraConfig =
       #tmux
       ''
-      set -g @catppuccin_window_status_style "rounded"
-      set -g status-right-length 100
-      set -g status-left ""
-      set -g status-right "#{E:@catppuccin_status_application}"
-      set -ag status-right "#{E:@catppuccin_status_session}"
-      set -g @catppuccin_window_current_text "#W"
-      set -g @catppuccin_window_default_text "#W"
-      set -g @catppuccin_window_text "#W"
+        set -g @catppuccin_window_status_style "rounded"
+        set -g status-right-length 100
+        set -g status-left ""
+        set -g status-right "#{E:@catppuccin_status_application}"
+        set -ag status-right "#{E:@catppuccin_status_session}"
+        set -g @catppuccin_window_current_text "#W"
+        set -g @catppuccin_window_default_text "#W"
+        set -g @catppuccin_window_text "#W"
       '';
 
     programs = {

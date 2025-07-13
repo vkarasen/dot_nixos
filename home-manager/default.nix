@@ -5,5 +5,5 @@
   ];
 
   programs.home-manager.enable = true;
-  home.sessionPath = [ "~/.nix-profile/bin" ];
+  home.sessionPath = ["~/.nix-profile/bin"];
 }

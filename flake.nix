@@ -99,7 +99,6 @@
         path = ./templates/jekyll;
         description = "Jekyll template";
       };
-
     };
 
     formatter.${system} = pkgs.alejandra;

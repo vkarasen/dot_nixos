@@ -1,4 +1,8 @@
-{pkgs, config, ...}: let
+{
+  pkgs,
+  config,
+  ...
+}: let
   nodepkgs = with pkgs.nodePackages; [
     bash-language-server
   ];
