@@ -8,6 +8,7 @@ in {
       nil
       alejandra
       shfmt
+      black
     ]
     ++ nodepkgs;
 
@@ -37,7 +38,6 @@ in {
               "<leader>ck" = "goto_prev";
             };
             lspBuf = {
-              "<leader>cf" = "format";
               "<leader>ca" = "code_action";
               "<leader>cK" = "hover";
               "<leader>cD" = "references";
@@ -49,15 +49,10 @@ in {
           servers = {
             bashls = {
               enable = true;
-              settings.formatting.command = ["shfmt"];
             };
             nixd = {
               enable = true;
               settings = {
-                formatting.command = [
-                  "alejandra"
-                  "-qq"
-                ];
                 nixpkgs.expr = ''import (builtins.getFlake (toString ./.)).inputs.nixpkgs { }'';
                 options = {
                   home_manager.expr = ''(builtins.getFlake (toString ./.)).homeConfigurations.${config.my.homeConfigurationName}.options'';
@@ -66,6 +61,15 @@ in {
             };
             pyright = {
               enable = true;
+              settings = {
+                python = {
+                  analysis = {
+                    typeCheckingMode = "basic";
+                    autoSearchPaths = true;
+                    useLibraryCodeForTypes = true;
+                  };
+                };
+              };
             };
             clangd = {
               enable = true;
@@ -179,6 +183,22 @@ in {
             backends = ["treesitter" "lsp"];
           };
         };
+        conform-nvim = {
+          enable = true;
+          settings = {
+            formatters_by_ft = {
+              python = ["black"];
+              bash = ["shfmt"];
+              nix = ["alejandra"];
+              cpp = ["clang-format"];
+              "_" = [
+                "squeeze_blanks"
+                "trim_whitespace"
+                "trim_newlines"
+              ];
+            };
+          };
+        };
       };
       keymaps = [
         {
@@ -186,6 +206,12 @@ in {
           key = "<leader>A";
           action = "<cmd>AerialToggle<CR>";
           options.desc = "Toggle aerial window";
+        }
+        {
+          mode = "n";
+          key = "<leader>cf";
+          action = "<cmd>lua require('conform').format()<CR>";
+          options.desc = "Format buffer with conform";
         }
       ];
       extraConfigLua =
