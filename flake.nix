@@ -51,11 +51,7 @@
       catppuccin.homeModules.catppuccin
       nixvim.homeManagerModules.nixvim
       (
-        {
-          config,
-          pkgs,
-          ...
-        }: {
+        {...}: {
           nixpkgs.overlays = [
             overlay-stable
           ];
