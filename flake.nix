@@ -46,7 +46,7 @@
   in rec {
     homeManagerModules = [
       ./home-manager
-      nix-index-database.hmModules.nix-index
+      nix-index-database.homeModules.nix-index
       {programs.nix-index-database.comma.enable = true;}
       catppuccin.homeModules.catppuccin
       nixvim.homeManagerModules.nixvim
