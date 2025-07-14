@@ -44,11 +44,34 @@ in {
             lspBuf = {
               "<leader>ca" = "code_action";
               "<leader>cK" = "hover";
-              "<leader>cD" = "references";
-              "<leader>cd" = "definition";
-              "<leader>ci" = "implementation";
-              "<leader>ct" = "type_definition";
+              "<leader>cD" = "definition";
             };
+            extra = [
+              {
+                action = "<CMD>Lspsaga outline<Enter>";
+                key = "<leader>co";
+              }
+              {
+                action = "<CMD>Lspsaga finder<Enter>";
+                key = "<leader>cF";
+              }
+              {
+                action = "<CMD>Lspsaga rename<Enter>";
+                key = "<leader>cr";
+              }
+              {
+                action = "<CMD>Lspsaga peek_definition<Enter>";
+                key = "<leader>cd";
+              }
+              {
+                action = "<CMD>Lspsaga peek_type_definition<Enter>";
+                key = "<leader>ct";
+              }
+              {
+                action = "<CMD>Lspsaga goto_type_definition<Enter>";
+                key = "<leader>cT";
+              }
+            ];
           };
           servers = {
             bashls = {
@@ -160,6 +183,10 @@ in {
                 end
               '';
           };
+        };
+        lspsaga = {
+          enable = true;
+          lightbulb.enable = false;
         };
         luasnip.enable = true;
         friendly-snippets.enable = true;
