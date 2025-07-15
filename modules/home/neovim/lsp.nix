@@ -71,6 +71,14 @@ in {
                 action = "<CMD>Lspsaga goto_type_definition<Enter>";
                 key = "<leader>cT";
               }
+              {
+                action = "<CMD>Lspsaga show_buf_diagnostics<Enter>";
+                key = "<leader>cb";
+              }
+              {
+                action = "<CMD>Lspsaga show_workspace_diagnostics<Enter>";
+                key = "<leader>cw";
+              }
             ];
           };
           servers = {
