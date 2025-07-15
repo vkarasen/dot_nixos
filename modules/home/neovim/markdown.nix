@@ -6,7 +6,8 @@
     nixvim = {
       plugins = {
         lsp.servers.marksman = {
-          enable = true;
+          # issues with lspsaga, disabling for now
+          enable = false;
         };
         markdown-preview = {
           enable = true;
