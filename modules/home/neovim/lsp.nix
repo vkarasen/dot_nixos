@@ -164,6 +164,15 @@ in {
           settings = {
             provider = "copilot";
             providers.copilot.model = "claude-sonnet-4";
+            windows = {
+              wrap = true;
+              input = {
+                height = 15;
+              };
+              edit = {
+                border = "rounded";
+              };
+            };
           };
         };
         lspkind = {
