@@ -40,6 +40,7 @@
             set -g base-index 1
             set -g renumber-windows on
             bind f run -b "${pkgs.tmuxPlugins.tmux-fzf}/share/tmux-plugins/tmux-fzf/scripts/window.sh switch"
+            bind M-c attach-session -c "#{pane_current_path}"
           '';
       };
 
