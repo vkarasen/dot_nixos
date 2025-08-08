@@ -49,7 +49,7 @@
       nix-index-database.homeModules.nix-index
       {programs.nix-index-database.comma.enable = true;}
       catppuccin.homeModules.catppuccin
-      nixvim.homeManagerModules.nixvim
+      nixvim.homeModules.nixvim
       (
         {...}: {
           nixpkgs.overlays = [

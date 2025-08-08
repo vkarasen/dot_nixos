@@ -177,12 +177,16 @@ in {
         };
         lspkind = {
           enable = true;
-          mode = "symbol";
-          symbolMap = {
-            Copilot = "";
+          settings = {
+            mode = "symbol";
+            symbol_map = {
+              Copilot = "";
+            };
+            cmp = {
+              maxwidth = 30;
+            };
           };
           cmp = {
-            maxWidth = 30;
             after =
               #lua
               ''
