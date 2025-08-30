@@ -13,12 +13,15 @@
 
     programs.ssh = {
       enable = true;
-      addKeysToAgent =
-        if config.my.is_private
-        then "yes"
-        else "no";
+      enableDefaultConfig = false;
 
       matchBlocks = {
+        "*" = {
+          addKeysToAgent =
+            if config.my.is_private
+            then "yes"
+            else "no";
+        };
         github = {
           hostname = "github.com";
           user = "git";
