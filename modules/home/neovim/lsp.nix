@@ -207,7 +207,9 @@ in {
         };
         lspsaga = {
           enable = true;
-          lightbulb.enable = false;
+          settings = {
+            lightbulb.enable = false;
+          };
         };
         luasnip.enable = true;
         friendly-snippets.enable = true;
