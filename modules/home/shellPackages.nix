@@ -24,7 +24,6 @@
       openssl
       ncurses
       tabiew
-      sops
     ];
 
     programs = {

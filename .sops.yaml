@@ -14,8 +14,8 @@ keys:
   # - &machine1 age0987654321fedcba... # Replace with machine's age key
 
 creation_rules:
-  # Rules for secrets in the secrets/ directory
-  - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
+  # Rules for secrets in the modules/home/sops/secrets/ directory
+  - path_regex: modules/home/sops/secrets/[^/]+\.(yaml|json|env|ini)$
     key_groups:
     - age:
       - *user_key

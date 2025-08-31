@@ -9,7 +9,7 @@
     ./ssh.nix
     ./git.nix
     ./bash.nix
-    ./sops.nix
+    ./sops
     ./tmux
     ./neovim
     ./lf
