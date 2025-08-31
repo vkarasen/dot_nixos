@@ -24,6 +24,11 @@
       url = "github:nix-community/nixvim";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -33,6 +38,7 @@
     nix-index-database,
     catppuccin,
     nixvim,
+    sops-nix,
     ...
   }: let
     system = "x86_64-linux";
@@ -50,6 +56,7 @@
       {programs.nix-index-database.comma.enable = true;}
       catppuccin.homeModules.catppuccin
       nixvim.homeModules.nixvim
+      sops-nix.homeManagerModules.sops
       (
         {...}: {
           nixpkgs.overlays = [

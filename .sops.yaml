@@ -1,0 +1,29 @@
+# SOPS configuration file
+# This file defines which keys can decrypt which secrets
+
+# Replace these with your actual keys:
+# - For age: run `age-keygen` and use the public key
+# - For GPG: use your GPG fingerprint
+# - For SSH: convert with `ssh-to-age < ~/.ssh/id_ed25519.pub`
+
+keys:
+  # Your personal key (replace with your actual key)
+  - &user_key age1f948vk9ek354n4k4kfgwx2fdd2my5m5l5gkdqc9nct970u7q9g5savtl7w
+  
+  # Machine keys (add as needed)
+  # - &machine1 age0987654321fedcba... # Replace with machine's age key
+
+creation_rules:
+  # Rules for secrets in the secrets/ directory
+  - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
+    key_groups:
+    - age:
+      - *user_key
+      # - *machine1  # Uncomment and add machine keys as needed
+
+# To get started:
+# 1. Generate an age key: age-keygen -o ~/.config/sops/age/keys.txt
+# 2. Get your public key: age-keygen -y ~/.config/sops/age/keys.txt
+# 3. Replace the placeholder key above with your actual public key
+# 4. Create/edit secrets: sops secrets/example.yaml
+
