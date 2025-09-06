@@ -24,7 +24,7 @@
         historyLimit = 10000;
         prefix = "^A";
         keyMode = "vi";
-        newSession = true;
+        newSession = false;
         mouse = true;
         terminal = "screen-256color";
 
