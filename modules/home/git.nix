@@ -1,6 +1,7 @@
 {
   pkgs,
   config,
+  lib,
   ...
 }: {
   config = {
@@ -14,6 +15,9 @@
         gitCredentialHelper = {
           enable = true;
         };
+        extensions = lib.optionals config.nixpkgs.config.allowUnfree [
+          pkgs.gh-copilot
+        ];
       };
       git = {
         enable = true;
