@@ -92,6 +92,8 @@ in {
             symbol = "󰗹 ";
             style = "bold blue";
           };
+
+          status.disabled = false;
         };
       };
       carapace = {
