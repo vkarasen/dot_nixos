@@ -84,6 +84,14 @@ in {
         enableBashIntegration = true;
         settings = {
           add_newline = false;
+
+          # Custom tmux module
+          custom.tmux = {
+            command = "tmux list-sessions 2>/dev/null | wc -l";
+            when = "test $(tmux list-sessions 2>/dev/null | wc -l) -gt 0 && test -z \"$TMUX\"";
+            symbol = "󰗹 ";
+            style = "bold blue";
+          };
         };
       };
       carapace = {
