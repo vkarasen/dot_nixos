@@ -6,6 +6,9 @@
       };
       gitsigns.enable = true;
       diffview.enable = true;
+      octo = {
+        enable = true;
+      };
     };
     keymaps = [
       {
