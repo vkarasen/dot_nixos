@@ -124,6 +124,7 @@ in {
               {name = "nvim_lsp";}
               {name = "luasnip";}
               {name = "path";}
+              {name = "git";}
               {
                 name = "buffer";
                 # Words from other open buffers can also be suggested.
@@ -252,6 +253,9 @@ in {
               ];
             };
           };
+        };
+        cmp-git = {
+          enable = true;
         };
       };
       keymaps = [
