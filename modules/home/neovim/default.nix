@@ -132,7 +132,7 @@
         };
         neo-tree = {
           enable = true;
-          sources = ["filesystem"];
+          settings.sources = ["filesystem"];
         };
       };
     };
