@@ -22,10 +22,11 @@
       git = {
         enable = true;
 
-        userEmail = config.my.git.email;
-        userName = "Vitali Karasenko";
-
-        extraConfig = {
+        settings = {
+          user = {
+            email = config.my.git.email;
+            name = "Vitali Karasenko";
+          };
           core = {
             pager = "delta";
             fsmonitor = true;
