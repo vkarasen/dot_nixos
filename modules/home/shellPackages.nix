@@ -44,7 +44,7 @@
         config = {
           theme = "Catppuccin Mocha";
         };
-        extraPackages = with pkgs.bat-extras; [batdiff batgrep batwatch batpipe batman];
+        extraPackages = with pkgs.bat-extras; [batdiff batwatch batpipe batman] ++ [pkgs.stable.bat-extras.batgrep];
       };
     };
 
