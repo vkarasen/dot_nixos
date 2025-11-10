@@ -18,7 +18,7 @@
       tldr
       yq
       jq
-      stable.patool
+      patool
       sd
       file
       openssl
@@ -44,7 +44,7 @@
         config = {
           theme = "Catppuccin Mocha";
         };
-        extraPackages = with pkgs.bat-extras; [batdiff batwatch batpipe batman] ++ [pkgs.stable.bat-extras.batgrep];
+        extraPackages = with pkgs.bat-extras; [batdiff batwatch batpipe batman batgrep];
       };
     };
 
