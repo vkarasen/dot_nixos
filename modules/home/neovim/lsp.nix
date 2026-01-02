@@ -217,17 +217,36 @@ in {
         rustaceanvim = {
           enable = true;
           settings = {
-            rust-analyzer = {
-              check = {
-                command = "clippy";
-              };
-              inlayHints = {
-                lifetimeElisionHints = {
-                  enable = "always";
+            server = {
+              default_settings = {
+                rust-analyzer = {
+                  check = {
+                    command = "clippy";
+                    allTargets = true;
+                  };
+                  inlayHints = {
+                    lifetimeElisionHints = {
+                      enable = "always";
+                    };
+                  };
+                  cargo = {
+                    features = "all";
+                    targetDir = true;
+                  };
+                  assist = {
+                    preferSelf = true;
+                  };
+                  files = {
+                    watcher = "server";
+                    exclude = [
+                      "**/.git/**"
+                      "**/target/**"
+                      "**/node_modules/**"
+                      "**/dist/**"
+                      "**/out/**"
+                    ];
+                  };
                 };
-              };
-              cargo = {
-                allFeatures = true;
               };
             };
           };
