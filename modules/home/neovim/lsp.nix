@@ -224,11 +224,17 @@ in {
                     command = "clippy";
                     allTargets = true;
                   };
-                  inlayHints = {
-                    lifetimeElisionHints = {
-                      enable = "always";
-                    };
+                  diagnostics.styleLints.enable = true;
+                  imports = {
+                    preferPrelude = true;
                   };
+                  inlayHints = {
+                    closureCaptureHints.enable = true;
+                    closureReturnTypeHints.enable = true;
+                    genericParameterHints.enable = true;
+                    parameterHints.missingArguments.enable = true;
+                  };
+                  interpret.tests = true;
                   cargo = {
                     features = "all";
                     targetDir = true;
