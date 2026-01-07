@@ -88,6 +88,11 @@
         ];
     };
 
+    packages.${system}.nvim = nixvim.legacyPackages.${system}.makeNixvimWithModule {
+      inherit pkgs;
+      module = import ./modules/nixvim;
+    };
+
     templates = {
       py-venv = {
         path = ./templates/py-venv;
