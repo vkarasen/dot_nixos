@@ -5,6 +5,8 @@
     nixpkgs.url = "github:nixos/nixpkgs?shallow=1&ref=nixos-unstable";
     nixpkgs-stable.url = "github:nixos/nixpkgs?shallow=1&ref=nixos-24.11";
 
+    flake-utils.url = "github:numtide/flake-utils";
+
     catppuccin = {
       url = "github:catppuccin/nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -34,6 +36,7 @@
   outputs = {
     nixpkgs,
     nixpkgs-stable,
+    flake-utils,
     home-manager,
     nix-index-database,
     catppuccin,
