@@ -77,7 +77,7 @@
       )
     ];
 
-    nix.nixPath = ["nixpkgs=${pkgs}"];
+    nix.nixPath = ["nixpkgs=${nixpkgs}"];
 
     homeConfigurations.vkarasen = home-manager.lib.homeManagerConfiguration {
       inherit pkgs;
