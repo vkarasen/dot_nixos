@@ -5,7 +5,8 @@
     nixpkgs.url = "github:nixos/nixpkgs?shallow=1&ref=nixos-unstable";
     nixpkgs-stable.url = "github:nixos/nixpkgs?shallow=1&ref=nixos-24.11";
 
-    flake-utils.url = "github:numtide/flake-utils";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    import-tree.url = "github:vic/import-tree";
 
     catppuccin = {
       url = "github:catppuccin/nix";
@@ -33,88 +34,90 @@
     };
   };
 
-  outputs = {
+  outputs = inputs @ {
+    flake-parts,
+    import-tree,
     nixpkgs,
     nixpkgs-stable,
-    flake-utils,
     home-manager,
     nix-index-database,
     catppuccin,
     nixvim,
     sops-nix,
     ...
-  }: let
-    system = "x86_64-linux";
+  }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
 
-    pkgs = import nixpkgs {
-      inherit system;
-      config.allowUnfree = true;
-    };
-    overlay-stable = final: prev: {
-      stable = import nixpkgs-stable {
-        inherit system;
+      imports = [
+        # Import all modules from the new modules directory
+        (import-tree ./modules)
+      ];
+
+      perSystem = { config, self', inputs', pkgs, system, ... }: {
+        # Formatter for each system
+        formatter = pkgs.alejandra;
+
+        # Standalone nixvim package
+        packages.nvim = nixvim.legacyPackages.${system}.makeNixvimWithModule {
+          inherit pkgs;
+          module = import ./legacy-modules/nixvim;
+        };
       };
-    };
-  in rec {
-    homeManagerModules = [
-      ./home-manager
-      nix-index-database.homeModules.nix-index
-      {programs.nix-index-database.comma.enable = true;}
-      catppuccin.homeModules.catppuccin
-      nixvim.homeModules.nixvim
-      sops-nix.homeManagerModules.sops
-      (
-        {...}: {
-          nixpkgs.overlays = [
-            overlay-stable
-          ];
-          nix = {
-            registry = {
-              nixpkgs.flake = nixpkgs;
-            };
+
+      flake = {
+        # Templates remain at the flake level
+        templates = {
+          py-venv = {
+            path = ./templates/py-venv;
+            description = "Python/Snakemake development environment";
           };
-        }
-      )
-    ];
+          latex = {
+            path = ./templates/latex;
+            description = "latex development template";
+          };
+          rust = {
+            path = ./templates/rust;
+            description = "rust template using naersk";
+          };
+          jekyll = {
+            path = ./templates/jekyll;
+            description = "Jekyll template";
+          };
+        };
 
-    nix.nixPath = ["nixpkgs=${nixpkgs}"];
+        # Home Manager configuration
+        homeConfigurations.vkarasen = home-manager.lib.homeManagerConfiguration {
+          pkgs = import nixpkgs {
+            system = "x86_64-linux";
+            config.allowUnfree = true;
+          };
 
-    homeConfigurations.vkarasen = home-manager.lib.homeManagerConfiguration {
-      inherit pkgs;
+          modules = [
+            # Dendritic modules
+            ./modules/users/vkarasen
 
-      modules =
-        homeManagerModules
-        ++ [
-          ({lib, ...}: {
-            config.my.is_private = lib.mkForce true;
-          })
-        ];
+            # External modules
+            nix-index-database.homeModules.nix-index
+            catppuccin.homeModules.catppuccin
+            nixvim.homeModules.nixvim
+            sops-nix.homeManagerModules.sops
+
+            # Global configuration
+            ({lib, ...}: {
+              programs.nix-index-database.comma.enable = true;
+              nixpkgs.overlays = [
+                (final: prev: {
+                  stable = import nixpkgs-stable {
+                    system = "x86_64-linux";
+                  };
+                })
+              ];
+              nix.registry.nixpkgs.flake = nixpkgs;
+              my.is_private = lib.mkForce true;
+            })
+          ];
+        };
+      };
     };
-
-    packages.${system}.nvim = nixvim.legacyPackages.${system}.makeNixvimWithModule {
-      inherit pkgs;
-      module = import ./modules/nixvim;
-    };
-
-    templates = {
-      py-venv = {
-        path = ./templates/py-venv;
-        description = "Python/Snakemake development environment";
-      };
-      latex = {
-        path = ./templates/latex;
-        description = "latex development template";
-      };
-      rust = {
-        path = ./templates/rust;
-        description = "rust template using naersk";
-      };
-      jekyll = {
-        path = ./templates/jekyll;
-        description = "Jekyll template";
-      };
-    };
-
-    formatter.${system} = pkgs.alejandra;
-  };
 }
