@@ -4,8 +4,12 @@
     experimentalFeatures = [ "nix-command" "flakes" ];
   };
 
-  catppuccin = {
-    flavor = "mocha";
+  # Theme configuration - values used by other modules
+  # Do not define catppuccin.* options here as they are not available at flake-parts level
+  theme = {
+    catppuccin = {
+      flavor = "mocha";
+    };
   };
 
   editor = {

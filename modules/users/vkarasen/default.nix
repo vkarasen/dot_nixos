@@ -38,5 +38,13 @@
       description = "Name of the home configuration to use for LSP settings";
     };
   };
+
+  config = {
+    # Catppuccin theme configuration handled at flake level
+    # catppuccin = {
+    #   enable = true;
+    #   flavor = "mocha";
+    # };
+  };
 }
 

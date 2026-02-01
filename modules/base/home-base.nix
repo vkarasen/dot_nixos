@@ -19,10 +19,8 @@ in
     '';
   };
 
-  catppuccin = {
-    enable = true;
-    flavor = systemConstants.catppuccin.flavor;
-  };
+  # Catppuccin configuration moved to user-level configuration
+  # where the catppuccin module is available
 
   programs.home-manager.enable = true;
   home.sessionPath = [ "~/.nix-profile/bin" ];

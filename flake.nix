@@ -115,6 +115,12 @@
               ];
               nix.registry.nixpkgs.flake = nixpkgs;
               my.is_private = lib.mkForce true;
+
+              # Catppuccin theme configuration
+              catppuccin = {
+                enable = true;
+                flavor = "mocha";
+              };
             })
           ];
         };

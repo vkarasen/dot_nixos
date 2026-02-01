@@ -5,7 +5,7 @@ in
 {
   colorschemes.catppuccin = {
     enable = true;
-    settings.flavor = systemConstants.catppuccin.flavor;
+    settings.flavor = systemConstants.theme.catppuccin.flavor;
   };
 
   globals = {
