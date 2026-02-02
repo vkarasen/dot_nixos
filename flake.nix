@@ -49,8 +49,13 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" "x86_64-darwin" ];
 
-      # Note: import-tree is not used at flake-parts level since all modules
-      # are home-manager specific and imported via homeConfigurations
+      # Import flake-parts modules that expose flake.modules for external consumption
+      # This follows the dendritic pattern - modules are exposed via:
+      #   flake.modules.homeManager.<aspect>
+      #   flake.modules.nixvim.<aspect>
+      imports = [
+        ./modules/_flake-parts
+      ];
 
       perSystem = { config, self', inputs', pkgs, system, ... }: {
         # Formatter for each system
