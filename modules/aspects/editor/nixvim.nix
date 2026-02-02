@@ -12,7 +12,16 @@
 
       imports = [
         ../../base/nixvim-base.nix
-        ../../../nixvim
+        ./nixvim/git.nix
+        ./nixvim/lsp.nix
+        ./nixvim/treesitter.nix
+        ./nixvim/telescope.nix
+        ./nixvim/markdown.nix
+        ./nixvim/lint.nix
+        ./nixvim/latex.nix
+        ./nixvim/mini.nix
+        ./nixvim/which-key.nix
+        ./nixvim/dap.nix
       ];
     };
   };

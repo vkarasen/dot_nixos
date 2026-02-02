@@ -5,7 +5,7 @@
     zoxide
   ];
 
-  xdg.configFile."lf/icons".source = ./icons;
+  xdg.configFile."lf/icons".source = ./lf_icons;
 
   programs.lf = {
     enable = true;
@@ -75,8 +75,8 @@
         }}
       '';
 
-      dragon = ''%${pkgs.xdragon}/bin/xdragon -a -x "$fx"'';
-      cpdragon = ''%${pkgs.xdragon}/bin/xdragon -a -x "$fx"'';
+      dragon = ''%${pkgs.dragon-drop}/bin/dragon -a -x "$fx"'';
+      cpdragon = ''%${pkgs.dragon-drop}/bin/dragon -a -x "$fx"'';
 
       trash = ''%set -f; mv $fx ~/.trash'';
 

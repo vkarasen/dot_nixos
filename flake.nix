@@ -47,12 +47,10 @@
     ...
   }:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
+      systems = [ "x86_64-linux" "x86_64-darwin" ];
 
-      imports = [
-        # Import all modules from the new modules directory
-        (import-tree ./modules)
-      ];
+      # Note: import-tree is not used at flake-parts level since all modules
+      # are home-manager specific and imported via homeConfigurations
 
       perSystem = { config, self', inputs', pkgs, system, ... }: {
         # Formatter for each system
