@@ -1,6 +1,6 @@
 { pkgs, config, lib, ... }:
 let
-  constants = import ../../constants/users.nix;
+  constants = import ../../_constants/users.nix;
 in
 {
   home.packages = with pkgs; [

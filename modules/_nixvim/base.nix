@@ -1,6 +1,6 @@
 { config, lib, pkgs, ... }:
 let
-  systemConstants = import ../constants/system.nix;
+  systemConstants = import ../_constants/system.nix;
 in
 {
   colorschemes.catppuccin = {

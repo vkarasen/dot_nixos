@@ -1,7 +1,7 @@
 { config, lib, pkgs, ... }:
 let
-  constants = import ../constants/users.nix;
-  systemConstants = import ../constants/system.nix;
+  constants = import ../_constants/users.nix;
+  systemConstants = import ../_constants/system.nix;
 in
 {
   home = {

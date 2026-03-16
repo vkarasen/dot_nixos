@@ -28,3 +28,4 @@
     description = "Name of the home configuration to use for LSP settings";
   };
 }
+
