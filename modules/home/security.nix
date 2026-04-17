@@ -40,7 +40,7 @@
 
       defaultSopsFile =
         if config.my.is_private or false
-        then ./sops/secrets/secrets.yaml
+        then ../../secrets/secrets.yaml
         else null;
 
       secrets = lib.mkIf (config.my.is_private or false) {
