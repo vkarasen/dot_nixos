@@ -1,11 +1,7 @@
 # Git and GitHub CLI configuration
-# Exports: flake.homeModules.git
-{ ... }:
-let
-  constants = import ../_constants/users.nix;
-in
-{
-  flake.homeModules.git = { pkgs, config, lib, ... }: {
+# Exports: flake.modules.homeManager.git
+{ ... }: {
+  flake.modules.homeManager.git = { pkgs, config, lib, ... }: {
     home.packages = with pkgs; [
       delta
     ];
@@ -26,8 +22,8 @@ in
 
         settings = {
           user = {
-            email = constants.users.primary.email;
-            name = constants.users.primary.fullName;
+            email = "vkarasen@gmail.com";
+            name = "vkarasen";
           };
           core = {
             pager = "delta";

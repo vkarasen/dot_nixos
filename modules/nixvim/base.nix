@@ -1,19 +1,16 @@
 # Core editor settings: colorscheme, leader keys, options, keymaps, base plugins
 # Exports: flake.modules.nixvim.base
-{ inputs, ... }: {
+{ ... }: {
   flake.modules.nixvim.base = { config, lib, pkgs, ... }:
-    let
-      constants = inputs.self.constants;
-    in
     {
       colorschemes.catppuccin = {
         enable = true;
-        settings.flavor = constants.theme.catppuccin.flavor;
+        settings.flavor = "mocha";
       };
 
       globals = {
-        mapleader = constants.editor.leader;
-        maplocalleader = constants.editor.localLeader;
+        mapleader = ";";
+        maplocalleader = " ";
       };
 
       diagnostic.settings = {

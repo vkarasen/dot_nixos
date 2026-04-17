@@ -1,12 +1,7 @@
-# Base home-manager configuration and custom options
-# Exports: flake.homeModules.common
-{ ... }:
-let
-  constants = import ../_constants/users.nix;
-  systemConstants = import ../_constants/system.nix;
-in
-{
-  flake.homeModules.common = { config, lib, pkgs, ... }: {
+# Base home-manager configuration and custom options for user vkarasen
+# Exports: flake.modules.homeManager.common
+{ ... }: {
+  flake.modules.homeManager.common = { config, lib, pkgs, ... }: {
     options.my = {
       is_private = lib.mkOption {
         type = lib.types.bool;
@@ -41,9 +36,9 @@ in
 
     config = {
       home = {
-        stateVersion = systemConstants.system.stateVersion;
-        username = constants.users.primary.name;
-        homeDirectory = constants.users.primary.homeDirectory;
+        stateVersion = "24.11";
+        username = "vkarasen";
+        homeDirectory = "/home/vkarasen";
         sessionPath = [ "~/.nix-profile/bin" ];
       };
 
@@ -52,7 +47,7 @@ in
       xdg.configFile."nix/nix.conf" = {
         enable = true;
         text = ''
-          experimental-features = ${lib.concatStringsSep " " systemConstants.system.experimentalFeatures}
+          experimental-features = nix-command flakes
         '';
       };
 

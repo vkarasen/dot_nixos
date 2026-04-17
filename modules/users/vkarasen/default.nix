@@ -1,5 +1,5 @@
-# Home Manager configurations — composes homeModules into concrete user configs
-# Exports: flake.homeConfigurations.vkarasen
+# Aggregates the homeManager modules used by user vkarasen and exposes the
+# flake.homeConfigurations.vkarasen output for `home-manager switch`.
 { inputs, self, ... }: {
   flake.homeConfigurations.vkarasen = inputs.home-manager.lib.homeManagerConfiguration {
     pkgs = import inputs.nixpkgs {
@@ -8,13 +8,13 @@
     };
 
     modules = [
-      # Compose from dendritic homeModules
-      self.homeModules.common
-      self.homeModules.git
-      self.homeModules.shell
-      self.homeModules.terminal
-      self.homeModules.editor
-      self.homeModules.security
+      # Compose dendritic homeManager aspects
+      self.modules.homeManager.common
+      self.modules.homeManager.git
+      self.modules.homeManager.shell
+      self.modules.homeManager.terminal
+      self.modules.homeManager.editor
+      self.modules.homeManager.security
 
       # External modules
       inputs.nix-index-database.homeModules.nix-index
@@ -23,7 +23,7 @@
       inputs.sops-nix.homeManagerModules.sops
 
       # Per-user overrides
-      ({lib, ...}: {
+      ({ lib, ... }: {
         programs.nix-index-database.comma.enable = true;
         nixpkgs.overlays = [
           (final: prev: {

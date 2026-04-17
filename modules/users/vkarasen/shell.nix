@@ -1,7 +1,7 @@
 # Shell environment: bash, CLI packages, and integrations
-# Exports: flake.homeModules.shell
+# Exports: flake.modules.homeManager.shell
 { ... }: {
-  flake.homeModules.shell = { pkgs, config, lib, ... }:
+  flake.modules.homeManager.shell = { pkgs, config, lib, ... }:
   let
     bashprivate =
       if config.my.is_private or false

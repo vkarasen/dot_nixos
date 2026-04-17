@@ -1,7 +1,7 @@
 # Terminal tools: tmux and lf file manager
-# Exports: flake.homeModules.terminal
+# Exports: flake.modules.homeManager.terminal
 { ... }: {
-  flake.homeModules.terminal = { pkgs, config, lib, ... }: {
+  flake.modules.homeManager.terminal = { pkgs, config, lib, ... }: {
     home.packages = with pkgs; [
       tmux
       lf
@@ -9,7 +9,7 @@
     ];
 
     # lf icons configuration
-    xdg.configFile."lf/icons".source = ./lf_icons;
+    xdg.configFile."lf/icons".source = ../../../resources/lf_icons;
 
     programs = {
       # --- tmux ---

@@ -1,7 +1,7 @@
 # Security: SSH and sops secrets management
-# Exports: flake.homeModules.security
+# Exports: flake.modules.homeManager.security
 { ... }: {
-  flake.homeModules.security = { pkgs, config, lib, ... }: {
+  flake.modules.homeManager.security = { pkgs, config, lib, ... }: {
     home.packages = with pkgs; [
       openssh
       sops
@@ -40,7 +40,7 @@
 
       defaultSopsFile =
         if config.my.is_private or false
-        then ../../secrets/secrets.yaml
+        then ../../../secrets/secrets.yaml
         else null;
 
       secrets = lib.mkIf (config.my.is_private or false) {
