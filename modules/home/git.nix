@@ -16,7 +16,7 @@
           enable = true;
         };
         extensions = lib.optionals config.nixpkgs.config.allowUnfree [
-          pkgs.gh-copilot
+          pkgs.github-copilot-cli
         ];
       };
       git = {
