@@ -98,17 +98,47 @@
 
       settings = {
         sources = [
-          {name = "copilot";}
-          {name = "nvim_lsp";}
-          {name = "luasnip";}
-          {name = "path";}
-          {name = "git";}
+          {
+            name = "copilot";
+            group_index = 2;
+          }
+          {
+            name = "nvim_lsp";
+            group_index = 2;
+          }
+          {
+            name = "luasnip";
+            group_index = 2;
+          }
+          {
+            name = "path";
+            group_index = 2;
+          }
+          {
+            name = "git";
+            group_index = 2;
+          }
           {
             name = "buffer";
             # Words from other open buffers can also be suggested.
             option.get_bufnrs.__raw = "vim.api.nvim_list_bufs";
+            group_index = 2;
           }
         ];
+        sorting = {
+          priority_weight = 2;
+          comparators = [
+            "require('copilot_cmp.comparators').prioritize"
+            "require('cmp.config.compare').offset"
+            "require('cmp.config.compare').exact"
+            "require('cmp.config.compare').score"
+            "require('cmp.config.compare').recently_used"
+            "require('cmp.config.compare').locality"
+            "require('cmp.config.compare').kind"
+            "require('cmp.config.compare').length"
+            "require('cmp.config.compare').order"
+          ];
+        };
         snippet.expand =
           #lua
           ''
