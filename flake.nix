@@ -54,7 +54,7 @@
     };
   in rec {
     homeManagerModules = [
-      ./home-manager
+      ./modules/hosts/desktop
       nix-index-database.homeModules.nix-index
       {programs.nix-index-database.comma.enable = true;}
       catppuccin.homeModules.catppuccin

@@ -1,7 +1,7 @@
 {...}: {
   imports = [
-    ./options.nix
-    ../modules/home
+    ../../options.nix
+    ../../home
   ];
 
   programs.home-manager.enable = true;
