@@ -13,6 +13,7 @@
     ./tmux
     ./neovim
     ./lf
+    ./opencode
   ];
 
   config = {
