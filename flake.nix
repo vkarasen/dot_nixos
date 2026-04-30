@@ -29,6 +29,11 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    ast-outline = {
+      url = "github:aeroxy/ast-outline";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -39,6 +44,7 @@
     catppuccin,
     nixvim,
     sops-nix,
+    ast-outline,
     ...
   }: let
     system = "x86_64-linux";
@@ -62,6 +68,9 @@
       sops-nix.homeManagerModules.sops
       (
         {...}: {
+          home.packages = [
+            ast-outline.packages.${system}.default
+          ];
           nixpkgs.overlays = [
             overlay-stable
           ];
