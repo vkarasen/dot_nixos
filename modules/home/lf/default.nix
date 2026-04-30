@@ -87,6 +87,11 @@
                   mkdir $DIR
             	}}
           '';
+          yank-path = ''
+            ''${{
+                  printf '%s' "$fx" | wl-copy
+            }}
+          '';
           mkfile = ''
                   ''${{
                         printf "File name: "
@@ -106,6 +111,7 @@
           "a" = "mkfile";
           "." = "set hidden!";
           "D" = "delete";
+          "Y" = "yank-path";
         };
 
         extraConfig =

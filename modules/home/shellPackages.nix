@@ -24,6 +24,7 @@
       openssl
       ncurses
       tabiew
+      wl-clipboard
     ];
 
     programs = {
