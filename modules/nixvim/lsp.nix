@@ -69,7 +69,15 @@
         nixd = {
           enable = true;
           settings = {
-            nixpkgs.expr = ''import (builtins.getFlake (toString ./.)).inputs.nixpkgs { }'';
+            nixpkgs.expr = "import <nixpkgs> {}";
+            options = {
+              home_manager = {
+                expr = "(builtins.getFlake (toString ./.)).homeConfigurations.vkarasen.options";
+              };
+              nixvim = {
+                expr = "(builtins.getFlake (toString ./.)).nixVimOptions";
+              };
+            };
           };
         };
         pyright = {

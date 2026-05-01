@@ -85,6 +85,13 @@
 
     nix.nixPath = ["nixpkgs=${pkgs}"];
 
+    nixVimOptions =
+      (nixvim.lib.evalNixvim {
+        modules = [{nixpkgs.hostPlatform = system;}];
+      })
+      .options;
+
+
     homeConfigurations.vkarasen = home-manager.lib.homeManagerConfiguration {
       inherit pkgs;
 
