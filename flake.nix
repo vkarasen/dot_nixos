@@ -34,11 +34,6 @@
       url = "github:aeroxy/ast-outline";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    optnix = {
-      url = "sourcehut:~watersucks/optnix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = {
@@ -50,7 +45,6 @@
     nixvim,
     sops-nix,
     ast-outline,
-    optnix,
     ...
   }: let
     system = "x86_64-linux";
@@ -72,7 +66,6 @@
       catppuccin.homeModules.catppuccin
       nixvim.homeModules.nixvim
       sops-nix.homeManagerModules.sops
-      optnix.homeModules.optnix
       (
         {...}: {
           home.packages = [
@@ -98,9 +91,9 @@
       })
       .options;
 
+
     homeConfigurations.vkarasen = home-manager.lib.homeManagerConfiguration {
       inherit pkgs;
-      extraSpecialArgs = {inherit optnix;};
 
       modules =
         homeManagerModules
