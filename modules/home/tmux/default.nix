@@ -41,8 +41,7 @@
             set -g renumber-windows on
             bind f run -b "${pkgs.tmuxPlugins.tmux-fzf}/share/tmux-plugins/tmux-fzf/scripts/window.sh switch"
             bind M-c attach-session -c "#{pane_current_path}"
-            bind M-l display-popup -d "#{pane_current_path}" -w 90% -h 90% -E "lfk"
-            bind M-o display-popup -d "#{pane_current_path}" -w 90% -h 90% -E "optnix"
+            bind M-l display-popup -d "#{pane_current_path}" -w 90% -h 90% -E "lf"
           '';
       };
 
