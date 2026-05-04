@@ -61,7 +61,7 @@
         inherit system;
       };
     };
-    nixvimOptions = nixvim.packages.${system}.options-json;
+    nixvimOptions = nixvim.packages.${system}.options-json + /share/doc/nixos/options.json;
     std = nix-std.lib;
   in rec {
     homeManagerModules = [
@@ -89,12 +89,6 @@
     ];
 
     nix.nixPath = ["nixpkgs=${pkgs}"];
-
-    nixVimOptions =
-      (nixvim.lib.evalNixvim {
-        modules = [{nixpkgs.hostPlatform = system;}];
-      })
-      .options;
 
     homeConfigurations.vkarasen = home-manager.lib.homeManagerConfiguration {
       inherit pkgs;
