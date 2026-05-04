@@ -14,6 +14,7 @@
     ./neovim
     ./lf
     ./opencode
+    ./television
   ];
 
   config = {

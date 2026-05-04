@@ -58,6 +58,7 @@
         inherit system;
       };
     };
+    nixvimOptions = nixvim.packages.${system}.options-json;
   in rec {
     homeManagerModules = [
       ./modules/hosts/desktop
@@ -94,6 +95,8 @@
 
     homeConfigurations.vkarasen = home-manager.lib.homeManagerConfiguration {
       inherit pkgs;
+      
+      extraSpecialArgs = { inherit nixvimOptions; };
 
       modules =
         homeManagerModules
