@@ -22,6 +22,12 @@
       git = {
         enable = true;
 
+        ignores = [
+          ".envrc"
+          ".direnv"
+          ".worktrees"
+        ];
+
         settings = {
           user = {
             email = config.my.git.email;
