@@ -34,6 +34,8 @@ in {
 
               eval "$(batpipe)"
               eval "$(batman --export-env)"
+
+              eval "$(wt config shell init bash)"
             ''
           ];
 

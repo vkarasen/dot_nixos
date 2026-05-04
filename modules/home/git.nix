@@ -7,7 +7,6 @@
   config = {
     home.packages = with pkgs; [
       delta
-      worktrunk
     ];
 
     programs = {

@@ -34,6 +34,8 @@
       url = "github:aeroxy/ast-outline";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nix-std.url = "github:chessai/nix-std";
   };
 
   outputs = {
@@ -45,6 +47,7 @@
     nixvim,
     sops-nix,
     ast-outline,
+    nix-std,
     ...
   }: let
     system = "x86_64-linux";
@@ -59,6 +62,7 @@
       };
     };
     nixvimOptions = nixvim.packages.${system}.options-json;
+    std = nix-std.lib;
   in rec {
     homeManagerModules = [
       ./modules/hosts/desktop
@@ -92,11 +96,10 @@
       })
       .options;
 
-
     homeConfigurations.vkarasen = home-manager.lib.homeManagerConfiguration {
       inherit pkgs;
-      
-      extraSpecialArgs = { inherit nixvimOptions; };
+
+      extraSpecialArgs = {inherit nixvimOptions std;};
 
       modules =
         homeManagerModules

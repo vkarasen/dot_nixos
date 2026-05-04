@@ -15,6 +15,7 @@
     ./lf
     ./opencode
     ./television
+    ./worktrunk.nix
   ];
 
   config = {
