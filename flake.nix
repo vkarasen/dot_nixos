@@ -61,9 +61,12 @@
         inherit system;
       };
     };
-    nixvimOptions = nixvim.packages.${system}.options-json + /share/doc/nixos/options.json;
-    std = nix-std.lib;
   in rec {
+
+    nixvimOptions = nixvim.packages.${system}.options-json + /share/doc/nixos/options.json;
+
+    std = nix-std.lib;
+
     homeManagerModules = [
       ./modules/hosts/desktop
       nix-index-database.homeModules.nix-index
