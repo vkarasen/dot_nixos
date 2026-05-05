@@ -5,7 +5,8 @@
     ./treesitter.nix
     ./telescope.nix
     ./markdown.nix
-    ./lint.nix
+    # also getting rid of this for now because of codeberg issues
+    # ./lint.nix
     ./latex.nix
     ./mini.nix
     ./which-key.nix
