@@ -9,7 +9,8 @@
     ./latex.nix
     ./mini.nix
     ./which-key.nix
-    ./dap.nix
+    # temporarily removing this because of codeberg issues
+    # ./dap.nix 
   ];
 
   colorschemes.catppuccin = {
