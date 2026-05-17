@@ -19,6 +19,10 @@
           pkgs.github-copilot-cli
         ];
       };
+      mergiraf = {
+        enable = true;
+        enableGitIntegration = true;
+      };
       git = {
         enable = true;
 
@@ -48,9 +52,6 @@
             navigate = true;
             features = "side-by-side line-numbers decorations";
             syntax-theme = "Catppuccin Mocha";
-          };
-          merge = {
-            conflictstyle = "zdiff3";
           };
           diff = {
             colorMoved = "default";
