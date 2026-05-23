@@ -30,8 +30,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    ast-outline = {
-      url = "github:aeroxy/ast-outline";
+    ast-bro = {
+      url = "github:aeroxy/ast-bro";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -46,7 +46,7 @@
     catppuccin,
     nixvim,
     sops-nix,
-    ast-outline,
+    ast-bro,
     nix-std,
     ...
   }: let
@@ -77,7 +77,7 @@
       (
         {...}: {
           home.packages = [
-            ast-outline.packages.${system}.default
+            ast-bro.packages.${system}.default
           ];
           nixpkgs.overlays = [
             overlay-stable

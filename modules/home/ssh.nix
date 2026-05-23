@@ -15,7 +15,7 @@
       enable = true;
       enableDefaultConfig = false;
 
-      matchBlocks = {
+      settings = {
         "*" = {
           addKeysToAgent =
             if config.my.is_private
