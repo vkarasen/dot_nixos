@@ -28,8 +28,9 @@
 
         ignores = [
           ".envrc"
-          ".direnv"
-          ".worktrees"
+          ".direnv/"
+          ".worktrees/"
+          ".git/"
         ];
 
         settings = {

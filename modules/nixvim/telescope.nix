@@ -12,6 +12,9 @@
       };
       settings = {
         pickers = {
+          find_files = {
+            hidden = true;
+          };
           oldfiles = {
             initial_mode = "normal";
           };
@@ -22,7 +25,6 @@
             mappings = {
               n = {
                 "dd".__raw = "require('telescope.actions').delete_buffer";
-                "<c-h>".__raw = "function(bn) require('telescope.actions').extensions.file_browser.actions.toggle_hidden(bn) end";
               };
             };
           };
