@@ -30,7 +30,7 @@
           ".envrc"
           ".direnv/"
           ".worktrees/"
-          ".git/"
+          ".git"
         ];
 
         settings = {
