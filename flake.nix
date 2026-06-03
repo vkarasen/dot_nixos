@@ -22,7 +22,6 @@
 
     nixvim = {
       url = "github:nix-community/nixvim";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     sops-nix = {
@@ -62,7 +61,6 @@
       };
     };
   in rec {
-
     nixvimOptions = nixvim.packages.${system}.options-json + /share/doc/nixos/options.json;
 
     std = nix-std.lib;
@@ -86,6 +84,10 @@
             registry = {
               nixpkgs.flake = nixpkgs;
             };
+          };
+          catppuccin = {
+            autoEnable = true;
+            enable = true;
           };
         }
       )
