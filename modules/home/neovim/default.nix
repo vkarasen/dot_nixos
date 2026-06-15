@@ -7,7 +7,7 @@
       vimAlias = true;
       vimdiffAlias = true;
 
-      plugins.nixd.settings.options.home_manager.expr = ''(builtins.getFlake (toString ./.)).homeConfigurations.${config.my.homeConfigurationName}.options'';
+      plugins.lsp.servers.nixd.settings.options.home_manager.expr = ''(builtins.getFlake (toString ./.)).homeConfigurations.${config.my.homeConfigurationName}.options'';
 
       imports = [
         ../../nixvim

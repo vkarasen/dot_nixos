@@ -30,7 +30,8 @@
     };
 
     ast-bro = {
-      url = "github:aeroxy/ast-bro";
+      # url = "github:aeroxy/ast-bro";
+      url = "github:vkarasen/ast-outline?ref=flake-fixes";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
