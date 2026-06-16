@@ -27,7 +27,7 @@ in {
           "npm:rpiv-todo"
           "npm:@sherif-fanous/pi-catppuccin"
           "npm:@burneikis/pi-vim"
-          "pi install npm:@burneikis/pi-fzfp"
+          "npm:@burneikis/pi-fzfp"
         ];
       };
     };
