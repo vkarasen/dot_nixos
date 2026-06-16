@@ -34,6 +34,9 @@
         ];
 
         settings = {
+          alias = {
+            reset-upstream = "reset --hard @{u}";
+          };
           user = {
             email = config.my.git.email;
             name = "Vitali Karasenko";
