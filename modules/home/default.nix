@@ -16,6 +16,7 @@
     ./opencode
     ./television
     ./worktrunk.nix
+    ./pi
   ];
 
   config = {
