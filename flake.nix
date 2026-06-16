@@ -99,7 +99,7 @@
     homeConfigurations.vkarasen = home-manager.lib.homeManagerConfiguration {
       inherit pkgs;
 
-      extraSpecialArgs = {inherit nixvimOptions std;};
+      extraSpecialArgs = {inherit nixvimOptions std ast-bro;};
 
       modules =
         homeManagerModules
