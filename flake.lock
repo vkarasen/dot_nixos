@@ -9,17 +9,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1781544005,
+        "lastModified": 1781579932,
         "narHash": "sha256-isE8siSOID/XMQfvTlMbkS5yMXpp83zuxRBPH9JdFis=",
-        "owner": "vkarasen",
-        "repo": "ast-outline",
-        "rev": "cba582921af51222ddb862c48d031d5575b2aa06",
+        "owner": "aeroxy",
+        "repo": "ast-bro",
+        "rev": "18430faafa511cc751f5bea5d5b97f4a7ad5086f",
         "type": "github"
       },
       "original": {
-        "owner": "vkarasen",
-        "ref": "flake-fixes",
-        "repo": "ast-outline",
+        "owner": "aeroxy",
+        "repo": "ast-bro",
         "type": "github"
       }
     },
