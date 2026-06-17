@@ -10,6 +10,9 @@
   astBroSkill = skillsLib.mkAstBroSkill;
 in {
   config = {
+    home.packages = with pkgs; [
+      ast-grep
+    ];
     programs.pi-coding-agent = {
       enable = true;
       extraPackages = [
