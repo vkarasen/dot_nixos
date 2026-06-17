@@ -31,8 +31,16 @@ in {
           "git:github.com/DietrichGebert/ponytail"
           "npm:pi-worktrunk"
           "npm:@barlevalon/worktrunk-skill"
+          "npm:@latentminds/pi-quotas"
+          "npm:@juicesharp/rpiv-web-tools"
+          "npm:pi-lens"
         ];
       };
+    };
+
+    xdg.configFile."rpiv-web-tools/config.json".text = builtins.toJSON {
+      provider = "tavily";
+      interceptors.github = true;
     };
 
     home.activation.install-ast-bro-for-pi = lib.hm.dag.entryAfter ["writeBoundary"] ''
