@@ -1,18 +1,24 @@
 {
   pkgs,
   lib,
-  config,
   ast-bro,
   ...
 }: let
-  configDir = config.programs.pi-coding-agent.configDir;
-  skillsLib = import ./skills.nix {inherit pkgs ast-bro;};
-  astBroSkill = skillsLib.mkAstBroSkill;
+  astBroSkill = (import ./skills.nix {inherit pkgs ast-bro;}).mkAstBroSkill;
 in {
+  imports = [./module.nix];
+
   config = {
     home.packages = with pkgs; [
       ast-grep
     ];
+
+    programs.pi = {
+      skills = {
+        "ast-bro" = astBroSkill;
+      };
+    };
+
     programs.pi-coding-agent = {
       enable = true;
       extraPackages = [
@@ -45,10 +51,5 @@ in {
       provider = "tavily";
       interceptors.github = true;
     };
-
-    home.activation.install-ast-bro-for-pi = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      $DRY_RUN_CMD mkdir -p ${configDir}/skills/ast-bro
-      $DRY_RUN_CMD cp ${astBroSkill}/SKILL.md ${configDir}/skills/ast-bro/SKILL.md
-    '';
   };
 }
