@@ -11,7 +11,7 @@
     ./mini.nix
     ./which-key.nix
     # temporarily removing this because of codeberg issues
-    # ./dap.nix 
+    # ./dap.nix
   ];
 
   colorschemes.catppuccin = {

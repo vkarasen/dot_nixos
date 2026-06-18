@@ -1,8 +1,12 @@
 # Library module: declares programs.pi.{skills,promptTemplates} options and
 # wires them into programs.pi-coding-agent.settings.{skills,prompts}.
 # Import this from default.nix; put actual skill/template declarations there.
-{ pkgs, lib, config, ... }:
-let
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}: let
   cfg = config.programs.pi;
 
   # String content  → store dir with <name>/SKILL.md  (pi discovers recursively)
@@ -18,13 +22,13 @@ let
     if lib.isPath content || lib.isDerivation content
     then content
     else pkgs.writeText "${name}.md" content;
-in
-{
+in {
   options.programs.pi = {
     skills = lib.mkOption {
-      type = lib.types.attrsOf
+      type =
+        lib.types.attrsOf
         (lib.types.either lib.types.lines (lib.types.either lib.types.path lib.types.package));
-      default = { };
+      default = {};
       description = ''
         Skills to install into pi.
         Key   = skill directory name (lowercase, hyphens only).
@@ -47,9 +51,10 @@ in
     };
 
     promptTemplates = lib.mkOption {
-      type = lib.types.attrsOf
+      type =
+        lib.types.attrsOf
         (lib.types.either lib.types.lines (lib.types.either lib.types.path lib.types.package));
-      default = { };
+      default = {};
       description = ''
         Prompt templates (slash-commands) to install into pi.
         Key   = template name, becomes the /name command (no .md suffix).
@@ -71,13 +76,15 @@ in
 
   config = {
     programs.pi-coding-agent.settings =
-      lib.optionalAttrs (cfg.skills != { }) {
-        skills = lib.mapAttrsToList
+      lib.optionalAttrs (cfg.skills != {}) {
+        skills =
+          lib.mapAttrsToList
           (name: v: toString (mkSkillDrv name v))
           cfg.skills;
       }
-      // lib.optionalAttrs (cfg.promptTemplates != { }) {
-        prompts = lib.mapAttrsToList
+      // lib.optionalAttrs (cfg.promptTemplates != {}) {
+        prompts =
+          lib.mapAttrsToList
           (name: v: toString (mkPromptDrv name v))
           cfg.promptTemplates;
       };

@@ -5,6 +5,9 @@
     nixpkgs.url = "github:nixos/nixpkgs?shallow=1&ref=nixos-unstable";
     nixpkgs-stable.url = "github:nixos/nixpkgs?shallow=1&ref=nixos-24.11";
 
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    import-tree.url = "github:vic/import-tree";
+
     catppuccin = {
       url = "github:catppuccin/nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -37,102 +40,8 @@
     nix-std.url = "github:chessai/nix-std";
   };
 
-  outputs = {
-    nixpkgs,
-    nixpkgs-stable,
-    home-manager,
-    nix-index-database,
-    catppuccin,
-    nixvim,
-    sops-nix,
-    ast-bro,
-    nix-std,
-    ...
-  }: let
-    system = "x86_64-linux";
-
-    pkgs = import nixpkgs {
-      inherit system;
-      config.allowUnfree = true;
-    };
-    overlay-stable = final: prev: {
-      stable = import nixpkgs-stable {
-        inherit system;
-      };
-    };
-  in rec {
-    nixvimOptions = nixvim.packages.${system}.options-json + /share/doc/nixos/options.json;
-
-    std = nix-std.lib;
-
-    homeManagerModules = [
-      ./modules/hosts/desktop
-      nix-index-database.homeModules.nix-index
-      {programs.nix-index-database.comma.enable = true;}
-      catppuccin.homeModules.catppuccin
-      nixvim.homeModules.nixvim
-      sops-nix.homeManagerModules.sops
-      (
-        {...}: {
-          home.packages = [
-            ast-bro.packages.${system}.default
-          ];
-          nixpkgs.overlays = [
-            overlay-stable
-          ];
-          nix = {
-            registry = {
-              nixpkgs.flake = nixpkgs;
-            };
-          };
-          catppuccin = {
-            autoEnable = true;
-            enable = true;
-          };
-        }
-      )
-    ];
-
-    nix.nixPath = ["nixpkgs=${pkgs}"];
-
-    homeConfigurations.vkarasen = home-manager.lib.homeManagerConfiguration {
-      inherit pkgs;
-
-      extraSpecialArgs = {inherit nixvimOptions std ast-bro;};
-
-      modules =
-        homeManagerModules
-        ++ [
-          ({lib, ...}: {
-            config.my.is_private = lib.mkForce true;
-          })
-        ];
-    };
-
-    packages.${system}.nvim = nixvim.legacyPackages.${system}.makeNixvimWithModule {
-      inherit pkgs;
-      module = import ./modules/nixvim;
-    };
-
-    templates = {
-      py-venv = {
-        path = ./templates/py-venv;
-        description = "Python/Snakemake development environment";
-      };
-      latex = {
-        path = ./templates/latex;
-        description = "latex development template";
-      };
-      rust = {
-        path = ./templates/rust;
-        description = "rust template using naersk";
-      };
-      jekyll = {
-        path = ./templates/jekyll;
-        description = "Jekyll template";
-      };
-    };
-
-    formatter.${system} = pkgs.alejandra;
-  };
+  # Dendritic pattern: every file under ./modules is a flake-parts module,
+  # auto-imported by import-tree. flake.nix stays a thin entry point.
+  outputs = inputs:
+    inputs.flake-parts.lib.mkFlake {inherit inputs;} (inputs.import-tree ./modules);
 }

@@ -1,118 +1,121 @@
-{
-  pkgs,
-  config,
-  lib,
-  ...
-}: let
-  bashprivate =
-    if config.my.is_private
-    then "eval $(ssh-agent)"
-    else "";
-in {
-  config = {
-    home.packages = with pkgs; [
-    ];
+# Dendritic aspect: bash (home-manager class).
+{...}: {
+  flake.modules.homeManager.bash = {
+    pkgs,
+    config,
+    lib,
+    ...
+  }: let
+    bashprivate =
+      if config.my.is_private
+      then "eval $(ssh-agent)"
+      else "";
+  in {
+    config = {
+      home.packages = with pkgs; [
+      ];
 
-    programs = {
-      bash = {
-        enable = true;
-        enableCompletion = true;
-        historySize = 10000;
-        historyControl = ["ignoreboth"];
+      programs = {
+        bash = {
+          enable = true;
+          enableCompletion = true;
+          historySize = 10000;
+          historyControl = ["ignoreboth"];
 
-        initExtra =
-          lib.strings.concatLines
-          [
-            bashprivate
-            #bash
-            ''
-              set -o vi
+          initExtra =
+            lib.strings.concatLines
+            [
+              bashprivate
+              #bash
+              ''
+                set -o vi
 
-              bind 'set show-mode-in-prompt on'
-              bind 'set vi-cmd-mode-string "\1\e[2 q\2"'
-              bind 'set vi-ins-mode-string "\1\e[6 q\2"'
+                bind 'set show-mode-in-prompt on'
+                bind 'set vi-cmd-mode-string "\1\e[2 q\2"'
+                bind 'set vi-ins-mode-string "\1\e[6 q\2"'
 
-              eval "$(batpipe)"
-              eval "$(batman --export-env)"
+                eval "$(batpipe)"
+                eval "$(batman --export-env)"
 
-              eval "$(wt config shell init bash)"
-            ''
-          ];
+                eval "$(wt config shell init bash)"
+              ''
+            ];
 
-        shellAliases = {
-          tw = "tw --theme catppuccin";
-          cat = "bat";
+          shellAliases = {
+            tw = "tw --theme catppuccin";
+            cat = "bat";
 
-          grep = "rg";
+            grep = "rg";
 
-          cd = "z";
+            cd = "z";
 
-          #lists only directories (no files)
-          ldo = "eza -lD";
+            #lists only directories (no files)
+            ldo = "eza -lD";
 
-          #lists only files (no directories)
-          lfo = "eza -lf --color=always";
+            #lists only files (no directories)
+            lfo = "eza -lf --color=always";
 
-          #lists only hidden files (no directories)
-          lho = "eza -dl .* --group-directories-first";
+            #lists only hidden files (no directories)
+            lho = "eza -dl .* --group-directories-first";
 
-          #lists everything with directories first
-          ll = "eza -al --group-directories-first";
+            #lists everything with directories first
+            ll = "eza -al --group-directories-first";
 
-          ls = "eza --color=always --long --git --no-filesize --icons=always --no-time --no-user --no-permissions";
+            ls = "eza --color=always --long --git --no-filesize --icons=always --no-time --no-user --no-permissions";
 
-          #lists everything sorted by time updated
-          lt = "eza -al --sort=modified";
-        };
-      };
-
-      atuin = {
-        enable = true;
-        enableBashIntegration = true;
-        daemon.enable = true;
-        settings = {
-          auto_sync = false;
-          style = "auto";
-          dialect = "uk";
-          filter_mode_shell_up_key_binding = "workspace";
-          keymap_mode = "auto";
-          update_check = false;
-          workspaces = true;
-          enter_accept = true;
-        };
-      };
-
-      zoxide = {
-        enableBashIntegration = true;
-      };
-
-      starship = {
-        enableBashIntegration = true;
-        settings = {
-          add_newline = false;
-
-          # Custom tmux module
-          custom.tmux = {
-            command = "tmux list-sessions 2>/dev/null | wc -l";
-            when = "test $(tmux list-sessions 2>/dev/null | wc -l) -gt 0 && test -z \"$TMUX\"";
-            symbol = "󰗹 ";
-            style = "bold blue";
+            #lists everything sorted by time updated
+            lt = "eza -al --sort=modified";
           };
-
-          status.disabled = false;
         };
-      };
-      carapace = {
-        enableBashIntegration = true;
-        enable = true;
-      };
-      eza = {
-        enableBashIntegration = true;
-        git = true;
-      };
 
-      direnv = {
-        enableBashIntegration = true;
+        atuin = {
+          enable = true;
+          enableBashIntegration = true;
+          daemon.enable = true;
+          settings = {
+            auto_sync = false;
+            style = "auto";
+            dialect = "uk";
+            filter_mode_shell_up_key_binding = "workspace";
+            keymap_mode = "auto";
+            update_check = false;
+            workspaces = true;
+            enter_accept = true;
+          };
+        };
+
+        zoxide = {
+          enableBashIntegration = true;
+        };
+
+        starship = {
+          enableBashIntegration = true;
+          settings = {
+            add_newline = false;
+
+            # Custom tmux module
+            custom.tmux = {
+              command = "tmux list-sessions 2>/dev/null | wc -l";
+              when = "test $(tmux list-sessions 2>/dev/null | wc -l) -gt 0 && test -z \"$TMUX\"";
+              symbol = "󰗹 ";
+              style = "bold blue";
+            };
+
+            status.disabled = false;
+          };
+        };
+        carapace = {
+          enableBashIntegration = true;
+          enable = true;
+        };
+        eza = {
+          enableBashIntegration = true;
+          git = true;
+        };
+
+        direnv = {
+          enableBashIntegration = true;
+        };
       };
     };
   };

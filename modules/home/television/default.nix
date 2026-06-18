@@ -1,36 +1,39 @@
-{
-  nixvimOptions,
-  pkgs,
-  ...
-}: {
-  imports = [];
+# Dendritic aspect: television (home-manager class).
+{...}: {
+  flake.modules.homeManager.television = {
+    nixvimOptions,
+    pkgs,
+    ...
+  }: {
+    imports = [];
 
-  programs.television = {
-    enable = true;
+    programs.television = {
+      enable = true;
 
-    enableBashIntegration = true;
-    channels = {
-      files = {
-        metadata = {
-          name = "files";
-          description = "A channel to select files and directories";
+      enableBashIntegration = true;
+      channels = {
+        files = {
+          metadata = {
+            name = "files";
+            description = "A channel to select files and directories";
+          };
+          preview.command = "bat -n --color=always '{}'";
+          source.command = "fd -L -t f";
         };
-        preview.command = "bat -n --color=always '{}'";
-        source.command = "fd -L -t f";
+      };
+
+      settings = {
       };
     };
 
-    settings = {
-    };
-  };
+    programs.nix-search-tv = {
+      enable = true;
+      enableTelevisionIntegration = true;
 
-  programs.nix-search-tv = {
-    enable = true;
-    enableTelevisionIntegration = true;
-
-    settings = {
-      experimental.options_file = {
-        nixvim = nixvimOptions;
+      settings = {
+        experimental.options_file = {
+          nixvim = nixvimOptions;
+        };
       };
     };
   };

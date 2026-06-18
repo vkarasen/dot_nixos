@@ -9,16 +9,25 @@ Pi is managed via home-manager. All relevant files live under `modules/home/pi/`
 
 ```
 modules/home/pi/
-├── default.nix   # config — edit this to add packages, skills, prompt templates
-├── module.nix    # library — defines options.programs.pi.{skills,promptTemplates};
-│                 #           wires them into programs.pi-coding-agent.settings
-└── skills.nix    # builders for complex skills that need a Nix derivation at build time
+├── default.nix    # config — edit this to add packages, skills, prompt templates
+├── _module.nix    # library — defines options.programs.pi.{skills,promptTemplates};
+│                  #           wires them into programs.pi-coding-agent.settings
+└── _skills.nix    # builders for complex skills that need a Nix derivation at build time
 ```
 
-After any edit, verify with:
+This repo uses the **dendritic pattern**: every `.nix` file under `modules/` is
+auto-imported as a flake-parts module by `import-tree`. `default.nix` declares
+the `flake.modules.homeManager.pi` aspect. The `_module.nix` / `_skills.nix`
+files are helpers consumed *by reference* from `default.nix`, not standalone
+flake-parts modules — the leading `_` is deliberate: `import-tree` ignores any
+path containing `/_`. **Do not rename them back** without underscores or they
+will be picked up as top-level modules and break evaluation.
+
+After any edit, verify with (new files must be `git add`ed first — Nix's git
+flake fetcher ignores untracked files):
 
 ```bash
-nix flake check --no-build
+git add -A && nix flake check --no-build
 ```
 
 ---
@@ -112,7 +121,7 @@ programs.pi = {
 ```
 
 The key is the skill directory name (lowercase letters and hyphens only).
-`module.nix` will write the string into a store path as `<name>/SKILL.md` and
+`_module.nix` will write the string into a store path as `<name>/SKILL.md` and
 add it to `settings.skills` automatically — no activation scripts needed.
 
 ### From a local path
@@ -129,10 +138,10 @@ skills."my-skill" = ./skills/my-skill;   # path to dir containing SKILL.md
 
 When the skill content must be produced at build time by a tool (see: ast-bro,
 which runs `ast-bro prompt` to emit its instructions), add a builder to
-`skills.nix` following the existing `mkAstBroSkill` pattern:
+`_skills.nix` following the existing `mkAstBroSkill` pattern:
 
 ```nix
-# skills.nix
+# _skills.nix
 { pkgs, my-input, ... }: {
   mkAstBroSkill = ...;          # existing
 
@@ -150,7 +159,7 @@ Then in `default.nix`:
 
 ```nix
 let
-  mySkill = (import ./skills.nix { inherit pkgs my-input; }).mkMySkill;
+  mySkill = (import ./_skills.nix { inherit pkgs my-input; }).mkMySkill;
 in {
   programs.pi.skills."my-skill" = mySkill;
 }
@@ -184,7 +193,7 @@ The key becomes the command name — the above registers `/review`.
 
 ## How the wiring works
 
-`module.nix` converts every `programs.pi.skills` entry into an absolute Nix
+`_module.nix` converts every `programs.pi.skills` entry into an absolute Nix
 store path and appends it to `programs.pi-coding-agent.settings.skills`. That
 array is serialised into `settings.json` inside `configDir` (default:
 `~/.pi/agent`). Pi reads `settings.json` at startup and loads skills from the
