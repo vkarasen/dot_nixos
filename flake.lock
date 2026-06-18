@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "agent-stuff": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1776846223,
+        "narHash": "sha256-OeVS9NSTZbMDUObfnaTaJioQtnE2nbdhwD2IwLnBSJo=",
+        "owner": "0xferrous",
+        "repo": "agent-stuff",
+        "rev": "6f4c819eaaad22c9dd86b5e0cf920952e39de6a1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "0xferrous",
+        "repo": "agent-stuff",
+        "type": "github"
+      }
+    },
     "ast-bro": {
       "inputs": {
         "crane": "crane",
@@ -285,6 +301,7 @@
     },
     "root": {
       "inputs": {
+        "agent-stuff": "agent-stuff",
         "ast-bro": "ast-bro",
         "catppuccin": "catppuccin",
         "flake-parts": "flake-parts_2",

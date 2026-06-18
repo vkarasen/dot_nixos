@@ -4,9 +4,13 @@
     pkgs,
     lib,
     ast-bro,
+    inputs,
     ...
   }: let
-    astBroSkill = (import ./_skills.nix {inherit pkgs ast-bro;}).mkAstBroSkill;
+    skills = import ./_skills.nix {inherit pkgs ast-bro;};
+    astBroSkill = skills.mkAstBroSkill;
+    # Consumed from the agent-stuff flake input (flake = false), not copied in.
+    nixSearchSkill = skills.mkSourceSkill "nix-search" (inputs.agent-stuff + "/skills/nix-search");
   in {
     imports = [./_module.nix];
 
@@ -18,6 +22,7 @@
       programs.pi = {
         skills = {
           "ast-bro" = astBroSkill;
+          "nix-search" = nixSearchSkill;
         };
       };
 

@@ -38,6 +38,14 @@
     };
 
     nix-std.url = "github:chessai/nix-std";
+
+    # Skill collection by the nix-search-tv maintainer; consumed as a plain
+    # source tree (flake = false) so aspects can point pi at skills/* without
+    # copying the files into this repo.
+    agent-stuff = {
+      url = "github:0xferrous/agent-stuff";
+      flake = false;
+    };
   };
 
   # Dendritic pattern: every file under ./modules is a flake-parts module,
