@@ -49,6 +49,8 @@
 
             cd = "z";
 
+            gcd = "cd $(git rev-parse --show-toplevel 2>/dev/null)";
+
             #lists only directories (no files)
             ldo = "eza -lD";
 
