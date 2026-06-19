@@ -43,7 +43,7 @@
             "npm:rpiv-todo"
             "npm:@sherif-fanous/pi-catppuccin"
             "npm:@burneikis/pi-vim"
-            "npm:@burneikis/pi-fzfp"
+            "npm:pi-fzfp"
             "git:github.com/DietrichGebert/ponytail"
             "npm:pi-worktrunk"
             "npm:@barlevalon/worktrunk-skill"
