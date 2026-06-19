@@ -28,7 +28,7 @@
           keyMode = "vi";
           newSession = false;
           mouse = true;
-          terminal = "screen-256color";
+          terminal = "xterm-256color";
 
           plugins = with pkgs.tmuxPlugins; [
             sensible
@@ -39,6 +39,7 @@
           extraConfig =
             #tmux
             ''
+              set -g extended-keys on
               set -g base-index 1
               set -g renumber-windows on
               bind f run -b "${pkgs.tmuxPlugins.tmux-fzf}/share/tmux-plugins/tmux-fzf/scripts/window.sh switch"
