@@ -1,7 +1,8 @@
 # Dendritic aspect: television (home-manager class).
-{...}: {
-  flake.modules.homeManager.television = {
-    nixvimOptions,
+{ inputs, ... }: {
+  flake.modules.homeManager.television = let
+    nixvimInput = inputs.nixvim;
+  in {
     pkgs,
     ...
   }: {
@@ -32,7 +33,9 @@
 
       settings = {
         experimental.options_file = {
-          nixvim = nixvimOptions;
+          nixvim =
+            nixvimInput.packages.${pkgs.stdenv.hostPlatform.system}.options-json
+            + /share/doc/nixos/options.json;
         };
       };
     };

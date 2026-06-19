@@ -1,8 +1,9 @@
 # Dendritic aspect: worktrunk (home-manager class).
-{...}: {
-  flake.modules.homeManager.worktrunk = {
+{ inputs, ... }: {
+  flake.modules.homeManager.worktrunk = let
+    std = inputs.nix-std.lib;
+  in {
     pkgs,
-    std,
     ...
   }: let
     wtConfig = {

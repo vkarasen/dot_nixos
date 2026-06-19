@@ -14,12 +14,10 @@
       inherit pkgs;
 
       extraSpecialArgs = {
+        # inputs is the only extraSpecialArg still threaded explicitly.
+        # std, ast-bro, nixvimOptions were removed: every aspect that needed
+        # them now closes over inputs.* at flake-parts evaluation time instead.
         inherit inputs;
-        std = inputs.nix-std.lib;
-        ast-bro = inputs.ast-bro;
-        nixvimOptions =
-          inputs.nixvim.packages.${pkgs.stdenv.hostPlatform.system}.options-json
-          + /share/doc/nixos/options.json;
       };
 
       modules =
