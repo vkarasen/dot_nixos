@@ -1,5 +1,5 @@
-# Library module: declares programs.pi.{skills,promptTemplates} options and
-# wires them into programs.pi-coding-agent.settings.{skills,prompts}.
+# Library module: declares programs.pi-coding-agent.{skills,promptTemplates} options
+# and wires them into programs.pi-coding-agent.settings.{skills,prompts}.
 # Import this from default.nix; put actual skill/template declarations there.
 {
   pkgs,
@@ -7,7 +7,7 @@
   config,
   ...
 }: let
-  cfg = config.programs.pi;
+  cfg = config.programs.pi-coding-agent;
 
   # String content  → store dir with <name>/SKILL.md  (pi discovers recursively)
   # Path / derivation → pass through (must be a dir containing SKILL.md)
@@ -23,7 +23,7 @@
     then content
     else pkgs.writeText "${name}.md" content;
 in {
-  options.programs.pi = {
+  options.programs.pi-coding-agent = {
     skills = lib.mkOption {
       type =
         lib.types.attrsOf

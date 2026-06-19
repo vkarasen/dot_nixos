@@ -19,19 +19,16 @@
         ast-grep
       ];
 
-      programs.pi = {
-        skills = {
-          "ast-bro" = astBroSkill;
-          "nix-search" = nixSearchSkill;
-        };
-      };
-
       programs.pi-coding-agent = {
         enable = true;
         extraPackages = [
           pkgs.nodejs
           pkgs.bun
         ];
+        skills = {
+          "ast-bro" = astBroSkill;
+          "nix-search" = nixSearchSkill;
+        };
         settings = {
           theme = "catppuccin-mocha";
           quietStartup = true;
