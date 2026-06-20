@@ -220,7 +220,7 @@ Reference when deciding which private aspects to import:
 | `worktrunk` | none | `std` closed at definition time | — |
 | `television` | none | `nixvimOptions` closed at definition time | — |
 | `neovim` | none | clean; needs nixvim HM module → include `external` | — |
-| `sops` | none | clean; needs sops-nix HM module → include `external` | ✓ (secrets file, secret decls) |
+| `sops` | none | clean; needs sops-nix HM module → include `external`; for corporate secrets setup see `modules/home/sops/README-corporate.md` in the private repo | ✓ (secrets file, secret decls) |
 | `external` | none | all inputs pre-closed at flake-parts level | — |
 | `pi` | none | inputs pre-closed; personal config guarded | ✓ (entire config block) |
 

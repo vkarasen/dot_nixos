@@ -30,6 +30,7 @@ age-keygen -y ~/.config/sops/age/keys.txt
 ```
 
 Alternatively, convert an existing SSH Ed25519 key:
+
 ```bash
 mkdir -p ~/.config/sops/age
 nix-shell -p ssh-to-age --run "ssh-to-age -private-key -i ~/.ssh/id_ed25519 > ~/.config/sops/age/keys.txt"
@@ -61,6 +62,7 @@ sops secrets.yaml
 ```
 
 Add your secrets in YAML format:
+
 ```yaml
 tavily_api_key: your_actual_api_key_here
 openai_api_key: your_actual_openai_key_here
@@ -73,7 +75,8 @@ When you save and exit, the file will be encrypted automatically.
 
 ### 4. Configure secrets in your Nix configuration
 
-Edit `modules/home/secrets.nix` and uncomment/configure the secrets you need:
+Edit `modules/home/sops/default.nix` and add the secrets you need inside the
+`lib.mkIf config.my.is_private { ... }` block:
 
 ```nix
 {
@@ -113,14 +116,18 @@ The secrets will be decrypted by the `sops-nix.service` systemd user service and
 ## Usage Examples
 
 ### Environment Variables
+
 Secrets are automatically available as environment variables in new shells:
+
 ```bash
 echo $TAVILY_API_KEY
 echo $OPENAI_API_KEY
 ```
 
 ### Service Dependencies
+
 If you have systemd user services that need secrets, make them depend on sops-nix:
+
 ```nix
 systemd.user.services.myservice = {
   unitConfig.After = [ "sops-nix.service" ];
@@ -129,7 +136,9 @@ systemd.user.services.myservice = {
 ```
 
 ### Templates
+
 You can embed secrets in configuration files using templates:
+
 ```nix
 sops.templates."myapp-config.toml".content = ''
   api_key = "${config.sops.placeholder.tavily_api_key}"
@@ -140,21 +149,25 @@ sops.templates."myapp-config.toml".content = ''
 ## Managing Secrets
 
 ### Edit existing secrets
+
 ```bash
 sops secrets/example.yaml
 ```
 
 ### Add new secrets
+
 1. Edit the secrets file: `sops secrets/example.yaml`
 2. Add the new secret to your Nix configuration
 3. Run `home-manager switch`
 
 ### Add team members
+
 1. Get their age public key
 2. Add it to `.sops.yaml`
 3. Update existing secrets: `sops updatekeys secrets/example.yaml`
 
 ### Rotate keys
+
 ```bash
 # Update all secrets with new keys
 sops updatekeys secrets/example.yaml
@@ -181,15 +194,18 @@ If you were using the previous custom secrets system:
 ## Troubleshooting
 
 ### Secrets not available
+
 - Check that `sops-nix.service` is running: `systemctl --user status sops-nix`
 - Verify age key exists: `ls -la ~/.config/sops/age/keys.txt`
 - Check service logs: `journalctl --user -u sops-nix`
 
 ### Permission denied
+
 - Ensure age key file has correct permissions: `chmod 600 ~/.config/sops/age/keys.txt`
 - Check that the key directory is not world-readable
 
 ### Can't edit secrets
+
 - Make sure `sops` is available: `nix-shell -p sops`
 - Verify `.sops.yaml` is correctly configured
 - Check that your age key can decrypt: `sops -d secrets/example.yaml`

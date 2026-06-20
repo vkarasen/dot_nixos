@@ -1,122 +1,48 @@
-# SOPS Configuration for Corporate Environment
+# SOPS in the Corporate Environment
 
-This document explains how to use the sops secrets management in a corporate environment when importing the `homeManagerModules` from this flake.
+The sops aspect (`modules/home/sops/default.nix`) is fully cross-flake
+portable. It uses `lib.mkIf config.my.is_private` to gate all private-only
+secrets, so importing it into a corporate flake with the default
+`my.is_private = false` gives you a clean sops-nix baseline with no private
+secrets wired in.
 
-## Overview
+## How to wire the corporate flake
 
-The sops module has been designed to work in both private and corporate environments:
-
-- **Private environment** (`config.my.is_private = true`): Uses the predefined secrets and configuration from this flake
-- **Corporate environment** (`config.my.is_private = false`): Provides basic sops facilities but allows custom configuration
-
-## Setting Up Corporate Environment
-
-### 1. Copy the Corporate SOPS Configuration
-
-Copy `sops-corporate.yaml.example` to `.sops.yaml` in your corporate flake:
-
-```bash
-cp modules/home/sops/sops-corporate.yaml.example /path/to/your/corporate/flake/.sops.yaml
-```
-
-### 2. Generate Corporate Age Keys
-
-```bash
-# Generate a new age key for corporate use
-age-keygen -o ~/.config/sops/age/keys.txt
-
-# Get the public key
-age-keygen -y ~/.config/sops/age/keys.txt
-```
-
-### 3. Update the Corporate SOPS Configuration
-
-Edit your `.sops.yaml` file and replace the placeholder key with your actual corporate public key.
-
-### 4. Configure Your Corporate Flake
-
-In your corporate flake, configure the sops module:
+The authoritative guide for importing aspects from this flake into the
+corporate flake is the **`corporate-pi-wiring` skill**, located at
+`skills/corporate-pi-wiring/SKILL.md` in this repo. Import it into the
+corporate pi agent:
 
 ```nix
-{
-  homeConfigurations.your-user = home-manager.lib.homeManagerConfiguration {
-    inherit pkgs;
-
-    modules = homeManagerModules ++ [
-      {
-        # Set to corporate environment
-        config.my.is_private = false;
-
-        # Configure corporate secrets
-        config.sops = {
-          defaultSopsFile = ./secrets/corporate-secrets.yaml;
-
-          # Define your corporate secrets
-          secrets = {
-            corporate_api_key = {};
-            database_password = {};
-            # Add other corporate secrets as needed
-          };
-        };
-
-        # Set up corporate environment variables
-        config.home.sessionVariables = {
-          CORPORATE_API_KEY = "$(cat ${config.sops.secrets.corporate_api_key.path})";
-          DB_PASSWORD = "$(cat ${config.sops.secrets.database_password.path})";
-          # Add other environment variables as needed
-        };
-      }
-    ];
-  };
-}
+skills."corporate-pi-wiring" = skills.mkSourceSkill "corporate-pi-wiring"
+  (inputs.private + "/skills/corporate-pi-wiring");
 ```
 
-### 5. Create Corporate Secrets
+That skill covers the full import pattern, the `extraSpecialArgs` contract
+(now just `inherit inputs`), and the aspect dependency inventory.
 
-Create and edit your corporate secrets file:
+## What the corporate environment gets from this aspect
 
-```bash
-# Create the secrets directory
-mkdir -p secrets
+With `my.is_private = false`:
 
-# Create and edit corporate secrets
-sops secrets/corporate-secrets.yaml
+- `pkgs.sops` installed
+- `sops.age.keyFile` pointed at `~/.config/sops/age/keys.txt`
+- `sops.defaultSopsFile = null` — set your own in the corporate flake
+- No private secrets declared — add corporate secrets in the corporate aspect
+
+## Adding corporate secrets
+
+In a corporate aspect:
+
+```nix
+config.sops = {
+  defaultSopsFile = ./secrets/corporate.yaml;
+  secrets.my_corp_secret = {};
+};
+config.home.sessionVariables = {
+  MY_CORP_VAR = "$(cat ${config.sops.secrets.my_corp_secret.path})";
+};
 ```
 
-## What's Available
-
-### Always Available (Both Environments)
-
-- Basic sops-nix functionality
-- Age key management
-- Secret decryption capabilities
-- Custom secrets configuration
-
-### Private Environment Only (`config.my.is_private = true`)
-
-- Predefined `tavily_api_key` secret
-- Automatic `TAVILY_API_KEY` environment variable
-- Default secrets file from this flake
-- Any other private-specific secrets added to this flake
-
-### Corporate Environment (`config.my.is_private = false`)
-
-- Clean slate for corporate secrets
-- Custom `defaultSopsFile` configuration
-- Custom secrets and environment variables
-- No private secrets or environment variables
-
-## Best Practices
-
-1. **Separate Keys**: Use different age keys for private and corporate environments
-2. **Separate Files**: Keep corporate secrets in separate files from private secrets
-3. **Access Control**: Ensure corporate keys are only accessible to authorized personnel
-4. **Documentation**: Document your corporate secrets and their purposes
-5. **Rotation**: Regularly rotate corporate secrets and keys
-
-## Troubleshooting
-
-- Ensure your age key file exists at `~/.config/sops/age/keys.txt`
-- Verify the public key in `.sops.yaml` matches your private key
-- Check that the secrets file path in `defaultSopsFile` is correct
-- Ensure proper file permissions on your age key file (600)
+See `README.md` in this directory for general sops-nix setup (key generation,
+`.sops.yaml` configuration, editing secrets files).

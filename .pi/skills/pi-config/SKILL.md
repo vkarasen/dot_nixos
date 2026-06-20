@@ -10,7 +10,9 @@ Pi is managed via home-manager. All relevant files live under `modules/home/pi/`
 ```
 modules/home/pi/
 ├── default.nix    # config — edit this to add packages, skills, prompt templates
-├── _module.nix    # library — defines options.programs.pi.{skills,promptTemplates};
+│                  #           ALL config is inside `lib.mkIf config.my.is_private { ... }`;
+│                  #           add new entries inside that block.
+├── _module.nix    # library — defines options.programs.pi-coding-agent.{skills,promptTemplates};
 │                  #           wires them into programs.pi-coding-agent.settings
 └── _skills.nix    # builders for complex skills that need a Nix derivation at build time
 ```
@@ -155,13 +157,25 @@ which runs `ast-bro prompt` to emit its instructions), add a builder to
 }
 ```
 
-Then in `default.nix`:
+Then in `default.nix`, pass the new input at the flake-parts level (the outer
+`{ inputs, ... }:` function) rather than as an HM module arg, so it stays
+cross-flake portable:
 
 ```nix
-let
-  mySkill = (import ./_skills.nix { inherit pkgs my-input; }).mkMySkill;
-in {
-  programs.pi.skills."my-skill" = mySkill;
+{ inputs, ... }: {
+  flake.modules.homeManager.pi = let
+    myInput = inputs.my-input;   # close over here
+    astBroInput = inputs.ast-bro;
+    agentStuffSrc = inputs.agent-stuff;
+  in { pkgs, lib, config, ... }: let
+    skills = import ./_skills.nix { inherit pkgs; ast-bro = astBroInput; my-input = myInput; };
+    mySkill = skills.mkMySkill;
+  in {
+    imports = [./_module.nix];
+    config = lib.mkIf config.my.is_private {
+      programs.pi-coding-agent.skills."my-skill" = mySkill;
+    };
+  };
 }
 ```
 

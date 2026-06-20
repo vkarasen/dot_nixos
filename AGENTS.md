@@ -28,6 +28,8 @@ modules/
   flake/                          # flake-level wiring (NOT aspects)
     parts.nix                     # opt into flake.modules.<class>; systems; shared allowUnfree pkgs + `stable` overlay; formatter
     home-configurations.nix       # folds flake.modules.homeManager.* + generic.* -> homeConfigurations.vkarasen
+    home-modules.nix              # flake.homeModules.* — standalone HM modules for cross-flake import
+    lib.nix                       # flake.lib.pi — skill derivation builders exposed as a library
     packages.nix                  # perSystem packages.nvim (built from modules/_nixvim)
     templates.nix                 # flake.templates
   options.nix                     # custom my.* options, class `generic` (reusable by home/nixos/darwin)
@@ -37,10 +39,16 @@ modules/
     git.nix bash.nix ssh.nix ...
     pi/ sops/ lf/ ...             # multi-file aspects (dir with default.nix)
   _nixvim/                        # shared nixvim module tree (NOT a flake-parts module — see pitfalls)
+skills/
+  corporate-pi-wiring/            # agent-ingestible wiring guide for the corporate flake (NOT under .pi/ — intentional)
 ```
 
-`std`, `ast-bro`, `nixvimOptions` are threaded to home modules via
-`extraSpecialArgs` in `modules/flake/home-configurations.nix`.
+Only `inputs` is threaded to home modules via `extraSpecialArgs` in
+`modules/flake/home-configurations.nix`. Aspects that need a specific input
+value (e.g. `nix-std.lib`, `ast-bro`) close over it at flake-parts evaluation
+time in the outer `{inputs, ...}:` function — not as HM module function args.
+This keeps every aspect self-contained and importable by other flakes without
+extra wiring.
 
 ## Looking up options & packages (do this FIRST)
 
@@ -86,7 +94,24 @@ Then create `modules/home/<name>.nix`:
 ```
 
 It is picked up automatically and folded into `homeConfigurations.vkarasen`.
-Need a specialArg (`std`/`ast-bro`/`nixvimOptions`)? It's already in scope.
+Need a value from a flake input (e.g. `nix-std.lib`, `ast-bro`)? Close over
+it at flake-parts level — change the outer function from `{...}:` to
+`{ inputs, ... }:` and bind the value in a `let` before the HM module
+function:
+
+```nix
+{ inputs, ... }: {
+  flake.modules.homeManager.<name> = let
+    myLib = inputs.some-input.lib;
+  in {pkgs, config, lib, ...}: {
+    # use myLib here
+  };
+}
+```
+
+Do **not** add new values to `extraSpecialArgs` in `home-configurations.nix`
+— that breaks cross-flake portability. The closure approach keeps every
+aspect self-contained.
 
 ### Same concern across classes (the point of aspects)
 
