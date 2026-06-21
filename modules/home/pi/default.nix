@@ -33,7 +33,8 @@
       ];
       skills = {
         "ast-bro" = astBroSkill;
-        "nix-search" = nixSearchSkill;
+          "nix-search" = nixSearchSkill;
+          "bundle-module" = ../../../../.pi/skills/bundle-module;
       };
       settings = {
         theme = lib.mkDefault "catppuccin-mocha";
