@@ -20,10 +20,16 @@
     # ".config/rpiv-web-tools/config.json").
     binds = wlib.mkBinds base.passthru.hmAdapter;
 
+    # programs.pi-coding-agent.extraPackages (nodejs, bun) are wired into
+    # the pi-coding-agent-wrapped makeWrapper PATH by the HM module —
+    # the hm-adapter doesn't capture that, and accessing hmConfig.programs.*
+    # forces full HM module evaluation (hits unrelated removed-option errors).
+    # Declare them explicitly so npm is available when pi installs packages.
     bwrapped = base.wrap ({ config, lib, ... }: {
       imports = [ wlib.modules.bwrapConfig ];
       bwrapConfig.binds.ro = binds;
       env.XDG_CONFIG_HOME = lib.mkIf config.bwrapConfig.enable (lib.mkForce null);
+      extraPackages = [ pkgs.nodejs pkgs.bun ];
     });
 
     # Pre-create every bwrap bind destination so bwrap can mount over them
