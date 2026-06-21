@@ -10,8 +10,6 @@ Pi is managed via home-manager. All relevant files live under `modules/home/pi/`
 ```
 modules/home/pi/
 ├── default.nix    # config — edit this to add packages, skills, prompt templates
-│                  #           ALL config is inside `lib.mkIf config.my.is_private { ... }`;
-│                  #           add new entries inside that block.
 ├── _module.nix    # library — defines options.programs.pi-coding-agent.{skills,promptTemplates};
 │                  #           wires them into programs.pi-coding-agent.settings
 └── _skills.nix    # builders for complex skills that need a Nix derivation at build time
@@ -172,9 +170,7 @@ cross-flake portable:
     mySkill = skills.mkMySkill;
   in {
     imports = [./_module.nix];
-    config = lib.mkIf config.my.is_private {
-      programs.pi-coding-agent.skills."my-skill" = mySkill;
-    };
+    programs.pi-coding-agent.skills."my-skill" = mySkill;
   };
 }
 ```

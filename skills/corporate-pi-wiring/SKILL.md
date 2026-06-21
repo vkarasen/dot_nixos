@@ -27,10 +27,11 @@ After the refactor these outputs are available on `inputs.private`:
 | `flake.modules.homeManager.*` | Attrset of HM modules | Full dendritic aspect store. Individual aspects can be cherry-picked or the whole set folded in. |
 | `flake.modules.generic.*` | Attrset of HM modules | Class-agnostic modules, notably `my-options` which declares `my.is_private`, `my.git.email`, `my.portable.*`, `my.homeConfigurationName`. |
 
-**Key invariant:** `my.is_private` defaults to `false`. All private-only
-behaviour (personal pi settings, ssh-agent, private sops secrets, etc.) is
-gated behind `lib.mkIf config.my.is_private`. The corporate flake never needs
-to set this flag — silence means corporate.
+**Key invariant:** `my.is_private` defaults to `false`. Private-only
+behaviour in ssh, bash, and sops is still gated behind
+`lib.mkIf config.my.is_private`. The pi aspect is **not** gated — its
+settings are unconditional defaults that corporate can override with
+`lib.mkForce` or extend via list merging.
 
 ---
 
@@ -95,6 +96,7 @@ modules =
 
   # Corporate identity:
   ++ [{ my.is_private = false; }];   # default, but explicit is cleaner
+                                     # (needed for ssh/bash/sops gates; not for pi)
 ```
 
 **Cherry-picking instead of the full store:**
@@ -222,7 +224,7 @@ Reference when deciding which private aspects to import:
 | `neovim` | none | clean; needs nixvim HM module → include `external` | — |
 | `sops` | none | clean; needs sops-nix HM module → include `external`; for corporate secrets setup see `modules/home/sops/README-corporate.md` in the private repo | ✓ (secrets file, secret decls) |
 | `external` | none | all inputs pre-closed at flake-parts level | — |
-| `pi` | none | inputs pre-closed; personal config guarded | ✓ (entire config block) |
+| `pi` | none | inputs pre-closed; settings are unconditional `mkDefault` — override with `mkForce` or extend lists | — |
 
 ---
 
