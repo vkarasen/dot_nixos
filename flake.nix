@@ -46,6 +46,12 @@
       url = "github:0xferrous/agent-stuff";
       flake = false;
     };
+
+    hm-wrapper-modules = {
+      url = "github:sini/hm-wrapper-modules";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
   };
 
   # Dendritic pattern: every file under ./modules is a flake-parts module,
