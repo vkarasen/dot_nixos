@@ -39,7 +39,7 @@
         theme = lib.mkDefault "catppuccin-mocha";
         quietStartup = lib.mkDefault true;
         defaultProvider = lib.mkDefault "github-copilot";
-        defaultModel = lib.mkDefault "claude-haiku-4.5";
+        defaultModel = lib.mkDefault "gpt-5.4-mini";
         packages = [
           "npm:pi-mcp-adapter"
           "npm:context-mode"
