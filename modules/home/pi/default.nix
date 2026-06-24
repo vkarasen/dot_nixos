@@ -53,6 +53,7 @@
           "npm:@latentminds/pi-quotas"
           "npm:@juicesharp/rpiv-web-tools"
           "npm:pi-lens"
+          "npm:@mohndoe/pi-atlas"
         ];
       };
     };
