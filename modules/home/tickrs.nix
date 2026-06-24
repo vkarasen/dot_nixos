@@ -28,7 +28,6 @@
 
     xdg.configFile."tickrs/config.yml" = {
       source = yaml.generate "tickrs-config.yml" tickrsConfig;
-      force = true;
     };
   };
 }
