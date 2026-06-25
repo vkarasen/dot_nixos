@@ -9,7 +9,10 @@
       settings = {
         onboarding = lib.mkDefault false;
 
-        terminal.default_shell = lib.mkDefault "$SHELL";
+        terminal = {
+          shell_mode = "auto";
+          new_cwd = "follow";
+        };
 
         theme.name = lib.mkDefault "catppuccin";
 
@@ -21,6 +24,7 @@
         ui.toast.delivery = lib.mkDefault "herdr";
         ui.toast.herdr.position = lib.mkDefault "bottom-right";
         ui.sound.enabled = lib.mkDefault true;
+        keys.prefix = "ctrl+a";
       };
     };
 
@@ -34,9 +38,7 @@
       lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         _pi_dir="''${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
         $DRY_RUN_CMD mkdir -p "$_pi_dir/extensions"
-        if command -v herdr >/dev/null 2>&1; then
-          $DRY_RUN_CMD herdr integration install pi
-        fi
+        $DRY_RUN_CMD ${pkgs.herdr}/bin/herdr integration install pi
       '';
   };
 }
