@@ -6,6 +6,7 @@
     # flake etc.) don't have to thread them.
     astBroInput = inputs.ast-bro;
     agentStuffSrc = inputs.agent-stuff;
+    herdrSrc = inputs.herdr; # source tree — gives us SKILL.md pinned to flake.lock
   in {
     pkgs,
     lib,
@@ -16,6 +17,10 @@
     astBroSkill = skills.mkAstBroSkill;
     # Consumed from the agent-stuff flake input (flake = false), not copied in.
     nixSearchSkill = skills.mkSourceSkill "nix-search" (agentStuffSrc + "/skills/nix-search");
+    # Herdr's own SKILL.md, read from the pinned source tree.
+    # Teaches pi to drive Herdr (split panes, spawn agents, wait on status).
+    herdrSkill = pkgs.writeTextDir "herdr/SKILL.md"
+      (builtins.readFile (herdrSrc + "/SKILL.md"));
   in {
     imports = [./_module.nix];
 
@@ -34,6 +39,14 @@
       skills = {
         "ast-bro" = astBroSkill;
         "nix-search" = nixSearchSkill;
+        "herdr" = herdrSkill;
+      };
+      # Role prompt templates — mkDefault so the corporate flake can override
+      # any individual key with lib.mkForce.
+      promptTemplates = {
+        "reviewer" = lib.mkDefault ./prompts/reviewer.md;
+        "investigator" = lib.mkDefault ./prompts/investigator.md;
+        "planner" = lib.mkDefault ./prompts/planner.md;
       };
       settings = {
         theme = lib.mkDefault "catppuccin-mocha";

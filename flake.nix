@@ -39,6 +39,8 @@
 
     nix-std.url = "github:chessai/nix-std";
 
+    herdr.url = "github:ogulcancelik/herdr";
+
     # Skill collection by the nix-search-tv maintainer; consumed as a plain
     # source tree (flake = false) so aspects can point pi at skills/* without
     # copying the files into this repo.
