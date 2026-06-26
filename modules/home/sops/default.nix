@@ -27,6 +27,7 @@
             # This will make the secret available as an environment variable
             # The secret will be decrypted to $XDG_RUNTIME_DIR/secrets/tavily_api_key
           };
+          anthropic_api_key = {};
           #
           # openai_api_key = {};
           #
@@ -41,10 +42,9 @@
         (lib.mkIf (config.my.is_private && config.sops.secrets ? tavily_api_key) {
           TAVILY_API_KEY = "$(cat ${config.sops.secrets.tavily_api_key.path})";
         })
-        #
-        # (lib.mkIf (config.my.is_private && config.sops.secrets ? openai_api_key) {
-        #   OPENAI_API_KEY = "$(cat ${config.sops.secrets.openai_api_key.path})";
-        # })
+        (lib.mkIf (config.my.is_private && config.sops.secrets ? anthropic_api_key) {
+          ANTHROPIC_API_KEY = "$(cat ${config.sops.secrets.anthropic_api_key.path})";
+        })
       ];
     };
   };
