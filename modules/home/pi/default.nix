@@ -40,6 +40,7 @@
         "ast-bro" = astBroSkill;
         "nix-search" = nixSearchSkill;
         "herdr" = herdrSkill;
+        "oss-contrib" = ./skills/oss-contrib;
       };
       # Role prompt templates — mkDefault so the corporate flake can override
       # any individual key with lib.mkForce.
