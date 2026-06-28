@@ -56,18 +56,15 @@
         defaultModel = lib.mkDefault "gpt-5.4-mini";
         packages = [
           "npm:pi-mcp-adapter"
-          "npm:context-mode"
           "npm:rpiv-todo"
           "npm:@sherif-fanous/pi-catppuccin"
           "npm:@burneikis/pi-vim"
           "npm:pi-fzfp"
-          "git:github.com/DietrichGebert/ponytail"
           "npm:pi-worktrunk"
           "npm:@barlevalon/worktrunk-skill"
-          "npm:@latentminds/pi-quotas"
+          "npm:@zaganjade/pi-usage"
           "npm:@juicesharp/rpiv-web-tools"
           "npm:pi-lens"
-          "npm:@mohndoe/pi-atlas"
         ];
       };
     };
