@@ -58,7 +58,7 @@
           "npm:pi-mcp-adapter"
           "npm:rpiv-todo"
           "npm:@sherif-fanous/pi-catppuccin"
-          "npm:@burneikis/pi-vim"
+          "npm:pi-vim"
           "npm:pi-fzfp"
           "npm:pi-worktrunk"
           "npm:@barlevalon/worktrunk-skill"
