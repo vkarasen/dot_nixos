@@ -115,6 +115,7 @@
   };
 
   plugins = {
+    lz-n.enable = true;
     lualine.enable = true;
     indent-blankline.enable = true;
     bufferline.enable = true;
@@ -128,6 +129,7 @@
     neo-tree = {
       enable = true;
       settings.sources = ["filesystem"];
+      lazyLoad.settings.cmd = "Neotree";
     };
   };
 }

@@ -175,6 +175,21 @@
     };
     avante = {
       enable = true;
+      lazyLoad.settings.cmd = [
+        "AvanteAsk"
+        "AvanteChat"
+        "AvanteChatNew"
+        "AvanteToggle"
+        "AvanteRefresh"
+        "AvanteFocus"
+        "AvanteSwitchProvider"
+        "AvanteSwitchInputProvider"
+        "AvanteClear"
+        "AvanteShowRepoMap"
+        "AvanteModels"
+        "AvanteHistory"
+        "AvanteStop"
+      ];
       settings = {
         provider = "copilot";
         providers.copilot.model = "claude-sonnet-4";
@@ -221,6 +236,7 @@
     };
     lspsaga = {
       enable = true;
+      lazyLoad.settings.cmd = "Lspsaga";
       settings = {
         lightbulb.enable = false;
       };
@@ -272,6 +288,7 @@
     };
     aerial = {
       enable = true;
+      lazyLoad.settings.cmd = "AerialToggle";
       settings = {
         backends = ["treesitter" "lsp"];
       };
