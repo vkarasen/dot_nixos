@@ -54,6 +54,37 @@
         for them.
       '';
 
+      "20-git-workflow" = ''
+        # Git workflow policy
+
+        When working inside any git repository, default to this toolset:
+
+        - **`gh`** for all GitHub operations (PRs, issues, CI checks, releases).
+        - **`wt`** (Worktrunk) for branch and worktree lifecycle — creating task
+          branches, switching contexts, stacking work, merging, and cleanup.
+          Prefer `wt` over raw `git worktree add/remove`, `git switch`, or
+          `git checkout` for these operations.
+
+        ## Worktree default
+        For any non-trivial or exploratory piece of work, prefer a dedicated
+        worktree over working directly on the default branch:
+          wt switch --create <task-branch>
+        Worktrees are cheap.  A separate worktree keeps the default branch
+        clean and makes it easy to abandon, compare, or parallelise work.
+        Skip the worktree only for genuinely trivial fixes (typos, one-liner
+        config tweaks) where the overhead outweighs the benefit.
+
+        ## When to raise a PR vs. merge locally
+        Default to opening a PR (`gh pr create`) so there is a review record.
+        Use `wt merge` for a local merge only when the repo or task context
+        explicitly says PRs are not needed (e.g. a personal config repo).
+
+        Load the **`worktrunk` skill** at the start of any task that involves
+        branch creation, worktree management, PR workflows, parallel agents, or
+        merge/cleanup.  The skill contains the full command reference and
+        preferred patterns.
+      '';
+
       "10-scripting" = ''
         # Scripting runtime policy
 
