@@ -20,6 +20,21 @@
         default = "~/nix/nix-portable";
       };
     };
+    options.my.pi.globalAgentPolicies = lib.mkOption {
+      type = lib.types.attrsOf lib.types.lines;
+      default = {};
+      description = ''
+        Named policy sections merged into ~/.pi/agent/AGENTS.md, which pi
+        loads as global always-on instructions at startup (not opt-in like
+        a skill). Keys are sorted alphabetically before concatenation, so
+        use numeric prefixes to control order:
+          "00-nix-workspace"  – base Nix exploration policy (defined here)
+          "10-scripting"      – scripting runtime preference (defined here)
+          "90-corporate"      – add in the corporate flake for site-specific rules
+        The lib.types.lines type lets multiple modules extend the same key
+        additively; use lib.mkForce to override a section entirely.
+      '';
+    };
     options.my.homeConfigurationName = lib.mkOption {
       type = lib.types.nonEmptyStr;
       default = let

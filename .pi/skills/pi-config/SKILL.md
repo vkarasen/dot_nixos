@@ -201,6 +201,43 @@ The key becomes the command name — the above registers `/review`.
 
 ---
 
+## Adding a global always-on instruction (AGENTS.md policy)
+
+Skills are opt-in (description-triggered). For **always-on** behavioral
+directives that apply in every session — e.g. "never search /nix/store",
+"prefer Node.js for scripting" — use the `my.pi.globalAgentPolicies` option
+instead. Pi loads `~/.pi/agent/AGENTS.md` at startup unconditionally.
+
+The option is declared in `modules/options.nix` (generic class, so it is
+available to home-manager, NixOS, and darwin configs alike). Values are merged
+by the module system — multiple flakes can each add their own sections without
+conflicting.
+
+```nix
+# In any home-manager aspect (or the corporate flake's pi module):
+my.pi.globalAgentPolicies = {
+  # Key is sorted alphabetically; use numeric prefix to control order.
+  "90-corporate" = ''
+    # Corporate policy
+    Always use the internal Artifactory mirror for npm packages.
+    Never push to public GitHub from a corporate workspace.
+  '';
+};
+```
+
+Rules:
+
+- Keys are sorted alphabetically before concatenation → use `"00-"`, `"10-"`,
+  `"90-"` prefixes to control section order.
+- `lib.types.lines` means two modules can write the **same** key and both
+  contributions are appended (newline-separated).
+- `lib.mkForce` on a key replaces any lower-priority definition entirely.
+- The base sections (`00-nix-workspace`, `10-scripting`) are defined in
+  `modules/home/pi/default.nix` and encode the Nix exploration and scripting
+  runtime policies.
+
+---
+
 ## How the wiring works
 
 `_module.nix` converts every `programs.pi.skills` entry into an absolute Nix
@@ -211,3 +248,8 @@ listed paths. The store paths are absolute, so the setup is unaffected by
 changes to `configDir`.
 
 Prompt templates follow the same pattern via `settings.prompts`.
+
+`my.pi.globalAgentPolicies` is wired separately: the pi home-manager aspect
+collects all sections, sorts them by key, and writes the concatenated result to
+`home.file.".pi/agent/AGENTS.md"`. Pi loads this file at startup as global
+standing instructions — no skill invocation required.
