@@ -199,6 +199,19 @@ avoid repetition across classes.
    is the dendritic aspect store surfaced as a freeform flake output, not an
    error.
 
+## Git workflow for this repo
+
+This is a **personal, solo config repo** — no collaborators, no review process.
+
+- Work directly on `main` for routine changes (adding an aspect, tweaking
+  options, bumping an input).  No feature branch needed.
+- Create a worktree (`wt switch --create <name>`) only when a change is
+  genuinely experimental — e.g. a large refactor you might want to discard,
+  or two independent lines of work you want to keep separate.
+- **Do not open GitHub PRs.**  When a worktree task is done and you're
+  satisfied, merge locally with `wt merge` and push directly to `main`.
+- Plain `git commit` + `git push` is fine for incremental work on `main`.
+
 ## Testing
 
 ```bash
