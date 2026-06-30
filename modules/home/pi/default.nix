@@ -28,7 +28,16 @@
     # or extend lists (packages, skills) via normal module merging.
     home.packages = with pkgs; [
       ast-grep
+      rtk
     ];
+
+    # Run `rtk init --agent pi --global` on every activation.
+    # The hook content is compiled into the binary (include_str!), so this
+    # is fully hermetic — no network access. Idempotent by design.
+    home.activation.rtkInit =
+      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        $DRY_RUN_CMD ${pkgs.rtk}/bin/rtk init --agent pi --global
+      '';
 
     programs.pi-coding-agent = {
       enable = true;
