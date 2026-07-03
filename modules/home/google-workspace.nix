@@ -14,13 +14,17 @@
 # ── First-time setup (manual steps, done once) ──────────────────────────────
 #  1. Create a Google Cloud project at https://console.cloud.google.com
 #  2. Enable these APIs:
-#       Gmail API, Google Drive API, Google Sheets API, Google Docs API
+#       Gmail API, Google Drive API, Google Sheets API, Google Docs API,
+#       Google Calendar API, Google People API
 #  3. Configure the OAuth consent screen:
 #       APIs & Services → OAuth consent screen → External (or Internal)
 #       Add scopes:
 #         https://www.googleapis.com/auth/gmail.modify
 #         https://www.googleapis.com/auth/drive
 #         https://www.googleapis.com/auth/spreadsheets
+#         https://www.googleapis.com/auth/documents
+#         https://www.googleapis.com/auth/calendar
+#         https://www.googleapis.com/auth/contacts
 #  4. Create an OAuth 2.0 Client ID:
 #       APIs & Services → Credentials → Create → OAuth client ID
 #       Application type: Desktop app
@@ -38,14 +42,18 @@
 #     Tokens auto-refresh — you only do this once unless you revoke access.
 #
 # ── Tools available to pi after setup ───────────────────────────────────────
-#  Gmail (6 tools):  search_emails, get_email, send_email, create_draft,
-#                    list_labels, modify_email_labels
-#  Drive (5 tools):  search_files, get_file, list_files, create_file,
-#                    download_file
-#  Sheets (7 tools): get_spreadsheet, get_values, update_values,
-#                    batch_update_values, append_values, clear_values,
-#                    create_spreadsheet
-#  Docs, Calendar, Contacts also available via GOOGLE_WORKSPACE_SERVICES
+#  Gmail (6 tools):    search_emails, get_email, send_email, create_draft,
+#                      list_labels, modify_email_labels
+#  Drive (5 tools):    search_files, get_file, list_files, create_file,
+#                      download_file
+#  Sheets (7 tools):   get_spreadsheet, get_values, update_values,
+#                      batch_update_values, append_values, clear_values,
+#                      create_spreadsheet
+#  Docs (5 tools):     get_document, create_document, update_document,
+#                      append_text, insert_text
+#  Calendar (6 tools): list_calendars, list_events, get_event,
+#                      create_event, update_event, delete_event
+#  Contacts (3 tools): list_contacts, get_contact, search_contacts
 #
 {...}: {
   flake.modules.homeManager.google-workspace = {
@@ -56,7 +64,7 @@
   }: let
     # Services exposed to pi. Adjust to taste — adding "calendar" or "docs"
     # here requires the corresponding API to be enabled in GCP.
-    workspaceServices = "drive,gmail,sheets";
+    workspaceServices = "drive,gmail,sheets,docs,calendar,contacts";
 
     # Path where @dguido/google-workspace-mcp stores its credentials.
     credentialsDir = "${config.home.homeDirectory}/.config/google-workspace-mcp";
