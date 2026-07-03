@@ -15,7 +15,8 @@
 #  1. Create a Google Cloud project at https://console.cloud.google.com
 #  2. Enable these APIs:
 #       Gmail API, Google Drive API, Google Sheets API, Google Docs API,
-#       Google Calendar API, Google People API
+#       Google Calendar API, Google People API, Google Slides API
+#       One-click: https://console.cloud.google.com/flows/enableapi?apiid=drive.googleapis.com,docs.googleapis.com,sheets.googleapis.com,slides.googleapis.com,calendar-json.googleapis.com,gmail.googleapis.com,people.googleapis.com
 #  3. Configure the OAuth consent screen:
 #       APIs & Services → OAuth consent screen → External (or Internal)
 #       Add scopes:
@@ -25,6 +26,7 @@
 #         https://www.googleapis.com/auth/documents
 #         https://www.googleapis.com/auth/calendar
 #         https://www.googleapis.com/auth/contacts
+#         https://www.googleapis.com/auth/presentations
 #  4. Create an OAuth 2.0 Client ID:
 #       APIs & Services → Credentials → Create → OAuth client ID
 #       Application type: Desktop app
@@ -42,18 +44,36 @@
 #     Tokens auto-refresh — you only do this once unless you revoke access.
 #
 # ── Tools available to pi after setup ───────────────────────────────────────
-#  Gmail (6 tools):    search_emails, get_email, send_email, create_draft,
-#                      list_labels, modify_email_labels
-#  Drive (5 tools):    search_files, get_file, list_files, create_file,
-#                      download_file
-#  Sheets (7 tools):   get_spreadsheet, get_values, update_values,
-#                      batch_update_values, append_values, clear_values,
-#                      create_spreadsheet
-#  Docs (5 tools):     get_document, create_document, update_document,
-#                      append_text, insert_text
-#  Calendar (6 tools): list_calendars, list_events, get_event,
-#                      create_event, update_event, delete_event
-#  Contacts (3 tools): list_contacts, get_contact, search_contacts
+#  Gmail (14 tools):    sendEmail, draftEmail, readEmail, searchEmails,
+#                       deleteEmail, modifyEmail, downloadAttachment,
+#                       listLabels, getOrCreateLabel, updateLabel,
+#                       deleteLabel, createFilter, listFilters, deleteFilter
+#  Drive (29 tools):   search, listFolder, createFolder, createTextFile,
+#                       updateTextFile, deleteItem, renameItem, moveItem,
+#                       copyFile, getFileMetadata, exportFile, shareFile,
+#                       getSharing, removePermission, listRevisions,
+#                       restoreRevision, downloadFile, uploadFile,
+#                       getStorageQuota, starFile, resolveFilePath,
+#                       batchDelete, batchRestore, batchMove, batchShare,
+#                       listTrash, restoreFromTrash, emptyTrash, getFolderTree
+#  Sheets (7 tools):   createGoogleSheet, updateGoogleSheet,
+#                       getGoogleSheetContent, formatGoogleSheetCells,
+#                       mergeGoogleSheetCells, addGoogleSheetConditionalFormat,
+#                       sheetTabs
+#  Docs (8 tools):     createGoogleDoc, updateGoogleDoc, getGoogleDocContent,
+#                       appendToDoc, insertTextInDoc, deleteTextInDoc,
+#                       replaceTextInDoc, formatGoogleDocRange
+#  Calendar (7 tools): listCalendars, listEvents, getEvent, createEvent,
+#                       updateEvent, deleteEvent, findFreeTime
+#  Contacts (6 tools): listContacts, getContact, searchContacts,
+#                       createContact, updateContact, deleteContact
+#  Slides (10 tools):  createGoogleSlides, updateGoogleSlides,
+#                       getGoogleSlidesContent, formatSlidesText,
+#                       formatSlidesShape, formatSlideBackground,
+#                       createGoogleSlidesTextBox, createGoogleSlidesShape,
+#                       slidesSpeakerNotes, listSlidePages
+#  Unified (3 tools):  createFile, updateFile, getFileContent
+#                       (unlocked when all services are active)
 #
 {...}: {
   flake.modules.homeManager.google-workspace = {
@@ -64,7 +84,7 @@
   }: let
     # Services exposed to pi. Adjust to taste — adding "calendar" or "docs"
     # here requires the corresponding API to be enabled in GCP.
-    workspaceServices = "drive,gmail,sheets,docs,calendar,contacts";
+    workspaceServices = "drive,gmail,sheets,docs,calendar,contacts,slides";
 
     # Path where @dguido/google-workspace-mcp stores its credentials.
     credentialsDir = "${config.home.homeDirectory}/.config/google-workspace-mcp";
@@ -87,8 +107,9 @@
           args = ["-y" "@dguido/google-workspace-mcp"];
           env = {
             GOOGLE_WORKSPACE_SERVICES = workspaceServices;
-            # credentials.json is picked up automatically from credentialsDir;
-            # no GOOGLE_CLIENT_ID env var needed when the file is present.
+            # Reduce token usage 20-50% on list operations (emails, events,
+            # calendars) with no change to the API surface.
+            GOOGLE_WORKSPACE_TOON_FORMAT = "true";
           };
         };
       };
