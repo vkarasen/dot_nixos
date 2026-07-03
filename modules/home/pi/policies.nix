@@ -57,6 +57,19 @@
       "20-git-workflow" = ''
         # Git workflow policy
 
+        ## Commit approval — default: always wait
+        Never commit, merge, or push unless the user has explicitly approved
+        the changes in this conversation, OR has given standing permission to
+        commit freely for the current task.
+
+        "It looks good" or "go ahead" counts as approval for the specific
+        change just shown.  It does NOT carry over to future changes in the
+        same session unless the user says something like "commit as you go" or
+        "you don't need to ask".
+
+        When work is ready, show the diff / summary and ask — don't assume a
+        passing build is sufficient sign-off.
+
         When working inside any git repository, default to this toolset:
 
         - **`gh`** for all GitHub operations (PRs, issues, CI checks, releases).
