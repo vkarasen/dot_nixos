@@ -28,6 +28,10 @@
             # The secret will be decrypted to $XDG_RUNTIME_DIR/secrets/tavily_api_key
           };
           anthropic_api_key = {};
+          # Google Workspace MCP OAuth credentials
+          # (used by modules/home/google-workspace.nix)
+          google_oauth_client_id = {};
+          google_oauth_client_secret = {};
           #
           # openai_api_key = {};
           #
