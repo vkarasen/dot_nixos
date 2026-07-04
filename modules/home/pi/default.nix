@@ -53,6 +53,7 @@
         "herdr" = herdrSkill;
         "google-workspace" = googleWorkspaceSkill;
         "oss-contrib" = ./skills/oss-contrib;
+        "userspace-mounts" = ./skills/userspace-mounts;
       };
       # Role prompt templates — mkDefault so the corporate flake can override
       # any individual key with lib.mkForce.
