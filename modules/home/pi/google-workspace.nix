@@ -142,9 +142,10 @@
       google_oauth_client_secret = {};
     };
 
-    # The skill carries the Google Workspace safety guidance. It is opt-in,
-    # but its frontmatter should make clear that it is required whenever the
-    # google-workspace MCP server is in play.
+    # The skill carries the Google Workspace safety guidance. The default pi
+    # config wires it in alongside the server, but its frontmatter should still
+    # make clear that it is required whenever the google-workspace MCP server
+    # is in play.
     # ── Write credentials.json at activation time ───────────────────────────
     # home.activation runs after sops has decrypted secrets, so we can safely
     # read the secret paths here.  The file is written at 0600 so only the

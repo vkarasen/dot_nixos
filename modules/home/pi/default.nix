@@ -21,6 +21,8 @@
     # Teaches pi to drive Herdr (split panes, spawn agents, wait on status).
     herdrSkill = pkgs.writeTextDir "herdr/SKILL.md"
       (builtins.readFile (herdrSrc + "/SKILL.md"));
+    # Companion guidance for the Google Workspace MCP server.
+    googleWorkspaceSkill = ./skills/google-workspace;
   in {
     imports = [./_module.nix];
 
@@ -49,6 +51,7 @@
         "ast-bro" = astBroSkill;
         "nix-search" = nixSearchSkill;
         "herdr" = herdrSkill;
+        "google-workspace" = googleWorkspaceSkill;
         "oss-contrib" = ./skills/oss-contrib;
       };
       # Role prompt templates — mkDefault so the corporate flake can override

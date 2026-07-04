@@ -5,23 +5,27 @@ description: How to modify the pi coding agent configuration in this NixOS/home-
 
 # Pi Configuration in this repo
 
-Pi is managed via home-manager. All relevant files live under `modules/home/pi/`:
+Pi is managed via home-manager. Treat `modules/home/pi/` as the primary area,
+but discover the current shape with semantic tools instead of relying on a
+frozen inventory. The stable landmarks are:
 
-```
-modules/home/pi/
-├── default.nix    # config — edit this to add packages, skills, prompt templates
-├── _module.nix    # library — defines options.programs.pi-coding-agent.{skills,promptTemplates};
-│                  #           wires them into programs.pi-coding-agent.settings
-└── _skills.nix    # builders for complex skills that need a Nix derivation at build time
-```
+- `default.nix` — declares the `flake.modules.homeManager.pi` aspect
+- `_module.nix` — helper that defines
+  `options.programs.pi-coding-agent.{skills,promptTemplates}` and wires them
+  into `programs.pi-coding-agent.settings`
+- `_skills.nix` — builders for complex skills that need a Nix derivation at build time
+- `policies.nix` — the source of truth for always-on AGENTS.md policy sections
+- `prompts/` — role prompt templates / slash commands
+- server-specific adjunct aspects such as
+  `google-workspace.nix`
 
 This repo uses the **dendritic pattern**: every `.nix` file under `modules/` is
-auto-imported as a flake-parts module by `import-tree`. `default.nix` declares
-the `flake.modules.homeManager.pi` aspect. The `_module.nix` / `_skills.nix`
-files are helpers consumed *by reference* from `default.nix`, not standalone
-flake-parts modules — the leading `_` is deliberate: `import-tree` ignores any
-path containing `/_`. **Do not rename them back** without underscores or they
-will be picked up as top-level modules and break evaluation.
+auto-imported as a flake-parts module by `import-tree`. Files under `modules/home/pi/`
+are mixed: `default.nix` is the aspect entry point, while `_module.nix` and
+`_skills.nix` are helpers consumed *by reference* from `default.nix`. The leading
+`_` is deliberate: `import-tree` ignores any path containing `/_`. If the repo
+layout ever changes, trust the current module tree and the generated policy file
+more than this text.
 
 After any edit, verify with (new files must be `git add`ed first — Nix's git
 flake fetcher ignores untracked files):
@@ -34,9 +38,9 @@ git add -A && nix flake check --no-build
 
 ## Looking up and suggesting packages
 
-The canonical package catalog is **<https://pi.dev/packages>**. Fetch it with
-`ctx_fetch_and_index` (or equivalent) so you can search it in context before
-making suggestions.
+Use the live package catalog / discovery tooling before suggesting Pi
+packages. Prefer the current indexed source over a copied list so the guidance
+stays in sync with the ecosystem.
 
 When suggesting packages, apply these filters in order:
 
@@ -84,7 +88,8 @@ programs.pi-coding-agent = {
 
 ## Adding extra Nix build dependencies
 
-`extraPackages` makes additional Nix packages available to the pi process (e.g. runtimes a package needs at runtime). Edit `modules/home/pi/default.nix`:
+`extraPackages` makes additional Nix packages available to the pi process
+(e.g. runtimes a package needs at runtime). Edit `modules/home/pi/default.nix`:
 
 ```nix
 programs.pi-coding-agent = {
@@ -102,10 +107,10 @@ programs.pi-coding-agent = {
 
 ### Inline (simple — just markdown)
 
-Add a key to `programs.pi.skills` in `modules/home/pi/default.nix`:
+Add a key to `programs.pi-coding-agent.skills` in `modules/home/pi/default.nix`:
 
 ```nix
-programs.pi = {
+programs.pi-coding-agent = {
   skills = {
     "my-skill" = ''
       ---
@@ -164,9 +169,12 @@ cross-flake portable:
   flake.modules.homeManager.pi = let
     myInput = inputs.my-input;   # close over here
     astBroInput = inputs.ast-bro;
-    agentStuffSrc = inputs.agent-stuff;
   in { pkgs, lib, config, ... }: let
-    skills = import ./_skills.nix { inherit pkgs; ast-bro = astBroInput; my-input = myInput; };
+    skills = import ./_skills.nix {
+      inherit pkgs;
+      ast-bro = astBroInput;
+      my-input = myInput;
+    };
     mySkill = skills.mkMySkill;
   in {
     imports = [./_module.nix];
@@ -182,10 +190,10 @@ The derivation must produce a directory with `SKILL.md` at its root.
 ## Adding a prompt template (slash-command)
 
 Prompt templates become `/name` slash-commands inside pi. Add to
-`programs.pi.promptTemplates` in `modules/home/pi/default.nix`:
+`programs.pi-coding-agent.promptTemplates` in `modules/home/pi/default.nix`:
 
 ```nix
-programs.pi = {
+programs.pi-coding-agent = {
   promptTemplates = {
     review = ''
       ---
@@ -232,24 +240,24 @@ Rules:
 - `lib.types.lines` means two modules can write the **same** key and both
   contributions are appended (newline-separated).
 - `lib.mkForce` on a key replaces any lower-priority definition entirely.
-- The base sections (`00-nix-workspace`, `10-scripting`) are defined in
-  `modules/home/pi/default.nix` and encode the Nix exploration and scripting
-  runtime policies.
+- The base always-on policy sections live in `modules/home/pi/policies.nix`.
+  Treat the generated `~/.pi/agent/AGENTS.md` or the policy source as the live
+  inventory if you need the exact current set; avoid copying it here.
 
 ---
 
 ## How the wiring works
 
-`_module.nix` converts every `programs.pi.skills` entry into an absolute Nix
-store path and appends it to `programs.pi-coding-agent.settings.skills`. That
-array is serialised into `settings.json` inside `configDir` (default:
+`_module.nix` converts every `programs.pi-coding-agent.skills` entry into an
+absolute Nix store path and appends it to `programs.pi-coding-agent.settings.skills`.
+That array is serialised into `settings.json` inside `configDir` (default:
 `~/.pi/agent`). Pi reads `settings.json` at startup and loads skills from the
 listed paths. The store paths are absolute, so the setup is unaffected by
 changes to `configDir`.
 
 Prompt templates follow the same pattern via `settings.prompts`.
 
-`my.pi.globalAgentPolicies` is wired separately: the pi home-manager aspect
-collects all sections, sorts them by key, and writes the concatenated result to
-`home.file.".pi/agent/AGENTS.md"`. Pi loads this file at startup as global
-standing instructions — no skill invocation required.
+`my.pi.globalAgentPolicies` is wired separately: the pi home-manager policy
+aspect collects all sections, sorts them by key, and writes the concatenated
+result to `home.file.".pi/agent/AGENTS.md"`. Pi loads this file at startup as
+global standing instructions — no skill invocation required.

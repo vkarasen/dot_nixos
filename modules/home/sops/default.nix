@@ -29,7 +29,7 @@
           };
           anthropic_api_key = {};
           # Google Workspace MCP OAuth credentials
-          # (used by modules/home/google-workspace.nix)
+          # (used by modules/home/pi/google-workspace.nix)
           google_oauth_client_id = {};
           google_oauth_client_secret = {};
           #
