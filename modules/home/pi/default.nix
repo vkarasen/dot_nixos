@@ -6,7 +6,6 @@
     # flake etc.) don't have to thread them.
     astBroInput = inputs.ast-bro;
     agentStuffSrc = inputs.agent-stuff;
-    herdrSrc = inputs.herdr; # source tree — gives us SKILL.md pinned to flake.lock
   in {
     pkgs,
     lib,
@@ -17,10 +16,6 @@
     astBroSkill = skills.mkAstBroSkill;
     # Consumed from the agent-stuff flake input (flake = false), not copied in.
     nixSearchSkill = skills.mkSourceSkill "nix-search" (agentStuffSrc + "/skills/nix-search");
-    # Herdr's own SKILL.md, read from the pinned source tree.
-    # Teaches pi to drive Herdr (split panes, spawn agents, wait on status).
-    herdrSkill = pkgs.writeTextDir "herdr/SKILL.md"
-      (builtins.readFile (herdrSrc + "/SKILL.md"));
     # Companion guidance for the Google Workspace MCP server.
     googleWorkspaceSkill = ./skills/google-workspace;
   in {
@@ -50,7 +45,7 @@
       skills = {
         "ast-bro" = astBroSkill;
         "nix-search" = nixSearchSkill;
-        "herdr" = herdrSkill;
+        "herdr" = builtins.readFile (pkgs.herdr.src + "/SKILL.md");
         "google-workspace" = googleWorkspaceSkill;
         "oss-contrib" = ./skills/oss-contrib;
         "userspace-mounts" = ./skills/userspace-mounts;

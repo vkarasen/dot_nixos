@@ -9,12 +9,16 @@
 }: let
   cfg = config.programs.pi-coding-agent;
 
-  # String content  → store dir with <name>/SKILL.md  (pi discovers recursively)
-  # Path / derivation → pass through (must be a dir containing SKILL.md)
+  # String content  → store dir named "<name>-skill" with SKILL.md at root
+  # Path / derivation → pass through (must be a dir containing SKILL.md at root)
   mkSkillDrv = name: content:
     if lib.isPath content || lib.isDerivation content
     then content
-    else pkgs.writeTextDir "${name}/SKILL.md" content;
+    else pkgs.writeTextFile {
+      name = "${name}-skill";
+      destination = "/SKILL.md";
+      text = content;
+    };
 
   # String content  → store file <name>.md
   # Path / derivation → pass through
