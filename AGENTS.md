@@ -50,6 +50,38 @@ time in the outer `{inputs, ...}:` function — not as HM module function args.
 This keeps every aspect self-contained and importable by other flakes without
 extra wiring.
 
+## Persistent storage for new aspects
+
+Before reaching for gdrive, apply this preference order:
+
+1. **Home-manager derivation** — if the data can be expressed as immutable
+   Nix config, do that. It is reproducible, version-controlled, and always
+   available at activation time.
+2. **SOPS** — for secrets or credentials that must be injected at runtime.
+3. **gdrive** — only for genuinely mutable post-bootstrap data that cannot
+   be expressed as either of the above: user-generated content, app vaults,
+   runtime caches, downloaded artifacts.
+
+When gdrive is the right choice, point the aspect at
+`config.my.gdrive.mountPoint` rather than inventing a new path under
+`$HOME`.
+
+Conventions:
+
+- one top-level directory per app or domain
+- keep unrelated apps in separate subtrees
+- separate hand-managed content from generated/runtime content
+- prefer `app-name/data/`, `app-name/cache/`, `app-name/vault/` as
+  sub-layouts — not `settings/`, which should live in Nix config
+
+This mount is **private** (gated by `my.is_private`), **post-bootstrap**
+only — Home Manager must be able to evaluate and activate without it
+being available — and **externally mutable**: treat writes as potentially
+visible outside this machine and hard to undo.
+
+See `modules/home/rclone.nix` for how the mount is wired and
+`modules/options.nix` for the canonical `my.gdrive.mountPoint` option.
+
 ## Looking up options & packages (do this FIRST)
 
 Before you add or change **any** home-manager / NixOS / nix-darwin / nixvim
@@ -198,6 +230,19 @@ avoid repetition across classes.
 5. **`unknown flake output 'modules'` from `nix flake check` is harmless** — it
    is the dendritic aspect store surfaced as a freeform flake output, not an
    error.
+
+## Google Drive bootstrap boundary
+
+This repo is the only place where the private Google Drive mount is wired
+up. Keep that mount strictly post-bootstrap:
+
+- Home Manager must be able to evaluate, activate, and load secrets without
+  the mount being available
+- anything needed to bring the config online must live in the repo, the Nix
+  store, or SOPS
+- use gdrive only for data that is read or written after Home Manager is
+  already online
+- do not make activation or secret loading depend on the mount
 
 ## Git workflow for this repo
 
