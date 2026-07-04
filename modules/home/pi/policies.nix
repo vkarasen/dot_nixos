@@ -70,6 +70,25 @@
         When work is ready, show the diff / summary and ask — don't assume a
         passing build is sufficient sign-off.
 
+        ## Commit-making behavior
+        If the user asks you to "make the commits" or something similar, first
+        inspect the actual staging area and working tree (`git status`, staged
+        vs. unstaged diff, and any file boundaries) and decide whether the
+        changes should be split into atomic commits before doing anything.
+
+        Default to a commit plan that mirrors real logical units of work.
+        Do not bundle unrelated edits together.
+
+        Use `git add -A` only when the whole working tree is clearly one
+        commit-worthy unit or the user has explicitly asked for that scope.
+        Never use `git add -A` as a reflex.
+
+        If you can reasonably infer from the previous conversation that several
+        changes belong to separate logical commits, do not ask for approval just
+        because you are about to split them. Only ask if you encounter
+        uncommitted changes that you have no memory of making or that do not fit
+        the current task context.
+
         When working inside any git repository, default to this toolset:
 
         - **`gh`** for all GitHub operations (PRs, issues, CI checks, releases).
