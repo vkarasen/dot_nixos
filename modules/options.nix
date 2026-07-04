@@ -20,6 +20,15 @@
         default = "~/nix/nix-portable";
       };
     };
+    options.my.gdrive.mountPoint = lib.mkOption {
+      type = lib.types.nonEmptyStr;
+      default = "/home/vkarasen/mnt/gdrive";
+      description = ''
+        Canonical filesystem path for the mounted Google Drive. Use this for
+        persistent private data that should be available across sessions and
+        machines without going through the Google Workspace MCP server.
+      '';
+    };
     options.my.pi.globalAgentPolicies = lib.mkOption {
       type = lib.types.attrsOf lib.types.lines;
       default = {};

@@ -6,7 +6,8 @@
 # Secret model:
 #  • sops stores one full rclone.conf blob as `rclone_gdrive_conf`.
 #  • The config is copied to ~/.config/rclone/rclone.conf on activation.
-#  • A systemd user service mounts `gdrive:` at ~/mnt/gdrive.
+#  • A systemd user service mounts `gdrive:` at the canonical
+#    `my.gdrive.mountPoint` and exposes it as `$GDRIVE_MOUNTPOINT`.
 #
 # Auth flow:
 #  1. Create/choose a Google OAuth client for rclone.
@@ -19,7 +20,7 @@
 
 {...}: {
   flake.modules.homeManager.rclone = { lib, config, pkgs, ... }: let
-    mountPoint = "${config.home.homeDirectory}/mnt/gdrive";
+    mountPoint = config.my.gdrive.mountPoint;
     rcloneConfigDir = "${config.home.homeDirectory}/.config/rclone";
     rcloneConfigFile = "${rcloneConfigDir}/rclone.conf";
     cacheDir = "${config.home.homeDirectory}/.cache/rclone";
@@ -47,6 +48,9 @@
         "${config.sops.secrets.rclone_gdrive_conf.path}" \
         "${rcloneConfigFile}"
     '';
+
+    # Expose the canonical mount path to shells and agent tooling.
+    home.sessionVariables.GDRIVE_MOUNTPOINT = mountPoint;
 
     # Ensure the mount/cache directories exist before systemd starts the unit.
     home.activation.prepareRcloneDirs = lib.hm.dag.entryAfter ["writeBoundary"] ''
