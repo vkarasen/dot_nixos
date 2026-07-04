@@ -2,10 +2,6 @@
 {...}: {
   flake.modules.homeManager.tmux = {pkgs, ...}: {
     config = {
-      home.packages = with pkgs; [
-        tmux
-      ];
-
       catppuccin.tmux.extraConfig =
         #tmux
         ''

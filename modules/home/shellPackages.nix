@@ -11,7 +11,6 @@
         ripgrep
         curl
         wget
-        bat
         gnused
         dua
         duf

@@ -1,16 +1,11 @@
 # Dendritic aspect: ssh (home-manager class).
 {...}: {
   flake.modules.homeManager.ssh = {
-    pkgs,
     config,
     lib,
     ...
   }: {
     config = {
-      home.packages = with pkgs; [
-        openssh
-      ];
-
       services.ssh-agent.enable = config.my.is_private;
 
       programs.ssh = {
