@@ -1,6 +1,7 @@
 # Project-local skills
 
-Skills in this directory are **local to this repo/workspace**.
+This note describes the project-local skills stored under `.pi/skills/`.
+They are **local to this repo/workspace**.
 
 Use them for guidance that should be loaded whenever we're working here, but
 that should **not** be exported as a global pi skill through Nix.
