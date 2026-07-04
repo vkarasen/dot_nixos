@@ -32,6 +32,10 @@
           # (used by modules/home/pi/google-workspace.nix)
           google_oauth_client_id = {};
           google_oauth_client_secret = {};
+
+          # rclone Google Drive mount config (full rclone.conf blob)
+          # (used by modules/home/rclone.nix)
+          rclone_gdrive_conf = {};
           #
           # openai_api_key = {};
           #

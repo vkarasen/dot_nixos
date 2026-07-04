@@ -146,6 +146,25 @@ sops.templates."myapp-config.toml".content = ''
 '';
 ```
 
+### Full-file secrets for rclone mounts
+
+The rclone mount module expects a complete
+`~/.config/rclone/rclone.conf` file to be stored as a single sops secret
+named `rclone_gdrive_conf`.
+
+That means the one-time auth procedure is:
+
+1. Run `rclone config` once and complete the Google OAuth browser flow.
+2. Confirm the remote works.
+3. Copy the resulting `rclone.conf` contents into the encrypted sops file
+   under `rclone_gdrive_conf`.
+4. Rebuild Home Manager; the mount service will read the decrypted file on
+   every machine.
+
+If you prefer to keep the Google Workspace MCP client and the Drive mount
+fully separate, create a dedicated OAuth client for rclone and place its
+client ID, client secret, and token inside that `rclone.conf` blob.
+
 ## Managing Secrets
 
 ### Edit existing secrets
@@ -180,7 +199,8 @@ If you were using the previous custom secrets system:
 1. **Backup existing secrets**: Copy values from `~/.secrets/variables/`
 2. **Remove old files**: `rm -rf ~/.secrets/`
 3. **Setup sops-nix**: Follow the setup instructions above
-4. **Add secrets to sops**: Use `sops secrets/example.yaml` to add your backed up values
+4. **Add secrets to sops**: Use `sops secrets/example.yaml` to add your
+   backed up values
 5. **Update git ignore**: Remove `.secrets/` from `.gitignore` if it was there
 6. **Clean up**: Remove the old activation script from your configuration
 
