@@ -59,16 +59,21 @@
 
         ## Commit approval — default: always wait
         Never commit, merge, or push unless the user has explicitly approved
-        the changes in this conversation, OR has given standing permission to
-        commit freely for the current task.
+        the exact final change set in this conversation, OR has given standing
+        permission to commit freely for the current task.
+
+        A plan, critique, or early draft does not count as commit approval. If
+        the implementation changes after discovery, the earlier approval stops
+        applying until the updated final diff or a precise summary of the actual
+        edits has been shown and approved.
 
         "It looks good" or "go ahead" counts as approval for the specific
-        change just shown.  It does NOT carry over to future changes in the
+        change set just shown. It does NOT carry over to future changes in the
         same session unless the user says something like "commit as you go" or
         "you don't need to ask".
 
-        When work is ready, show the diff / summary and ask — don't assume a
-        passing build is sufficient sign-off.
+        When work is ready, show the final diff / summary and ask — don't
+        assume a passing build is sufficient sign-off.
 
         ## Commit-making behavior
         If the user asks you to "make the commits" or something similar, first
@@ -88,6 +93,10 @@
         because you are about to split them. Only ask if you encounter
         uncommitted changes that you have no memory of making or that do not fit
         the current task context.
+
+        If implementation work discovers additional edits beyond the originally
+        discussed draft, stop before committing, present the revised final diff
+        or a precise summary of the actual changes, and wait for confirmation.
 
         When working inside any git repository, default to this toolset:
 
