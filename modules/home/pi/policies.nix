@@ -199,6 +199,32 @@
 
         The goal is to collaborate carefully and explicitly, not to infer extra intent.
       '';
+
+      "18-documentation-drift" = ''
+        # Documentation drift check
+
+        Before completing a change that is likely to be committed, do a fast,
+        high-signal pass for documentation drift.
+
+        Prioritize:
+        - nearby comments, docstrings, and inline notes
+        - likely affected call sites or references to changed symbols, using cheap
+          structural tools when available
+        - README/docs/examples and other user-facing or workflow-facing
+          documentation when the change could plausibly affect them
+        - local skills, prompt templates, and repository-specific guidance
+        - always-loaded policy or instruction files such as `AGENTS.md` and
+          equivalent operational notes
+
+        Keep the pass opportunistic, not exhaustive. Do not perform a repo-wide
+        documentation hunt unless the change is broad enough to justify it.
+
+        If documentation may be stale but you do not update it, explicitly flag
+        that as follow-up work in the handoff.
+
+        If the change is unlikely to affect documentation, you may skip the pass,
+        but if there is any plausible drift, call it out.
+      '';
     };
 
     # -----------------------------------------------------------------------

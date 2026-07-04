@@ -28,9 +28,11 @@
         loads as global always-on instructions at startup (not opt-in like
         a skill). Keys are sorted alphabetically before concatenation, so
         use numeric prefixes to control order:
-          "00-nix-workspace"  – base Nix exploration policy (defined here)
-          "10-scripting"      – scripting runtime preference (defined here)
-          "90-corporate"      – add in the corporate flake for site-specific rules
+          "00-nix-workspace"       – base Nix exploration policy (defined here)
+          "10-scripting"           – scripting runtime preference (defined here)
+          "15-collaboration"       – collaboration / scope-control policy (defined here)
+          "18-documentation-drift" – quick documentation-adoption reminder (defined here)
+          "90-corporate"           – add in the corporate flake for site-specific rules
         The lib.types.lines type lets multiple modules extend the same key
         additively; use lib.mkForce to override a section entirely.
       '';
