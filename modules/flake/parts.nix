@@ -15,7 +15,6 @@
         (final: prev: {
           stable = import inputs.nixpkgs-stable {inherit system;};
         })
-        inputs.herdr.overlays.default
       ];
     };
 

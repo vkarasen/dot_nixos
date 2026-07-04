@@ -1,7 +1,6 @@
 # Dendritic aspect: herdr (home-manager class).
 { inputs, ... }: {
   flake.modules.homeManager.herdr = { pkgs, lib, config, ... }: {
-    imports = [ ./_module.nix ];
 
     programs.herdr = {
       enable = true;
