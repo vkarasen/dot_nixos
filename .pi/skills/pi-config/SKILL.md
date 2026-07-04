@@ -19,6 +19,23 @@ frozen inventory. The stable landmarks are:
 - server-specific adjunct aspects such as
   `google-workspace.nix`
 
+## Skill placement guide
+
+When you ask me to create a new skill, use the destination to encode intent:
+
+- `.pi/skills/<name>/SKILL.md` — project-local helper skills loaded for work in
+  this repo only. They are not exported through Nix and should not be treated
+  as global pi capabilities.
+- `skills/<name>/SKILL.md` — exported helper skills packaged with this repo
+  for downstream consumers. The canonical example is
+  `skills/corporate-pi-wiring`, which is intended to be imported by a
+  corporate flake using this repo as an input, but is not part of the local
+  `.pi` skill set.
+- `modules/home/pi/skills/<name>/SKILL.md` plus wiring in
+  `modules/home/pi/default.nix` — regular pi skills that are installed
+  globally via Nix. These propagate into consumers like the corporate flake
+  unless gated by `my.is_private`.
+
 This repo uses the **dendritic pattern**: every `.nix` file under `modules/` is
 auto-imported as a flake-parts module by `import-tree`. Files under `modules/home/pi/`
 are mixed: `default.nix` is the aspect entry point, while `_module.nix` and

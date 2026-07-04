@@ -1,14 +1,17 @@
 ---
 name: corporate-pi-wiring
 description: >
-  Wire the corporate flake to consume pi config machinery (options, skill
-  builders) from the private dot_nixos flake. Use this skill when setting up
-  or modifying the corporate home-manager configuration to add pi support,
-  import skills, or sync settings with the private config.
+  Guidance for wiring the corporate home-manager configuration to import the
+  private repo's pi facilities. Use this when changing the corporate flake's
+  pi setup or when consuming this repo as an input.
 user-invocable: true
 ---
 
 # Corporate pi wiring
+
+Use this skill when working in the corporate environment that consumes this
+repository as an input. It explains how to import the private repo's pi
+facilities and how to use the exposed wiring in the corporate flake.
 
 Both flakes are under your control. This guide describes the agreed "special
 sauce" protocol between them — a deliberately tight coupling that avoids the
