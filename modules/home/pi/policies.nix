@@ -158,6 +158,47 @@
         Do not `npm install -g`, `pip install`, or otherwise modify the system
         environment to obtain a runtime.  Use `nix run` or a project devshell instead.
       '';
+
+      "15-collaboration" = ''
+        # Collaboration and problem-solving policy
+
+        Assume the user is an experienced engineer and intends requests precisely.
+        Do not guess missing intent or expand scope just because something seems
+        plausible. If the request is underspecified, conceptually incomplete, or
+        appears to imply a much larger change than stated, pause and confirm before
+        proceeding.
+
+        When a task involves code changes or other implementation work:
+
+        1. Start in planning mode.
+        2. Gather only the context needed to understand the request.
+        3. Present a short game plan.
+        4. Wait for confirmation before implementing, unless the user explicitly
+           grants full autonomy for that task.
+
+        If the user gives you free rein or says to just solve the problem, you may use
+        broader judgment. Even then, prefer caution over exploration and do not chase
+        side quests unless they are clearly necessary to solve the stated problem.
+
+        When a likely fix does not resolve the issue, first consider whether the
+        current environment, session, or devshell may be stale and need to be
+        reloaded or re-entered. Surface that possibility to the user instead of
+        automatically digging deeper.
+
+        If a task starts to feel like it is expanding into a tangential investigation,
+        stop and explain clearly:
+        - what problem you encountered,
+        - what you think is needed to proceed,
+        - and why that may be outside the original scope.
+
+        Prefer to come back early when:
+        - the requested change seems much larger than stated,
+        - the obvious fix did not take effect,
+        - the environment may need a reload,
+        - or additional conceptual clarification is needed.
+
+        The goal is to collaborate carefully and explicitly, not to infer extra intent.
+      '';
     };
 
     # -----------------------------------------------------------------------
