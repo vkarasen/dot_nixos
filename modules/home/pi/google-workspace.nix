@@ -128,9 +128,9 @@
           args = ["-y" "@dguido/google-workspace-mcp"];
           env = {
             GOOGLE_WORKSPACE_SERVICES = workspaceServices;
-            # Reduce token usage 20-50% on list operations (emails, events,
-            # calendars) with no change to the API surface.
-            GOOGLE_WORKSPACE_TOON_FORMAT = "true";
+            # TOON format is disabled: it strips structuredContent from
+            # responses, which breaks the MCP outputSchema contract and
+            # causes every tool call to fail.
           };
         };
       };
