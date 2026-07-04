@@ -136,11 +136,16 @@
           on PATH. Use best judgment — optimise for clarity and speed of writing,
           not for consistency with the project language.
 
-        ## 1. A single CLI invocation does the job → `nix run`, always
-        If a tool exists in nixpkgs and one invocation is enough, just run it:
-          nix run nixpkgs#jq -- '.foo' file.json
-          nix run nixpkgs#ripgrep -- 'pattern' path/
-        No script needed.  Do not write TS/JS just to shell out to a single CLI.
+        ## 1. Prefer the common system CLI toolbox first
+        This environment usually has a broad set of everyday engineering
+        command-line tools installed system-wide and already on PATH. Use those
+        directly when they are present.
+
+        Do not wrap a command in `nix run` just because it exists in nixpkgs.
+        Reach for `nix run` when the tool is missing locally, is niche or
+        specialized, or is unlikely to be installed here.
+
+        No script needed. Do not write TS/JS just to shell out to a single CLI.
 
         ## 2. Glue logic is needed → Node.js / TypeScript / JavaScript
         Use Node.js when the task requires:
