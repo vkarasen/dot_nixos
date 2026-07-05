@@ -68,6 +68,9 @@
 
       Service = {
         Type = "simple";
+        # /run/wrappers/bin must be first so rclone's bash wrapper finds the
+        # setuid fusermount3 before its own bundled non-setuid store copy.
+        Environment = "PATH=/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin";
         ExecStart = "${rcloneBin} ${commonMountArgs}";
         ExecStop = "${fusermountBin} -u ${mountPoint}";
         Restart = "on-failure";
