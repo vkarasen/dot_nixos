@@ -1,5 +1,5 @@
 {pkgs, ...}: let
-  s = import ./_lsp-settings.nix;
+  s = import ../home/neovim/_lsp-settings.nix;
 in {
   extraPlugins = [
     (pkgs.vimUtils.buildVimPlugin {

@@ -2,7 +2,7 @@
 {...}: {
   flake.modules.homeManager.neovim = {config, ...}: let
     # Shared protocol-level LSP settings (defined once, used by nixvim + pi-lens).
-    s = import ../../_nixvim/_lsp-settings.nix;
+    s = import ./_lsp-settings.nix;
 
     # Full nixd settings: base (from _lsp-settings.nix) + home_manager option
     # expression that references this machine's HM configuration name.
