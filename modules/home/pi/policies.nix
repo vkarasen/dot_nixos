@@ -217,28 +217,15 @@
       "25-herdr-tab-naming" = ''
         # Herdr tab naming
 
-        When running inside herdr (`HERDR_ENV=1`), keep the current tab's label
-        in sync with the overarching topic of the session.
-
-        ## At session start
-        After the first substantive exchange — once the topic is clear — silently
-        rename the tab to a short label that reflects what is being worked on.
-        Use `herdr pane list` to find your focused pane and its tab id, then
-        `herdr tab rename <tab_id> "<label>"`.
-
-        ## Periodically
-        At natural breakpoints — after completing a task, when the conversation
-        pivots to a clearly different topic, or before a long-running operation —
-        check whether the current label still reflects the work at hand. Rename
-        silently if it has drifted.
+        When running inside herdr (`HERDR_ENV=1`), a `rename_herdr_tab` tool is
+        available. The first prompt of each session injects an instruction to
+        call it before starting work. Also call it whenever the session topic
+        shifts significantly.
 
         ## Label style
         - 2–4 words, lowercase noun phrase
         - Concrete and specific: `nixvim config`, `flake inputs bump`, `pr review`
         - Avoid generics like `chat`, `session`, `work`, or the bare repo name
-
-        ## Guard
-        Skip entirely when `HERDR_ENV` is not set to `1`.
       '';
 
       "18-documentation-drift" = ''
@@ -266,6 +253,27 @@
         If the change is unlikely to affect documentation, you may skip the pass,
         but if there is any plausible drift, call it out.
       '';
+    };
+
+    # -----------------------------------------------------------------------
+    # Herdr tab-rename extension + companion tsconfig.
+    # The tsconfig uses paths relative to the deployed location
+    # (~/.pi/agent/extensions/) so the LSP resolves pi's runtime modules.
+    # -----------------------------------------------------------------------
+    home.file.".pi/agent/extensions/herdr-tab-rename.ts".source =
+      ./extensions/herdr-tab-rename.ts;
+    home.file.".pi/agent/extensions/tsconfig.json".text = builtins.toJSON {
+      compilerOptions = {
+        target = "ES2022";
+        module = "commonjs";
+        strict = true;
+        types = [ "node" ];
+        paths = {
+          "@earendil-works/pi-coding-agent" =
+            [ "../npm/node_modules/@earendil-works/pi-coding-agent" ];
+          "typebox" = [ "../npm/node_modules/typebox" ];
+        };
+      };
     };
 
     # -----------------------------------------------------------------------
