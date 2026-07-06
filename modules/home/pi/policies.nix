@@ -214,6 +214,33 @@
         The goal is to collaborate carefully and explicitly, not to infer extra intent.
       '';
 
+      "25-herdr-tab-naming" = ''
+        # Herdr tab naming
+
+        When running inside herdr (`HERDR_ENV=1`), keep the current tab's label
+        in sync with the overarching topic of the session.
+
+        ## At session start
+        After the first substantive exchange — once the topic is clear — silently
+        rename the tab to a short label that reflects what is being worked on.
+        Use `herdr pane list` to find your focused pane and its tab id, then
+        `herdr tab rename <tab_id> "<label>"`.
+
+        ## Periodically
+        At natural breakpoints — after completing a task, when the conversation
+        pivots to a clearly different topic, or before a long-running operation —
+        check whether the current label still reflects the work at hand. Rename
+        silently if it has drifted.
+
+        ## Label style
+        - 2–4 words, lowercase noun phrase
+        - Concrete and specific: `nixvim config`, `flake inputs bump`, `pr review`
+        - Avoid generics like `chat`, `session`, `work`, or the bare repo name
+
+        ## Guard
+        Skip entirely when `HERDR_ENV` is not set to `1`.
+      '';
+
       "18-documentation-drift" = ''
         # Documentation drift check
 
