@@ -29,7 +29,7 @@
       imports = [ wlib.modules.bwrapConfig ];
       bwrapConfig.binds.ro = binds;
       env.XDG_CONFIG_HOME = lib.mkIf config.bwrapConfig.enable (lib.mkForce null);
-      extraPackages = [ pkgs.nodejs pkgs.bun ];
+      extraPackages = [ pkgs.nodejs ];
     });
 
     # Pre-create every bwrap bind destination so bwrap can mount over them

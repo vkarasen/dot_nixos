@@ -40,7 +40,6 @@
       enable = true;
       extraPackages = [
         pkgs.nodejs
-        pkgs.bun
       ];
       skills = {
         "ast-bro" = astBroSkill;
