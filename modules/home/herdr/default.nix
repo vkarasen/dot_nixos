@@ -1,7 +1,11 @@
 # Dendritic aspect: herdr (home-manager class).
-{ inputs, ... }: {
-  flake.modules.homeManager.herdr = { pkgs, lib, config, ... }: {
-
+{inputs, ...}: {
+  flake.modules.homeManager.herdr = {
+    pkgs,
+    lib,
+    config,
+    ...
+  }: {
     programs.herdr = {
       enable = true;
 
@@ -27,17 +31,16 @@
       };
     };
 
-    home.packages = [ pkgs.herdr ];
+    home.packages = [pkgs.herdr];
 
     # Run `herdr integration install pi` on every home-manager activation.
     # Herdr handles idempotency itself; we just ensure the target directory
     # exists first because herdr requires it to be present.
     # Respects PI_CODING_AGENT_DIR if set (herdr reads the same var).
-    home.activation.herdrPiIntegration =
-      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        _pi_dir="''${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
-        $DRY_RUN_CMD mkdir -p "$_pi_dir/extensions"
-        $DRY_RUN_CMD ${pkgs.herdr}/bin/herdr integration install pi
-      '';
+    home.activation.herdrPiIntegration = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      _pi_dir="''${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
+      $DRY_RUN_CMD mkdir -p "$_pi_dir/extensions"
+      $DRY_RUN_CMD ${pkgs.herdr}/bin/herdr integration install pi
+    '';
   };
 }

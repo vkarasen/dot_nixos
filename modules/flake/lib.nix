@@ -1,7 +1,7 @@
 # Reusable library functions exposed as flake.lib.pi.
 # A corporate or other flake can call these to build skill derivations
 # using the same builders as the private config, against its own pkgs.
-{ inputs, ... }: {
+{inputs, ...}: {
   flake.lib.pi = {
     # Build skill derivations with the private flake's builders.
     # Usage from a consumer flake:
@@ -10,7 +10,10 @@
     # Returns the _skills.nix attrset: { mkAstBroSkill, mkSourceSkill }.
     # ponytail: ast-bro input passed explicitly so the consumer pins its own version;
     # follows = "private/ast-bro" is the recommended approach (see corporate wiring skill).
-    mkSkills = { pkgs, ast-bro }:
-      import ../home/pi/_skills.nix { inherit pkgs ast-bro; };
+    mkSkills = {
+      pkgs,
+      ast-bro,
+    }:
+      import ../home/pi/_skills.nix {inherit pkgs ast-bro;};
   };
 }

@@ -114,44 +114,44 @@
     # Gate everything behind is_private — Google Workspace is personal-only;
     # the corporate env uses different tooling and must not see these servers.
     isPrivate = config.my.is_private;
-  in lib.mkIf isPrivate {
-    # ── MCP server declaration ─────────────────────────────────────────────
-    # pi-mcp-adapter reads ~/.pi/agent/mcp.json at startup.
-    # This is a static file (no secrets) — credentials live in credentials.json.
-    # NOTE: home.file creates a read-only symlink; pi-mcp-adapter only reads
-    #       this file, it never writes to it, so read-only is fine.
-    home.file.".pi/agent/mcp.json".text = builtins.toJSON {
-      mcpServers = {
-        google-workspace = {
-          type = "stdio";
-          command = "npx";
-          args = ["-y" "@dguido/google-workspace-mcp"];
-          env = {
-            GOOGLE_WORKSPACE_SERVICES = workspaceServices;
-            # TOON format is disabled: it strips structuredContent from
-            # responses, which breaks the MCP outputSchema contract and
-            # causes every tool call to fail.
+  in
+    lib.mkIf isPrivate {
+      # ── MCP server declaration ─────────────────────────────────────────────
+      # pi-mcp-adapter reads ~/.pi/agent/mcp.json at startup.
+      # This is a static file (no secrets) — credentials live in credentials.json.
+      # NOTE: home.file creates a read-only symlink; pi-mcp-adapter only reads
+      #       this file, it never writes to it, so read-only is fine.
+      home.file.".pi/agent/mcp.json".text = builtins.toJSON {
+        mcpServers = {
+          google-workspace = {
+            type = "stdio";
+            command = "npx";
+            args = ["-y" "@dguido/google-workspace-mcp"];
+            env = {
+              GOOGLE_WORKSPACE_SERVICES = workspaceServices;
+              # TOON format is disabled: it strips structuredContent from
+              # responses, which breaks the MCP outputSchema contract and
+              # causes every tool call to fail.
+            };
           };
         };
       };
-    };
 
-    # ── Sops secrets ───────────────────────────────────────────────────────
-    sops.secrets = {
-      google_oauth_client_id = {};
-      google_oauth_client_secret = {};
-    };
+      # ── Sops secrets ───────────────────────────────────────────────────────
+      sops.secrets = {
+        google_oauth_client_id = {};
+        google_oauth_client_secret = {};
+      };
 
-    # The skill carries the Google Workspace safety guidance. The default pi
-    # config wires it in alongside the server, but its frontmatter should still
-    # make clear that it is required whenever the google-workspace MCP server
-    # is in play.
-    # ── Write credentials.json at activation time ───────────────────────────
-    # home.activation runs after sops has decrypted secrets, so we can safely
-    # read the secret paths here.  The file is written at 0600 so only the
-    # owner can read it.
-    home.activation.writeGoogleWorkspaceCreds =
-      lib.hm.dag.entryAfter ["writeBoundary"] ''
+      # The skill carries the Google Workspace safety guidance. The default pi
+      # config wires it in alongside the server, but its frontmatter should still
+      # make clear that it is required whenever the google-workspace MCP server
+      # is in play.
+      # ── Write credentials.json at activation time ───────────────────────────
+      # home.activation runs after sops has decrypted secrets, so we can safely
+      # read the secret paths here.  The file is written at 0600 so only the
+      # owner can read it.
+      home.activation.writeGoogleWorkspaceCreds = lib.hm.dag.entryAfter ["writeBoundary"] ''
         _creds_dir="${credentialsDir}"
         _creds_file="$_creds_dir/credentials.json"
 
@@ -181,5 +181,5 @@
           echo "google-workspace: sops secrets not yet decrypted, skipping credentials.json" >&2
         fi
       '';
-  };
+    };
 }
