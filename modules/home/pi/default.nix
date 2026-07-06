@@ -74,10 +74,7 @@
             "npm:@barlevalon/worktrunk-skill"
             "npm:@zaganjade/pi-usage"
             "npm:@juicesharp/rpiv-web-tools"
-            # Fork with serverOverrides support (pending upstream merge).
-            # Pinned to the exact commit; update via:
-            #   pi install git:github.com/vkarasen/pi-lens@<new-sha>
-            "git:github.com/vkarasen/pi-lens@ac7347bab7a73b72725e54b8324b6a61b9436583"
+            "npm:pi-lens"
             "npm:@latentminds/pi-quotas"
           ];
         };
