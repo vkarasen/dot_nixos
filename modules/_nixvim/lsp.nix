@@ -1,4 +1,6 @@
-{pkgs, ...}: {
+{pkgs, ...}: let
+  s = import ./_lsp-settings.nix;
+in {
   extraPlugins = [
     (pkgs.vimUtils.buildVimPlugin {
       name = "colorful-menu";
@@ -68,14 +70,9 @@
         };
         nixd = {
           enable = true;
-          settings = {
-            nixpkgs.expr = "import <nixpkgs> {}";
-            options = {
-              nixvim = {
-                expr = "(builtins.getFlake (toString ./.)).nixVimOptions";
-              };
-            };
-          };
+          # Full settings (incl. home_manager option expr) are set by
+          # modules/home/neovim/default.nix where config.my.* is available.
+          settings = s.nixdBase;
         };
         pyright = {
           enable = true;
@@ -245,46 +242,7 @@
     friendly-snippets.enable = true;
     rustaceanvim = {
       enable = true;
-      settings = {
-        server = {
-          default_settings = {
-            rust-analyzer = {
-              check = {
-                command = "clippy";
-                allTargets = true;
-              };
-              diagnostics.styleLints.enable = true;
-              imports = {
-                preferPrelude = true;
-              };
-              inlayHints = {
-                closureCaptureHints.enable = true;
-                closureReturnTypeHints.enable = true;
-                genericParameterHints.enable = true;
-                parameterHints.missingArguments.enable = true;
-              };
-              interpret.tests = true;
-              cargo = {
-                features = "all";
-                targetDir = true;
-              };
-              assist = {
-                preferSelf = true;
-              };
-              files = {
-                watcher = "server";
-                exclude = [
-                  "**/.git/**"
-                  "**/target/**"
-                  "**/node_modules/**"
-                  "**/dist/**"
-                  "**/out/**"
-                ];
-              };
-            };
-          };
-        };
-      };
+      settings.server.default_settings."rust-analyzer" = s.rustAnalyzer;
     };
     aerial = {
       enable = true;

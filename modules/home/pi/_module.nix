@@ -14,11 +14,12 @@
   mkSkillDrv = name: content:
     if lib.isPath content || lib.isDerivation content
     then content
-    else pkgs.writeTextFile {
-      name = "${name}-skill";
-      destination = "/SKILL.md";
-      text = content;
-    };
+    else
+      pkgs.writeTextFile {
+        name = "${name}-skill";
+        destination = "/SKILL.md";
+        text = content;
+      };
 
   # String content  → store file <name>.md
   # Path / derivation → pass through

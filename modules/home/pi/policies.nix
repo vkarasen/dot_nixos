@@ -267,11 +267,10 @@
         target = "ES2022";
         module = "commonjs";
         strict = true;
-        types = [ "node" ];
+        types = ["node"];
         paths = {
-          "@earendil-works/pi-coding-agent" =
-            [ "../npm/node_modules/@earendil-works/pi-coding-agent" ];
-          "typebox" = [ "../npm/node_modules/typebox" ];
+          "@earendil-works/pi-coding-agent" = ["../npm/node_modules/@earendil-works/pi-coding-agent"];
+          "typebox" = ["../npm/node_modules/typebox"];
         };
       };
     };

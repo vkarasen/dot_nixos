@@ -17,9 +17,13 @@
 #
 # See also: modules/home/pi/skills/userspace-mounts/SKILL.md for the
 # host-side fusermount/FUSE checklist and WSL guidance.
-
 {...}: {
-  flake.modules.homeManager.rclone = { lib, config, pkgs, ... }: let
+  flake.modules.homeManager.rclone = {
+    lib,
+    config,
+    pkgs,
+    ...
+  }: let
     mountPoint = config.my.gdrive.mountPoint;
     rcloneConfigDir = "${config.home.homeDirectory}/.config/rclone";
     rcloneConfigFile = "${rcloneConfigDir}/rclone.conf";
@@ -37,49 +41,50 @@
         --file-perms 0600 \
         --dir-perms 0700
     '';
-  in lib.mkIf config.my.is_private {
-    home.packages = [
-      pkgs.rclone
-    ];
+  in
+    lib.mkIf config.my.is_private {
+      home.packages = [
+        pkgs.rclone
+      ];
 
-    # Materialize the secret config file for rclone.
-    home.activation.writeRcloneConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -Dm600 \
-        "${config.sops.secrets.rclone_gdrive_conf.path}" \
-        "${rcloneConfigFile}"
-    '';
+      # Materialize the secret config file for rclone.
+      home.activation.writeRcloneConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -Dm600 \
+          "${config.sops.secrets.rclone_gdrive_conf.path}" \
+          "${rcloneConfigFile}"
+      '';
 
-    # Expose the canonical mount path to shells and agent tooling.
-    home.sessionVariables.GDRIVE_MOUNTPOINT = mountPoint;
+      # Expose the canonical mount path to shells and agent tooling.
+      home.sessionVariables.GDRIVE_MOUNTPOINT = mountPoint;
 
-    # Ensure the mount/cache directories exist before systemd starts the unit.
-    home.activation.prepareRcloneDirs = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -d -m700 \
-        "${mountPoint}" \
-        "${cacheDir}"
-    '';
+      # Ensure the mount/cache directories exist before systemd starts the unit.
+      home.activation.prepareRcloneDirs = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -d -m700 \
+          "${mountPoint}" \
+          "${cacheDir}"
+      '';
 
-    systemd.user.services.rclone-gdrive = {
-      Unit = {
-        Description = "Mount Google Drive with rclone";
-        Wants = ["sops-nix.service"];
-        After = ["sops-nix.service"];
-      };
+      systemd.user.services.rclone-gdrive = {
+        Unit = {
+          Description = "Mount Google Drive with rclone";
+          Wants = ["sops-nix.service"];
+          After = ["sops-nix.service"];
+        };
 
-      Service = {
-        Type = "simple";
-        # /run/wrappers/bin must be first so rclone's bash wrapper finds the
-        # setuid fusermount3 before its own bundled non-setuid store copy.
-        Environment = "PATH=/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin";
-        ExecStart = "${rcloneBin} ${commonMountArgs}";
-        ExecStop = "${fusermountBin} -u ${mountPoint}";
-        Restart = "on-failure";
-        RestartSec = "5s";
-      };
+        Service = {
+          Type = "simple";
+          # /run/wrappers/bin must be first so rclone's bash wrapper finds the
+          # setuid fusermount3 before its own bundled non-setuid store copy.
+          Environment = "PATH=/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin";
+          ExecStart = "${rcloneBin} ${commonMountArgs}";
+          ExecStop = "${fusermountBin} -u ${mountPoint}";
+          Restart = "on-failure";
+          RestartSec = "5s";
+        };
 
-      Install = {
-        WantedBy = ["default.target"];
+        Install = {
+          WantedBy = ["default.target"];
+        };
       };
     };
-  };
 }

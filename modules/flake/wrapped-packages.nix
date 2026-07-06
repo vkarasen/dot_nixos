@@ -4,14 +4,22 @@
 # activation) bwrap bind destinations don't exist yet, so we touch them
 # first. bwrap is kept (not replaced with XDG_CONFIG_HOME redirect) so
 # that $HOME/.config remains writable for pi's npm package state.
-{ inputs, config, ... }: {
-  perSystem = { pkgs, lib, ... }: let
+{
+  inputs,
+  config,
+  ...
+}: {
+  perSystem = {
+    pkgs,
+    lib,
+    ...
+  }: let
     wlib = inputs.hm-wrapper-modules.lib;
 
     base = wlib.wrapHomeModule {
       inherit pkgs;
       mainPackage = pkgs.pi-coding-agent;
-      homeModules = [ config.flake.modules.homeManager.pi ];
+      homeModules = [config.flake.modules.homeManager.pi];
       home-manager = inputs.home-manager;
     };
 
@@ -25,11 +33,15 @@
     # the hm-adapter doesn't capture that, and accessing hmConfig.programs.*
     # forces full HM module evaluation (hits unrelated removed-option errors).
     # Declare them explicitly so npm is available when pi installs packages.
-    bwrapped = base.wrap ({ config, lib, ... }: {
-      imports = [ wlib.modules.bwrapConfig ];
+    bwrapped = base.wrap ({
+      config,
+      lib,
+      ...
+    }: {
+      imports = [wlib.modules.bwrapConfig];
       bwrapConfig.binds.ro = binds;
       env.XDG_CONFIG_HOME = lib.mkIf config.bwrapConfig.enable (lib.mkForce null);
-      extraPackages = [ pkgs.nodejs ];
+      extraPackages = [pkgs.nodejs];
     });
 
     # Pre-create every bwrap bind destination so bwrap can mount over them
