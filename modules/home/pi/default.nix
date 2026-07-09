@@ -72,6 +72,7 @@
           "npm:@zaganjade/pi-usage"
           "npm:@juicesharp/rpiv-web-tools"
           "npm:pi-lens"
+          "npm:@latentminds/pi-quotas"
         ];
       };
     };
