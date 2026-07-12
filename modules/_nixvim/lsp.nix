@@ -162,37 +162,6 @@ in {
     copilot-cmp = {
       enable = true;
     };
-    avante = {
-      enable = true;
-      lazyLoad.settings.cmd = [
-        "AvanteAsk"
-        "AvanteChat"
-        "AvanteChatNew"
-        "AvanteToggle"
-        "AvanteRefresh"
-        "AvanteFocus"
-        "AvanteSwitchProvider"
-        "AvanteSwitchInputProvider"
-        "AvanteClear"
-        "AvanteShowRepoMap"
-        "AvanteModels"
-        "AvanteHistory"
-        "AvanteStop"
-      ];
-      settings = {
-        provider = "copilot";
-        providers.copilot.model = "claude-sonnet-4";
-        windows = {
-          wrap = true;
-          input = {
-            height = 15;
-          };
-          edit = {
-            border = "rounded";
-          };
-        };
-      };
-    };
     lspkind = {
       enable = true;
       settings = {

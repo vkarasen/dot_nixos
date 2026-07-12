@@ -13,7 +13,7 @@
     };
     render-markdown = {
       enable = true;
-      lazyLoad.settings.ft = ["markdown" "Avante"];
+      lazyLoad.settings.ft = ["markdown"];
     };
   };
 }

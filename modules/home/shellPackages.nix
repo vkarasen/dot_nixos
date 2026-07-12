@@ -2,31 +2,36 @@
 {...}: {
   flake.modules.homeManager.shellPackages = {pkgs, ...}: {
     config = {
-      home.packages = with pkgs; [
-        nh
-        nix-output-monitor
-        nix-prefetch-git
-        nix-search-cli
-        nvd
-        ripgrep
-        curl
-        wget
-        gnused
-        dua
-        duf
-        dutree
-        fd
-        tldr
-        yq
-        jq
-        patool
-        sd
-        file
-        openssl
-        ncurses
-        tabiew
-        wl-clipboard
-      ];
+      home.packages = with pkgs;
+        [
+          nh
+          nix-output-monitor
+          nix-prefetch-git
+          nix-search-cli
+          nvd
+          ripgrep
+          curl
+          wget
+          gnused
+          dua
+          duf
+          dutree
+          fd
+          tldr
+          yq
+          jq
+          sd
+          file
+          openssl
+          ncurses
+          tabiew
+          wl-clipboard
+          tig
+          btop
+        ]
+        ++ [
+          pkgs.stable.patool
+        ];
 
       programs = {
         fzf = rec {
