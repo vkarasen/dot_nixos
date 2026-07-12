@@ -38,6 +38,9 @@ modules/
     external.nix                  # external input modules (nix-index, catppuccin, nixvim, sops) + ast-bro + registry
     git.nix bash.nix ssh.nix ...
     pi/ sops/ lf/ ...             # multi-file aspects (dir with default.nix)
+  home/neovim/
+    default.nix                   # nixvim aspect + generates .pi-lens.json with serverOverrides
+    _lsp-settings.nix             # single source of truth for LSP initializationOptions (vim + pi-lens)
   _nixvim/                        # shared nixvim module tree (NOT a flake-parts module — see pitfalls)
 skills/
   corporate-pi-wiring/            # agent-ingestible wiring guide for the corporate flake (NOT under .pi/ — intentional)
@@ -161,6 +164,14 @@ Declare the variants **in the same file**, grouped together:
 
 Add to `modules/options.nix` under `flake.modules.generic.my-options` so it is
 reusable by future nixos/darwin configs, not just home.
+
+### LSP settings (vim + pi-lens)
+
+The canonical place for all LSP `initializationOptions` is
+`modules/home/neovim/_lsp-settings.nix`. It has a recipe comment at the top
+explaining the three files to touch when adding a server or changing options.
+Do **not** add inline settings to `modules/_nixvim/lsp.nix` — that file now
+imports from `_lsp-settings.nix`.
 
 ### pi packages / skills / prompt templates
 
