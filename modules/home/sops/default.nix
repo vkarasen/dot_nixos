@@ -28,6 +28,7 @@
             # The secret will be decrypted to $XDG_RUNTIME_DIR/secrets/tavily_api_key
           };
           anthropic_api_key = {};
+          deepseek_api_key = {};
           # Google Workspace MCP OAuth credentials
           # (used by modules/home/pi/google-workspace.nix)
           google_oauth_client_id = {};
@@ -52,6 +53,9 @@
         })
         (lib.mkIf (config.my.is_private && config.sops.secrets ? anthropic_api_key) {
           ANTHROPIC_API_KEY = "$(cat ${config.sops.secrets.anthropic_api_key.path})";
+        })
+        (lib.mkIf (config.my.is_private && config.sops.secrets ? deepseek_api_key) {
+          DEEPSEEK_API_KEY = "$(cat ${config.sops.secrets.deepseek_api_key.path})";
         })
       ];
     };
