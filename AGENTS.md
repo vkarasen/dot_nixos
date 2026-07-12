@@ -271,7 +271,7 @@ This is a **personal, solo config repo** — no collaborators, no review process
 ## Testing
 
 ```bash
-git add -A                                                  # pitfall #1
+git add -NA                                                 # pitfall #1: make new files visible to Nix without staging content
 nix flake check                                             # full eval + templates
 nix build .#nvim --no-link                                  # standalone neovim
 nix build .#homeConfigurations.vkarasen.activationPackage --no-link
