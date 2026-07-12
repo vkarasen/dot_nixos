@@ -1,5 +1,5 @@
 {pkgs, ...}: let
-  s = import ../home/neovim/_lsp-settings.nix;
+  lspSettings = import ../home/neovim/_lsp-settings.nix;
 in {
   extraPlugins = [
     (pkgs.vimUtils.buildVimPlugin {
@@ -72,19 +72,11 @@ in {
           enable = true;
           # Full settings (incl. home_manager option expr) are set by
           # modules/home/neovim/default.nix where config.my.* is available.
-          settings = s.nixdBase;
+          settings = lspSettings.nixdBase;
         };
         pyright = {
           enable = true;
-          settings = {
-            python = {
-              analysis = {
-                typeCheckingMode = "basic";
-                autoSearchPaths = true;
-                useLibraryCodeForTypes = true;
-              };
-            };
-          };
+          settings = lspSettings.pyright;
         };
         clangd = {
           enable = true;
@@ -242,7 +234,7 @@ in {
     friendly-snippets.enable = true;
     rustaceanvim = {
       enable = true;
-      settings.server.default_settings."rust-analyzer" = s.rustAnalyzer;
+      settings.server.default_settings."rust-analyzer" = lspSettings.rustAnalyzer;
     };
     aerial = {
       enable = true;
