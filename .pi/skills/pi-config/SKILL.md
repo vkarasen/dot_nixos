@@ -10,11 +10,16 @@ but discover the current shape with semantic tools instead of relying on a
 frozen inventory. The stable landmarks are:
 
 - `default.nix` — declares the `flake.modules.homeManager.pi` aspect
+- `private.nix` — declares the `flake.modules.homeManager.pi-private` aspect
+  for private skills and policies (sops-encrypted, gated by `my.is_private`)
+- `skills-private/` — sops-encrypted `.md` files for private skill content
+  and private AGENTS.md policy sections
 - `_module.nix` — helper that defines
   `options.programs.pi-coding-agent.{skills,promptTemplates}` and wires them
   into `programs.pi-coding-agent.settings`
 - `_skills.nix` — builders for complex skills that need a Nix derivation at build time
-- `policies.nix` — the source of truth for always-on AGENTS.md policy sections
+- `policies.nix` — the source of truth for public always-on AGENTS.md policy sections
+  (private policies are declared here too but materialized by `private.nix`)
 - `prompts/` — role prompt templates / slash commands
 - server-specific adjunct aspects such as
   `google-workspace.nix`
@@ -35,6 +40,10 @@ When you ask me to create a new skill, use the destination to encode intent:
   `modules/home/pi/default.nix` — regular pi skills that are installed
   globally via Nix. These propagate into consumers like the corporate flake
   unless gated by `my.is_private`.
+- `modules/home/pi/skills-private/<name>.md` plus wiring in
+  `modules/home/pi/private.nix` — **private** skills encrypted with sops.
+  Content never appears in plaintext in the public git repo. See
+  [Adding a private skill](#adding-a-private-skill) below.
 
 This repo uses the **dendritic pattern**: every `.nix` file under `modules/` is
 auto-imported as a flake-parts module by `import-tree`. Files under `modules/home/pi/`
@@ -226,6 +235,61 @@ The key becomes the command name — the above registers `/review`.
 
 ---
 
+## Adding a private skill
+
+Private skills are sops-encrypted files whose content must not appear in
+plaintext in the public git repository. They are materialized at activation
+time into `~/.pi/agent/skills-private/<name>/SKILL.md`.
+
+### Step 1: Create the encrypted skill file
+
+```bash
+sops modules/home/pi/skills-private/<name>.md
+```
+
+sops will open your editor with a blank file. Write the full SKILL.md content
+(frontmatter + body). When you save and exit, sops encrypts it in place.
+
+### Step 2: Declare the skill in private.nix
+
+Open `modules/home/pi/private.nix` and add an entry to `my.pi.privateSkills`:
+
+```nix
+my.pi.privateSkills."<name>" = ./skills-private/<name>.md;
+```
+
+That's it — the aspect auto-generates the `sops.secrets` entry, handles
+decryption at activation, and registers `~/.pi/agent/skills-private/` in
+pi's `settings.skills` for auto-discovery.
+
+For the full sops encrypt/edit workflow suitable for an agent, see the
+**`edit-private-skill`** skill.
+
+## Adding a private policy section
+
+Private AGENTS.md sections use the same mechanism: sops-encrypted files
+declared as path values in `my.pi.globalAgentPolicies`.
+
+### Step 1: Create the encrypted policy file
+
+```bash
+sops modules/home/pi/skills-private/<name>.md
+```
+
+Write the policy markdown (no frontmatter needed — it's a raw section, not a skill).
+
+### Step 2: Declare the policy in private.nix
+
+```nix
+my.pi.globalAgentPolicies."<order>-<name>" = ./skills-private/<name>.md;
+```
+
+The key prefix controls ordering among all policies (public and private), e.g.
+`"92-secret-nix-workspace"` for a private section that extends `"00-nix-workspace"`.
+
+For the full sops encrypt/edit workflow suitable for an agent, see the
+**`edit-private-skill`** skill.
+
 ## Adding a global always-on instruction (AGENTS.md policy)
 
 Skills are opt-in (description-triggered). For **always-on** behavioral
@@ -254,8 +318,11 @@ Rules:
 
 - Keys are sorted alphabetically before concatenation → use `"00-"`, `"10-"`,
   `"90-"` prefixes to control section order.
-- `lib.types.lines` means two modules can write the **same** key and both
-  contributions are appended (newline-separated).
+- For **public** (string) values: `lib.types.lines` means two modules can write
+  the **same** key and both contributions are appended (newline-separated).
+- For **private** (path) values: the path must point to a sops-encrypted `.md`
+  file under `skills-private/`. The content is decrypted at activation time and
+  appended to AGENTS.md in key order. Only active when `my.is_private` is true.
 - `lib.mkForce` on a key replaces any lower-priority definition entirely.
 - The base always-on policy sections live in `modules/home/pi/policies.nix`.
   Treat the generated `~/.pi/agent/AGENTS.md` or the policy source as the live
@@ -274,7 +341,16 @@ changes to `configDir`.
 
 Prompt templates follow the same pattern via `settings.prompts`.
 
-`my.pi.globalAgentPolicies` is wired separately: the pi home-manager policy
-aspect collects all sections, sorts them by key, and writes the concatenated
-result to `home.file.".pi/agent/AGENTS.md"`. Pi loads this file at startup as
-global standing instructions — no skill invocation required.
+`my.pi.globalAgentPolicies` is wired in two stages:
+
+- **Public** (string) sections are collected by the `pi-policies` aspect,
+  sorted by key, and written to `home.file.".pi/agent/AGENTS.md"` as a
+  Nix-store file.
+- **Private** (path) sections are handled by the `pi-private` aspect: at
+  activation time, it reads the public base, appends the decrypted private
+  sections in key order, and writes the final `AGENTS.md` (overwriting the
+  Nix-store symlink with a regular file).
+
+Private skills follow a similar two-stage flow: the `pi-private` aspect
+auto-generates `sops.secrets` entries, decrypts at activation, and
+materializes each skill into `~/.pi/agent/skills-private/<name>/SKILL.md`.

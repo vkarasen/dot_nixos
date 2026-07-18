@@ -38,6 +38,12 @@ modules/
     external.nix                  # external input modules (nix-index, catppuccin, nixvim, sops) + ast-bro + registry
     git.nix bash.nix ssh.nix ...
     pi/ sops/ lf/ ...             # multi-file aspects (dir with default.nix)
+  home/pi/
+    default.nix                   # pi aspect (public skills, packages, templates)
+    policies.nix                  # public AGENTS.md sections
+    private.nix                   # private skills + policies (sops-backed, gated by my.is_private)
+    skills-private/               # sops-encrypted .md files for private skills/policies
+    _module.nix _skills.nix       # helpers (ignored by import-tree)
   home/neovim/
     default.nix                   # nixvim aspect + generates .pi-lens.json with serverOverrides
     _lsp-settings.nix             # single source of truth for LSP initializationOptions (vim + pi-lens)
@@ -189,22 +195,49 @@ Each key in the attrset becomes a named section; keys are sorted alphabetically
 before concatenation, so use numeric prefixes to control order:
 
 ```
-"00-nix-workspace"  — Nix exploration policy (defined in modules/home/pi/default.nix)
-"10-scripting"      — scripting runtime preference (defined in modules/home/pi/default.nix)
+"00-nix-workspace"  — Nix exploration policy (defined in modules/home/pi/policies.nix)
+"10-scripting"      — scripting runtime preference (defined in modules/home/pi/policies.nix)
 "90-corporate"      — add in the corporate flake for site-specific rules
 ```
 
-To add a section from any aspect:
+A value can be either:
+
+- A **string**: public inline policy (merged additively when multiple modules
+  set the same key). Appears plaintext in the git repo.
+- A **path**: points to a sops-encrypted markdown file. Decrypted at activation
+  time and appended to AGENTS.md. Only active when `my.is_private` is true.
 
 ```nix
-my.pi.globalAgentPolicies."90-corporate" = ''
-  # Corporate policy
-  Always use the internal Artifactory mirror.
+# Public (string):
+my.pi.globalAgentPolicies."00-nix-workspace" = ''
+  # Nix workspace exploration policy
+  ...
 '';
+
+# Private (path to sops-encrypted file):
+my.pi.globalAgentPolicies."90-corp-workflows" = ./skills-private/corp-workflows.md;
 ```
 
 The corporate flake can add keys freely (additive) or use `lib.mkForce` to
 replace a base section. See the **`pi-config` skill** for full details.
+
+### Private skills and policies
+
+Content that should not appear in plaintext in the public repo — confidential
+workflows, deployment procedures, internal system details — lives in
+`modules/home/pi/skills-private/` as sops-encrypted files. At activation time
+(only when `my.is_private` is true), the `pi-private` aspect decrypts them
+and materializes them into `~/.pi/agent/skills-private/`.
+
+To add a private skill or policy, use the **`edit-private-skill`** skill which
+teaches the sops encrypt/edit/commit workflow. Briefly:
+
+```bash
+sops modules/home/pi/skills-private/<name>.md   # create + edit
+# Then declare it in modules/home/pi/private.nix
+```
+
+See `modules/home/pi/private.nix` for the full implementation.
 
 ### A future NixOS or nix-darwin host
 
