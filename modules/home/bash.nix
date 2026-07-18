@@ -95,13 +95,13 @@
           settings = {
             add_newline = false;
 
-            # Custom herdr module — shows a green icon when the herdr server
-            # is running.  Detection is socket-based (the socket only exists
-            # while the server is up) so no herdr subprocess is spawned on each
-            # prompt render.  Hidden inside herdr panes (HERDR_ENV=1) and
-            # inside tmux sessions — mutually exclusive with the tmux module.
+            # Custom herdr module — shows a green icon in shells outside herdr
+            # whenever the herdr server is running.  Detection is socket-based
+            # (the socket only exists while the server is up) so no herdr
+            # subprocess is spawned on each prompt render.  Hidden inside
+            # herdr panes (HERDR_ENV=1) where the context is already obvious.
             custom.herdr = {
-              when = ''test -S "''${XDG_CONFIG_HOME:-$HOME/.config}/herdr/herdr.sock" && [ "$HERDR_ENV" != "1" ] && test -z "$TMUX"'';
+              when = ''test -S "''${XDG_CONFIG_HOME:-$HOME/.config}/herdr/herdr.sock" && [ "$HERDR_ENV" != "1" ]'';
               symbol = "󱡃 ";
               style = "bold green";
             };
@@ -109,7 +109,7 @@
             # Custom tmux module
             custom.tmux = {
               command = "tmux list-sessions 2>/dev/null | wc -l";
-              when = "test $(tmux list-sessions 2>/dev/null | wc -l) -gt 0 && test -z \"$TMUX\" && [ \"$HERDR_ENV\" != \"1\" ]";
+              when = "test $(tmux list-sessions 2>/dev/null | wc -l) -gt 0 && test -z \"$TMUX\"";
               symbol = "󰗹 ";
               style = "bold blue";
             };
