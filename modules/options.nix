@@ -30,7 +30,7 @@
       '';
     };
     options.my.pi.globalAgentPolicies = lib.mkOption {
-      type = lib.types.attrsOf lib.types.lines;
+      type = lib.types.attrsOf (lib.types.either lib.types.lines lib.types.path);
       default = {};
       description = ''
         Named policy sections merged into ~/.pi/agent/AGENTS.md, which pi
@@ -42,8 +42,28 @@
           "15-collaboration"       – collaboration / scope-control policy (defined here)
           "18-documentation-drift" – quick documentation-adoption reminder (defined here)
           "90-corporate"           – add in the corporate flake for site-specific rules
-        The lib.types.lines type lets multiple modules extend the same key
-        additively; use lib.mkForce to override a section entirely.
+
+        Each value can be either:
+        - A string (lib.types.lines): public inline policy section, merged
+          additively when multiple modules set the same key.
+        - A path: points to a sops-encrypted markdown file whose decrypted
+          content becomes the section body at activation time. Path values
+          are ignored when my.is_private is false.
+      '';
+    };
+
+    options.my.pi.privateSkills = lib.mkOption {
+      type = lib.types.attrsOf lib.types.path;
+      default = {};
+      description = ''
+        Private pi skills whose content must not appear in plaintext in the
+        public git repository. Each key is the skill name (lowercase, hyphens
+        only); each value is a path to a sops-encrypted file containing the
+        full SKILL.md content.
+
+        At activation time (only when my.is_private is true), the encrypted
+        content is decrypted and materialized into
+        ~/.pi/agent/skills-private/<name>/SKILL.md.
       '';
     };
     options.my.homeConfigurationName = lib.mkOption {

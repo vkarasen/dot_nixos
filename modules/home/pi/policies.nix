@@ -1,8 +1,9 @@
 # Dendritic aspect: pi-policies (home-manager class).
 #
-# Generates ~/.pi/agent/AGENTS.md from my.pi.globalAgentPolicies — the
-# global always-on context file that pi loads at startup unconditionally
-# (not opt-in like a skill).
+# Generates the public portion of ~/.pi/agent/AGENTS.md from the string
+# entries in my.pi.globalAgentPolicies. Path entries (pointing to sops-
+# encrypted files) are ignored here and handled by the pi-private aspect
+# at activation time instead.
 #
 # This is intentionally a SEPARATE aspect from modules/home/pi/default.nix
 # because the standalone packages.pi build evaluates homeManager.pi in
@@ -253,6 +254,51 @@
         If the change is unlikely to affect documentation, you may skip the pass,
         but if there is any plausible drift, call it out.
       '';
+    } // lib.optionalAttrs config.my.is_private {
+      "16-privacy-awareness" = ''
+        # Privacy awareness
+
+        This project is hosted on a public git remote. Content under
+        `modules/home/pi/skills-private/` is sops-encrypted so it never
+        appears in plaintext in the public repository.
+
+        ## Decision gate: before writing a new skill or policy section
+
+        When you are about to create or substantially modify a skill
+        (SKILL.md) or a global AGENTS.md policy section, pause and evaluate:
+
+        Does this content include any of the following?
+
+        - Internal deployment procedures, server addresses, or infrastructure
+          details
+        - Proprietary workflows, business logic, or trade secrets
+        - Internal tool credentials or access patterns (even if not literal
+          secrets)
+        - Security-sensitive architectural details, threat models, or
+          vulnerability information
+        - Any information that would aid an attacker if the repository were
+          public
+
+        If YES, do NOT write it as a plaintext skill or inline policy string.
+        Instead, stop and ask the user:
+
+        > "This contains [what tipped you off]. Should this be a private
+        > (sops-encrypted) skill, or a private AGENTS.md section?"
+
+        This is a design decision the user must make — do not proceed with
+        plaintext without explicit confirmation. When the user says yes,
+        load the **`edit-private-skill`** skill for the workflow.
+
+        ## Quick reference
+
+        - Private content: `modules/home/pi/skills-private/<name>.md`
+          (sops-encrypted)
+        - Declared in: `modules/home/pi/private.nix`
+        - Skills → `my.pi.privateSkills`; Policies → path-valued
+          `my.pi.globalAgentPolicies`
+        - Materialized at activation into `~/.pi/agent/skills-private/`
+        - Workflow skill: **`edit-private-skill`**
+      '';
     };
 
     # -----------------------------------------------------------------------
@@ -276,12 +322,19 @@
     };
 
     # -----------------------------------------------------------------------
-    # Wire the merged sections into the pi global context file.
+    # Wire the public (string) sections into the base AGENTS.md.
+    # Private (path) sections point to sops-encrypted files and are handled
+    # by the pi-private aspect at activation time.
     # attrValues sorts alphabetically, so numeric key prefixes control order.
-    # mkIf avoids creating an empty file when no policies are defined.
+    # mkIf avoids creating an empty file when no public policies are defined.
     # -----------------------------------------------------------------------
-    home.file.".pi/agent/AGENTS.md" = lib.mkIf (config.my.pi.globalAgentPolicies != {}) {
-      text = lib.concatStringsSep "\n\n" (lib.attrValues config.my.pi.globalAgentPolicies);
-    };
+    home.file.".pi/agent/AGENTS.md" = let
+      allPolicies = config.my.pi.globalAgentPolicies;
+      isPublic = v: builtins.isString v;
+      publicPolicies = lib.filterAttrs (_: isPublic) allPolicies;
+    in
+      lib.mkIf (publicPolicies != {}) {
+        text = lib.concatStringsSep "\n\n" (lib.attrValues publicPolicies);
+      };
   };
 }
