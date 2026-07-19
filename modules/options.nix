@@ -29,6 +29,51 @@
         machines without going through the Google Workspace MCP server.
       '';
     };
+    options.my.obsidian = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Enable Obsidian tooling and configure a singular environment-global
+          vault for the current user/profile. The global vault is private to
+          the current privilege domain; project-local vaults are discovered from
+          repository-local instructions instead of enumerated here.
+        '';
+      };
+      globalVault = {
+        name = lib.mkOption {
+          type = lib.types.nonEmptyStr;
+          default = "vkarasen-vault";
+          description = "Name of the environment-global Obsidian vault.";
+        };
+        dir = lib.mkOption {
+          type = lib.types.nullOr lib.types.nonEmptyStr;
+          default = null;
+          description = ''
+            Canonical filesystem path to the environment-global Obsidian vault.
+            When null, the home-manager aspect resolves this to a local vault
+            under the user's home directory using globalVault.name. Override
+            this in an environment-specific flake to place the vault on synced
+            storage such as Google Drive, SharePoint, or Azure.
+          '';
+        };
+        dailyDir = lib.mkOption {
+          type = lib.types.nonEmptyStr;
+          default = "daily";
+          description = "Vault-relative directory for daily scratchpad notes.";
+        };
+        templatesDir = lib.mkOption {
+          type = lib.types.nonEmptyStr;
+          default = "templates";
+          description = "Vault-relative directory for Obsidian templates.";
+        };
+        attachmentsDir = lib.mkOption {
+          type = lib.types.nonEmptyStr;
+          default = "attachments";
+          description = "Vault-relative directory for screenshots and attachments.";
+        };
+      };
+    };
     options.my.pi.globalAgentPolicies = lib.mkOption {
       type = lib.types.attrsOf (lib.types.either lib.types.lines lib.types.path);
       default = {};

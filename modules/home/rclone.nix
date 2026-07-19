@@ -57,6 +57,12 @@
       # Expose the canonical mount path to shells and agent tooling.
       home.sessionVariables.GDRIVE_MOUNTPOINT = mountPoint;
 
+      # This private profile uses Google Drive as the synced storage location
+      # for the environment-global Obsidian vault.  Other environments can
+      # override this option to point at local, SharePoint, Azure, or other
+      # storage without changing the vault semantics.
+      my.obsidian.globalVault.dir = lib.mkDefault "${mountPoint}/obsidian/${config.my.obsidian.globalVault.name}";
+
       # Ensure the mount/cache directories exist before systemd starts the unit.
       home.activation.prepareRcloneDirs = lib.hm.dag.entryAfter ["writeBoundary"] ''
         $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -d -m700 \
