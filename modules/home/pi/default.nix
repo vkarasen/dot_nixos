@@ -49,6 +49,7 @@
           "nix-search" = nixSearchSkill;
           "herdr" = builtins.readFile (pkgs.herdr.src + "/SKILL.md");
           "google-workspace" = googleWorkspaceSkill;
+          "obsidian-vault-bootstrap" = ./skills/obsidian-vault-bootstrap;
           "obsidian-vault-maintenance" = ./skills/obsidian-vault-maintenance;
           "obsidian-vault-read" = ./skills/obsidian-vault-read;
           "oss-contrib" = ./skills/oss-contrib;

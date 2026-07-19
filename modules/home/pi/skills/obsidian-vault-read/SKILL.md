@@ -122,6 +122,18 @@ rg -n --glob '*.md' 'search terms' "$OBSIDIAN_GLOBAL_VAULT_DIR"
 rg -n --glob '*.md' '(^tags:|#[[:alnum:]_/-]+|\[\[.*topic.*\]\])' "$OBSIDIAN_GLOBAL_VAULT_DIR"
 ```
 
+## Templates and conventions
+
+`templates/` is not primary retrieval context, but it is useful for
+understanding how notes in a vault are expected to look. Inspect it when the
+user asks about note shape, daily notes, capture conventions, or why an
+Obsidian/Neovim workflow produced a sparse note.
+
+In this Home Manager configuration, `obsidian.nvim` expects the daily-note
+template at `templates/daily.md`. If an otherwise bootstrapped vault lacks that
+file, load `obsidian-vault-bootstrap` and follow its guarded bootstrap/repair
+workflow before creating or editing templates.
+
 ## Read-only boundary
 
 This skill does not grant write permission.

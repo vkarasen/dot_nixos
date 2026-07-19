@@ -81,6 +81,17 @@ tags, and map/index notes for semantic grouping.
 Project-local vaults may use different conventions. Follow repo-local guidance
 for project-local writes.
 
+## Bootstrap and starter templates
+
+For new vault initialization, missing starter templates, or skeleton repair, use
+the `obsidian-vault-bootstrap` skill. It contains the canonical starter vault
+skeleton and a guarded bootstrap script.
+
+Do not manually recreate starter files from memory. Do not run bootstrap tooling
+against an existing vault directory unless the user has expressly approved
+bootstrapping or repairing that existing vault. Existing vault files are
+user-owned and must not be overwritten without explicit approval.
+
 ## Write boundaries
 
 Vaults are persistent memory. Default to read-only unless the user request

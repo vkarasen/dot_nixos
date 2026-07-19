@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: obsidian-vault-bootstrap [--allow-existing] [--dry-run] [TARGET_DIR]
+
+Initialize a standard Obsidian vault skeleton from this skill's skeleton/ dir.
+
+Safety:
+  - Refuses to run when TARGET_DIR already exists unless --allow-existing is set.
+  - Creates missing standard directories and starter files.
+  - Never overwrites existing files.
+
+TARGET_DIR defaults to $OBSIDIAN_GLOBAL_VAULT_DIR.
+USAGE
+}
+
+allow_existing=false
+dry_run=false
+target=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --allow-existing)
+      allow_existing=true
+      shift
+      ;;
+    --dry-run)
+      dry_run=true
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "error: unknown option: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+    *)
+      if [[ -n "$target" ]]; then
+        echo "error: multiple target directories supplied" >&2
+        usage >&2
+        exit 2
+      fi
+      target="$1"
+      shift
+      ;;
+  esac
+done
+
+if [[ $# -gt 0 ]]; then
+  if [[ -n "$target" || $# -gt 1 ]]; then
+    echo "error: multiple target directories supplied" >&2
+    usage >&2
+    exit 2
+  fi
+  target="$1"
+fi
+
+if [[ -z "$target" ]]; then
+  target="${OBSIDIAN_GLOBAL_VAULT_DIR:-}"
+fi
+
+if [[ -z "$target" ]]; then
+  echo 'error: no target supplied and $OBSIDIAN_GLOBAL_VAULT_DIR is unset' >&2
+  usage >&2
+  exit 2
+fi
+
+case "$target" in
+  /|//|.)
+    echo "error: refusing unsafe target: $target" >&2
+    exit 2
+    ;;
+esac
+
+script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+skeleton="$script_dir/skeleton"
+
+if [[ ! -d "$skeleton" ]]; then
+  echo "error: skeleton directory not found: $skeleton" >&2
+  exit 1
+fi
+
+if [[ -e "$target" && ! -d "$target" ]]; then
+  echo "error: target exists but is not a directory: $target" >&2
+  exit 2
+fi
+
+if [[ -d "$target" && "$allow_existing" != true ]]; then
+  cat >&2 <<EOF_REFUSE
+error: target directory already exists: $target
+
+Refusing to bootstrap an existing vault directory without explicit approval.
+After the user approves adding only missing starter directories/files, rerun with:
+
+  $0 --allow-existing "$target"
+
+Existing files are never overwritten.
+EOF_REFUSE
+  exit 3
+fi
+
+run() {
+  if [[ "$dry_run" == true ]]; then
+    printf '+ '
+    printf '%q ' "$@"
+    printf '\n'
+  else
+    "$@"
+  fi
+}
+
+created=0
+skipped=0
+
+standard_dirs=(
+  _meta
+  daily
+  inbox
+  working
+  memory
+  outputs
+  templates
+  attachments
+)
+
+for dir in "${standard_dirs[@]}"; do
+  run mkdir -p -- "$target/$dir"
+done
+
+while IFS= read -r -d '' src; do
+  rel="${src#"$skeleton/"}"
+  dest="$target/$rel"
+  if [[ -e "$dest" ]]; then
+    echo "skip existing file: $rel"
+    skipped=$((skipped + 1))
+    continue
+  fi
+  run mkdir -p -- "$(dirname -- "$dest")"
+  run install -m 0644 -- "$src" "$dest"
+  echo "create file: $rel"
+  created=$((created + 1))
+done < <(find "$skeleton" -type f -print0 | sort -z)
+
+echo "bootstrap complete: target=$target created=$created skipped=$skipped dry_run=$dry_run"
