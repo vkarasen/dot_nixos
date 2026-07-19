@@ -83,7 +83,7 @@
     ];
 
     # ── Activation ──────────────────────────────────────────────────────
-    home.activation.installPrivatePiAssets = lib.hm.dag.entryAfter ["writeBoundary"] (
+    home.activation.installPrivatePiAssets = lib.hm.dag.entryAfter ["sops-nix"] (
       let
         coreutils = pkgs.coreutils;
       in ''
