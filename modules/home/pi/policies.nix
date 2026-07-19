@@ -254,6 +254,36 @@
         If the change is unlikely to affect documentation, you may skip the pass,
         but if there is any plausible drift, call it out.
       '';
+
+      "19-obsidian-vault-context" = ''
+        # Obsidian vault context retrieval
+
+        Obsidian vaults may provide useful task context.
+
+        At the start of a non-trivial task, if you can see a project-local
+        Obsidian vault, repo-local instructions mention one, or additional
+        user/environment context from the environment-global vault might be
+        useful, load the `obsidian-vault-read` skill and perform scoped
+        retrieval.
+
+        Prefer:
+        1. project-local vaults for shared project documentation and
+           repo-specific context;
+        2. `$OBSIDIAN_GLOBAL_VAULT_DIR` for private environment-global memory,
+           preferences, prior decisions, and cross-project context.
+
+        Keep retrieval purposeful and bounded. Do not browse vaults out of
+        curiosity.
+
+        Do not create, modify, move, delete, or link vault notes unless the user
+        has explicitly asked for vault writes, capture, curation, or
+        maintenance. For writes or health checks, load
+        `obsidian-vault-maintenance`.
+
+        Do not copy or summarize environment-global vault content into
+        project-local shared state unless the user explicitly asks and the
+        content is appropriate for that audience.
+      '';
     } // lib.optionalAttrs config.my.is_private {
       "16-privacy-awareness" = ''
         # Privacy awareness
@@ -334,6 +364,7 @@
       publicPolicies = lib.filterAttrs (_: isPublic) allPolicies;
     in
       lib.mkIf (publicPolicies != {}) {
+        force = true;
         text = lib.concatStringsSep "\n\n" (lib.attrValues publicPolicies);
       };
   };
