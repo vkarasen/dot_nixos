@@ -22,6 +22,7 @@
       imports = [
         ../../_nixvim
       ];
+      _module.args.copilotEnable = config.my.copilot.enable;
     };
 
     # Generate .pi-lens.json so pi-lens picks up the same LSP initializationOptions

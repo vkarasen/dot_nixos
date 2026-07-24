@@ -65,7 +65,7 @@
         settings = {
           theme = lib.mkDefault "catppuccin-mocha";
           quietStartup = lib.mkDefault true;
-          defaultProvider = lib.mkDefault "github-copilot";
+          defaultProvider = lib.mkIf (config.my.copilot.enable or true) (lib.mkDefault "github-copilot");
           defaultModel = lib.mkDefault "gpt-5.4-mini";
           packages = [
             "npm:pi-mcp-adapter"

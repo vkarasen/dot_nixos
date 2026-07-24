@@ -17,7 +17,7 @@
           gitCredentialHelper = {
             enable = true;
           };
-          extensions = lib.optionals config.nixpkgs.config.allowUnfree [
+          extensions = lib.optionals (config.nixpkgs.config.allowUnfree && config.my.copilot.enable) [
             pkgs.github-copilot-cli
           ];
         };

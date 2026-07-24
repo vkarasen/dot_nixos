@@ -1,5 +1,11 @@
-{pkgs, ...}: let
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}: let
   lspSettings = import ../home/neovim/_lsp-settings.nix;
+  copilotEnable = config._module.args.copilotEnable or false;
 in {
   extraPlugins = [
     (pkgs.vimUtils.buildVimPlugin {
@@ -91,47 +97,53 @@ in {
       autoEnableSources = true;
 
       settings = {
-        sources = [
-          {
-            name = "copilot";
-            group_index = 2;
-          }
-          {
-            name = "nvim_lsp";
-            group_index = 2;
-          }
-          {
-            name = "luasnip";
-            group_index = 2;
-          }
-          {
-            name = "path";
-            group_index = 2;
-          }
-          {
-            name = "git";
-            group_index = 2;
-          }
-          {
-            name = "buffer";
-            # Words from other open buffers can also be suggested.
-            option.get_bufnrs.__raw = "vim.api.nvim_list_bufs";
-            group_index = 2;
-          }
-        ];
+        sources =
+          (lib.optionals copilotEnable [
+            {
+              name = "copilot";
+              group_index = 2;
+            }
+          ])
+          ++ [
+            {
+              name = "nvim_lsp";
+              group_index = 2;
+            }
+            {
+              name = "luasnip";
+              group_index = 2;
+            }
+            {
+              name = "path";
+              group_index = 2;
+            }
+            {
+              name = "git";
+              group_index = 2;
+            }
+            {
+              name = "buffer";
+              # Words from other open buffers can also be suggested.
+              option.get_bufnrs.__raw = "vim.api.nvim_list_bufs";
+              group_index = 2;
+            }
+          ];
         sorting = {
           priority_weight = 2;
-          comparators = [
-            "require('copilot_cmp.comparators').prioritize"
-            "require('cmp.config.compare').offset"
-            "require('cmp.config.compare').exact"
-            "require('cmp.config.compare').score"
-            "require('cmp.config.compare').recently_used"
-            "require('cmp.config.compare').locality"
-            "require('cmp.config.compare').kind"
-            "require('cmp.config.compare').length"
-            "require('cmp.config.compare').order"
-          ];
+          comparators =
+            (lib.optionals copilotEnable [
+              "require('copilot_cmp.comparators').prioritize"
+            ])
+            ++ [
+              "require('cmp.config.compare').offset"
+              "require('cmp.config.compare').exact"
+              "require('cmp.config.compare').score"
+              "require('cmp.config.compare').recently_used"
+              "require('cmp.config.compare').locality"
+              "require('cmp.config.compare').kind"
+              "require('cmp.config.compare').length"
+              "require('cmp.config.compare').order"
+            ];
         };
         snippet.expand =
           #lua
@@ -156,19 +168,20 @@ in {
         ];
       };
     };
-    copilot-lua = {
+    copilot-lua = lib.mkIf copilotEnable {
       enable = true;
     };
-    copilot-cmp = {
+    copilot-cmp = lib.mkIf copilotEnable {
       enable = true;
     };
     lspkind = {
       enable = true;
       settings = {
         mode = "symbol";
-        symbol_map = {
-          Copilot = "";
-        };
+        symbol_map =
+          lib.optionalAttrs copilotEnable {
+            Copilot = "";
+          };
         cmp = {
           maxwidth = 30;
         };

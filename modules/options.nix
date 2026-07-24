@@ -74,6 +74,11 @@
         };
       };
     };
+    options.my.copilot.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable GitHub Copilot integration (neovim, CLI, pi provider).";
+    };
     options.my.pi.globalAgentPolicies = lib.mkOption {
       type = lib.types.attrsOf (lib.types.either lib.types.lines lib.types.path);
       default = {};
