@@ -62,11 +62,21 @@
           "investigator" = lib.mkDefault ./prompts/investigator.md;
           "planner" = lib.mkDefault ./prompts/planner.md;
         };
-        settings = {
+        settings = let
+          hasCopilot = config.my.copilot.enable or false;
+          sopsSecrets = config.sops.secrets or {};
+          hasDeepseek = sopsSecrets ? deepseek_api_key;
+          hasAnthropic = sopsSecrets ? anthropic_api_key;
+          resolved =
+            if hasCopilot then {provider = "github-copilot"; model = "gpt-5.4-mini";}
+            else if hasDeepseek then {provider = "deepseek"; model = "deepseek-v4-pro";}
+            else if hasAnthropic then {provider = "anthropic"; model = "claude-sonnet-5";}
+            else null;
+        in {
           theme = lib.mkDefault "catppuccin-mocha";
           quietStartup = lib.mkDefault true;
-          defaultProvider = lib.mkIf (config.my.copilot.enable or true) (lib.mkDefault "github-copilot");
-          defaultModel = lib.mkDefault "gpt-5.4-mini";
+          defaultProvider = lib.mkIf (resolved != null) (lib.mkDefault resolved.provider);
+          defaultModel = lib.mkIf (resolved != null) (lib.mkDefault resolved.model);
           packages = [
             "npm:pi-mcp-adapter"
             "npm:rpiv-todo"
