@@ -43,6 +43,7 @@
         enable = true;
         extraPackages = [
           pkgs.nodejs
+          pkgs.poppler-utils # pdftoppm/pdftocairo — manual PDF→PNG fallback for visual inspection
         ];
         skills = {
           "ast-bro" = astBroSkill;
@@ -80,6 +81,7 @@
           packages = [
             "npm:pi-mcp-adapter"
             "npm:rpiv-todo"
+            "npm:pi-docparser"
             "npm:@sherif-fanous/pi-catppuccin"
             "npm:pi-vim"
             "npm:pi-fzfp"
