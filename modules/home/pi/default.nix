@@ -69,7 +69,7 @@
           hasDeepseek = sopsSecrets ? deepseek_api_key;
           hasAnthropic = sopsSecrets ? anthropic_api_key;
           resolved =
-            if hasCopilot then {provider = "github-copilot"; model = "gpt-5.4-mini";}
+            if hasCopilot then {provider = "github-copilot"; model = "claude-sonnet-5";}
             else if hasDeepseek then {provider = "deepseek"; model = "deepseek-v4-pro";}
             else if hasAnthropic then {provider = "anthropic"; model = "claude-sonnet-5";}
             else null;
