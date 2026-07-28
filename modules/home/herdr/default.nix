@@ -19,9 +19,6 @@
 
         theme.name = lib.mkDefault "catppuccin";
 
-        # Show agents across ALL workspaces, not just the active one —
-        # this is the key setting for multi-project visibility.
-        ui.agent_panel_scope = lib.mkDefault "all";
         ui.show_agent_labels_on_pane_borders = lib.mkDefault true;
         ui.sidebar_width = lib.mkDefault 32;
         ui.toast.delivery = lib.mkDefault "herdr";
