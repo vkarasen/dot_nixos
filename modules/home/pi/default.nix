@@ -22,6 +22,32 @@
       nixSearchSkill = skills.mkSourceSkill "nix-search" (agentStuffSrc + "/skills/nix-search");
       # Companion guidance for the Google Workspace MCP server.
       googleWorkspaceSkill = ./skills/google-workspace;
+
+      # pi-blackhole: algorithmic compaction (zero LLM) + observational memory.
+      # Scaled for 1M context windows. Worker models are unset — workers fall
+      # back to the session model. Set PI_BLACKHOLE_PASSIVE=1 to disable OM
+      # workers in standalone/non-HM environments.
+      blackholeConfig = {
+        compaction = "auto";
+        compactionEngine = "blackhole";
+        tailBehavior = "minimal";
+        midRunCompaction = "off";
+        compactAfterTokens = 650000;
+        memory = true;
+        sessionFallback = true;
+        observeAfterTokens = 30000;
+        reflectAfterTokens = 60000;
+        observationsPoolMaxTokens = 40000;
+        observationsPoolTargetTokens = 10000;
+        reflectorInputMaxTokens = 200000;
+        dropperInputMaxTokens = 200000;
+        observerChunkMaxTokens = 120000;
+        observerPreambleMaxTokens = 0;
+        dropperPressureThreshold = 0.70;
+        agentMaxTurns = 16;
+        debug = false;
+        debugLog = false;
+      };
     in {
       imports = [./_module.nix];
 
@@ -91,6 +117,7 @@
             "npm:@juicesharp/rpiv-web-tools"
             "npm:pi-lens"
             "npm:@latentminds/pi-quotas"
+            "npm:pi-blackhole"
           ];
         };
       };
@@ -99,5 +126,8 @@
         provider = "tavily";
         interceptors.github = true;
       };
+
+      home.file.".pi/agent/pi-blackhole/pi-blackhole-config.json".text =
+        builtins.toJSON blackholeConfig;
     };
 }
