@@ -74,7 +74,7 @@
         skills = {
           "ast-bro" = astBroSkill;
           "nix-search" = nixSearchSkill;
-          "herdr" = builtins.readFile (pkgs.herdr.src + "/SKILL.md");
+          "herdr" = builtins.readFile (pkgs.herdr.src + "/skills/herdr/SKILL.md");
           "google-workspace" = googleWorkspaceSkill;
           "obsidian-vault-bootstrap" = ./skills/obsidian-vault-bootstrap;
           "obsidian-vault-maintenance" = ./skills/obsidian-vault-maintenance;
