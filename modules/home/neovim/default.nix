@@ -17,6 +17,12 @@
       vimAlias = true;
       vimdiffAlias = true;
 
+      # copilot pulls in the unfree `copilot-language-server`; allow unfree
+      # in nixvim's own nixpkgs (NOT a full pkgs override — this is the
+      # `nixpkgs.config` global-config option, which nixvim applies when
+      # constructing its pkgs instance).
+      nixpkgs.config.allowUnfree = config.my.copilot.enable;
+
       plugins.lsp.servers.nixd.settings = nixdFull;
 
       imports = [
