@@ -152,9 +152,6 @@
               cmd on-cd &{{
                   zoxide add "$PWD"
               }}
-              cmd on-select &{{
-                  lf -remote "send $id set statfmt \"$(eza -ld --color=always "$f" | sed 's/\\/\\\\/g;s/"/\\"/g')\""
-              }}
               cmd on-cd &{{
                   fmt="$(STARSHIP_SHELL= starship prompt | sed 's/\\/\\\\/g;s/"/\\"/g')"
                   lf -remote "send $id set promptfmt \"$fmt\""
