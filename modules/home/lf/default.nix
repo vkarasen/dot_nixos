@@ -26,8 +26,25 @@
             #bash
             ''
               lfcd () {
-                  # `command` is needed in case `lfcd` is aliased to `lf`
-                  cd "$(command lf -print-last-dir "$@")"
+                  # `command` is needed in case `lfcd` is aliased to `lf`.
+                  #
+                  # Normal quit (q) only prints the last visited directory to
+                  # stdout. Quit-and-cd (Q) additionally drops a marker file,
+                  # which is what actually triggers the cd here.
+                  local last_dir cd_marker
+                  last_dir="$(mktemp)"
+                  cd_marker="$(mktemp)"
+                  LF_LAST_DIR="$last_dir" LF_CD_MARKER="$cd_marker" command lf "$@"
+                  if [ -s "$cd_marker" ]; then
+                      local dir
+                      dir="$(command cat "$last_dir")"
+                      [ -d "$dir" ] && cd "$dir"
+                  else
+                      # `command` bypasses a `cat` alias (e.g. to `bat`).
+                      command cat "$last_dir"
+                      echo
+                  fi
+                  rm -f "$last_dir" "$cd_marker"
               }
             '';
           shellAliases = {
@@ -101,6 +118,12 @@
               touch "$FILE"
                     	}}
             '';
+            quit-cd = ''
+              %{{
+                  printf 1 > "$LF_CD_MARKER"
+                  lf -remote "send $id quit"
+              }}
+            '';
           };
 
           previewer.source = config.xdg.dataFile."lf/pv.sh".source;
@@ -114,11 +137,18 @@
             "." = "set hidden!";
             "D" = "delete";
             "Y" = "yank-path";
+            "Q" = "quit-cd";
           };
 
           extraConfig =
             # put on-cd/on-select cmd extensions here
             ''
+              # Always record the last visited directory for the lfcd wrapper.
+              # Plain quit (q) only prints it; quit-cd (Q) additionally cds
+              # into it (see the quit-cd command and the lfcd bash function).
+              cmd on-quit %{{
+                  printf '%s' "$PWD" > "$LF_LAST_DIR"
+              }}
               cmd on-cd &{{
                   zoxide add "$PWD"
               }}
