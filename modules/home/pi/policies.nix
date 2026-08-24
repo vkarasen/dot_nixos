@@ -215,6 +215,7 @@
         The goal is to collaborate carefully and explicitly, not to infer extra intent.
       '';
 
+
       "25-herdr-tab-naming" = ''
         # Herdr tab naming
 
@@ -285,6 +286,16 @@
         content is appropriate for that audience.
       '';
     } // lib.optionalAttrs config.my.is_private {
+      "21-digital-twin" = ''
+        # Digital twin
+
+        A curated professional profile exists at
+        `$OBSIDIAN_GLOBAL_VAULT_DIR/memory/identity/`. It contains professional
+        background, work history, skills, and identity context. Retrieve it with
+        `obsidian-vault-read` when asked about job fit or professional background,
+        and update it with `obsidian-vault-maintenance`.
+      '';
+
       "16-privacy-awareness" = ''
         # Privacy awareness
 
