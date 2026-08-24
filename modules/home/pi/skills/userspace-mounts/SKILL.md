@@ -12,8 +12,9 @@ normal path without moving the data into NixOS/system configuration.
 ## Core rules
 
 - Do **not** assume `fusermount3` from the Nix store is usable on non-NixOS.
-- Prefer the system-provided helper at `/run/wrappers/bin/fusermount3` when a
-  mount needs to be launched from Home Manager.
+- Let the service resolve `fusermount3` via a PATH that covers both NixOS
+  (`/run/wrappers/bin`) and non-NixOS (`/bin`, `/usr/bin`). Never rely on the
+  non-setuid copy bundled in the Nix store.
 - Split debugging into two questions:
   1. does the backend/auth work without mounting?
   2. does the FUSE mount itself work on this host?
@@ -28,10 +29,13 @@ When a mount fails:
 
 1. Confirm the remote or backend itself works without mounting.
 2. Check that the config file is readable by the user that runs the mount.
-3. Verify the mount helper exists and is executable:
+3. Verify a *setuid* `fusermount3` is reachable via the service's PATH (not
+   the non-setuid Nix-store copy). On non-NixOS it is usually
+   `/bin/fusermount3` or `/usr/bin/fusermount3`:
 
    ```bash
-   ls -l /run/wrappers/bin/fusermount3
+   ls -l /bin/fusermount3 /usr/bin/fusermount3 2>/dev/null
+   stat -c '%a %U' /bin/fusermount3   # expect setuid, e.g. 4755 root
    ```
 
 4. Check whether `/dev/fuse` exists and is writable:
@@ -59,12 +63,13 @@ For example, on Debian/Ubuntu-like systems:
 sudo apt install fuse3
 ```
 
-Then expose it where Home Manager and the Nix tooling expect to find it:
-
-```bash
-sudo mkdir -p /run/wrappers/bin
-sudo ln -sf /usr/bin/fusermount3 /run/wrappers/bin/fusermount3
-```
+That is usually all that is needed: the `rclone` module's service PATH already
+includes `/bin:/usr/bin`, so it finds the system helper (e.g.
+`/bin/fusermount3`) directly. Do **not** create a
+`/run/wrappers/bin/fusermount3` symlink for this — `/run` is a tmpfs, so it
+would silently vanish on the next reboot and the mount would fail again.
+(`/run/wrappers/bin` is a NixOS-ism that is populated automatically there; on
+non-NixOS hosts the real location is `/bin` or `/usr/bin`.)
 
 If the mount needs to be visible to another user, add:
 
@@ -81,7 +86,8 @@ to Home Manager changes. First verify the host-side pieces:
 - the backend/auth works without the mount
 - `/etc/fuse.conf` contains `user_allow_other` if the mount uses
   `--allow-other`
-- `/run/wrappers/bin/fusermount3` points to a real system helper
+- a setuid `fusermount3` is reachable via the service's PATH (e.g.
+  `/bin/fusermount3` or `/usr/bin/fusermount3`)
 
 If the mount still fails rootless but works as root, prefer a system-level
 mount service or a distro-provided `fusermount3` rather than relying on a
@@ -92,8 +98,10 @@ Nix-store helper.
 - Put the mount logic in Home Manager only when the mount is genuinely a
   per-user feature.
 - Keep the secret/config file in SOPS if the backend needs credentials.
-- When a mount service uses `fusermount3`, point it at the system helper path,
-  not at the Nix-store binary.
+- When a mount service uses `fusermount3`, resolve it via a PATH that includes
+  the system helper location (`/bin`, `/usr/bin`) rather than hardcoding a
+  single absolute path that only exists on NixOS, and never point it at the
+  non-setuid Nix-store binary.
 - If a mount needs special host setup, tell the user exactly which commands
   they must run manually; do not pretend Home Manager can perform those sudo
   steps.
@@ -104,8 +112,9 @@ Nix-store helper.
 
 If you are asked to add a userspace mount feature, remember this rule of thumb:
 
-> For FUSE mounts on non-NixOS systems, use the system-provided `fusermount3`
-> helper and verify the host FUSE environment before blaming Home Manager.
-> On WSL, treat `Operation not permitted` as a host-side issue first and ask
-> the user to check `/dev/fuse`, `user_allow_other`, and the real system mount
-> helper.
+> For FUSE mounts on non-NixOS systems, resolve the system-provided
+> `fusermount3` via PATH (it lives in `/bin` or `/usr/bin`, not
+> `/run/wrappers/bin`) and verify the host FUSE environment before blaming
+> Home Manager. On WSL, treat `Operation not permitted` as a host-side issue
+> first and ask the user to check `/dev/fuse`, `user_allow_other`, and the real
+> system mount helper.

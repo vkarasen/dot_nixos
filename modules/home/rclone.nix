@@ -29,7 +29,9 @@
     rcloneConfigFile = "${rcloneConfigDir}/rclone.conf";
     cacheDir = "${config.home.homeDirectory}/.cache/rclone";
     rcloneBin = "${config.home.homeDirectory}/.nix-profile/bin/rclone";
-    fusermountBin = "/run/wrappers/bin/fusermount3";
+    # Resolved via the service PATH (see Environment below) so it works on
+    # NixOS (/run/wrappers/bin) and non-NixOS (/bin or /usr/bin) alike.
+    fusermountBin = "fusermount3";
     commonMountArgs = ''
       mount gdrive: "${mountPoint}" \
         --config "${rcloneConfigFile}" \
@@ -63,11 +65,12 @@
       # storage without changing the vault semantics.
       my.obsidian.globalVault.dir = lib.mkDefault "${mountPoint}/obsidian/${config.my.obsidian.globalVault.name}";
 
-      # Ensure the mount/cache directories exist before systemd starts the unit.
+      # Only the cache dir is prepared at activation. The mountpoint itself is
+      # created/removed by the systemd unit (ExecStartPre/ExecStopPost) so it
+      # only ever exists while mounted — a write to it while unmounted fails
+      # loudly (ENOENT) instead of silently landing on local disk.
       home.activation.prepareRcloneDirs = lib.hm.dag.entryAfter ["writeBoundary"] ''
-        $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -d -m700 \
-          "${mountPoint}" \
-          "${cacheDir}"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -d -m700 "${cacheDir}"
       '';
 
       systemd.user.services.rclone-gdrive = {
@@ -79,11 +82,24 @@
 
         Service = {
           Type = "simple";
-          # /run/wrappers/bin must be first so rclone's bash wrapper finds the
-          # setuid fusermount3 before its own bundled non-setuid store copy.
-          Environment = "PATH=/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin";
+          # PATH must let rclone's bash wrapper find a *setuid* fusermount3 before
+          # its own bundled non-setuid store copy. On NixOS the setuid helper is
+          # /run/wrappers/bin/fusermount3; on non-NixOS hosts it lives in /bin or
+          # /usr/bin (e.g. Debian's /bin/fusermount3). /run/wrappers/bin stays
+          # first for NixOS; /bin:/usr/bin cover non-NixOS without any sudo/reboot
+          # state (the /run/wrappers symlink trick is tmpfs and does not persist).
+          Environment = "PATH=/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/bin:/usr/bin";
+          # Tripwire: the mountpoint only exists while mounted. ExecStartPre
+          # creates it (fusermount3 requires write access to the mountpoint);
+          # ExecStopPost removes it again with `rmdir`, which only ever removes
+          # an empty dir — so a write to ~/mnt/gdrive while unmounted fails
+          # loudly (ENOENT), and any stray file that does appear makes the next
+          # mount fail loudly ("is not empty") as a backstop. ExecStopPost runs
+          # even when the mount fails to start, so the guard re-arms every cycle.
+          ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p \"${mountPoint}\"";
           ExecStart = "${rcloneBin} ${commonMountArgs}";
           ExecStop = "${fusermountBin} -u ${mountPoint}";
+          ExecStopPost = "${pkgs.coreutils}/bin/rmdir \"${mountPoint}\"";
           Restart = "on-failure";
           RestartSec = "5s";
         };
