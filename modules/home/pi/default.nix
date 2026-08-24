@@ -77,6 +77,7 @@
           "herdr" = builtins.readFile (pkgs.herdr.src + "/skills/herdr/SKILL.md");
           "google-workspace" = googleWorkspaceSkill;
           "linkedin-profile" = ./skills/linkedin-profile;
+          "profile-sync" = ./skills/profile-sync;
           "obsidian-vault-bootstrap" = ./skills/obsidian-vault-bootstrap;
           "obsidian-vault-maintenance" = ./skills/obsidian-vault-maintenance;
           "obsidian-vault-read" = ./skills/obsidian-vault-read;

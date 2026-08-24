@@ -291,9 +291,12 @@
 
         A curated professional profile exists at
         `$OBSIDIAN_GLOBAL_VAULT_DIR/memory/identity/`. It contains professional
-        background, work history, skills, and identity context. Retrieve it with
-        `obsidian-vault-read` when asked about job fit or professional background,
-        and update it with `obsidian-vault-maintenance`.
+        background, work history, skills, and identity context, as well as a
+        `disclosure-rules` note that is the authoritative table for what can be
+        mentioned in internal documents, external CVs, and public profiles.
+        Retrieve it with `obsidian-vault-read` when asked about job fit or
+        professional background, and update it with `obsidian-vault-maintenance`.
+        For LinkedIn profile review and sync, load the `profile-sync` skill.
       '';
 
       "16-privacy-awareness" = ''
