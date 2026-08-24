@@ -41,6 +41,7 @@
           # openai_api_key = {};
           #
           # github_token = {};
+          linkedin_api_key = {};
         };
       };
 
@@ -56,6 +57,9 @@
         })
         (lib.mkIf (config.my.is_private && config.sops.secrets ? deepseek_api_key) {
           DEEPSEEK_API_KEY = "$(cat ${config.sops.secrets.deepseek_api_key.path})";
+        })
+        (lib.mkIf (config.my.is_private && config.sops.secrets ? linkedin_api_key) {
+          LINKEDIN_API_KEY = "$(cat ${config.sops.secrets.linkedin_api_key.path})";
         })
       ];
     };
