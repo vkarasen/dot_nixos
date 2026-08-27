@@ -352,6 +352,10 @@
     # -----------------------------------------------------------------------
     home.file.".pi/agent/extensions/herdr-tab-rename.ts".source =
       ./extensions/herdr-tab-rename.ts;
+    # Single footer chip showing when this session was last active (absolute
+    # day + month + time), refreshed on agent_settled and restored on load.
+    home.file.".pi/agent/extensions/last-activity.ts".source =
+      ./extensions/last-activity.ts;
     home.file.".pi/agent/extensions/tsconfig.json".text = builtins.toJSON {
       compilerOptions = {
         target = "ES2022";
