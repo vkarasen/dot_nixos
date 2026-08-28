@@ -131,5 +131,16 @@
 
       home.file.".pi/agent/pi-blackhole/pi-blackhole-config.json".text =
         builtins.toJSON blackholeConfig;
+
+      # pi-lens mutation controls off by default: no autoformat (deferred format
+      # at agent_end would reformat every edited file) and no autofix (no auto-applied
+      # Biome/Ruff/ESLint fixes). Both would add whitespace/fix noise to PRs; the
+      # agent formats/fixes deliberately instead. Diagnostics (LSP, lint dispatch,
+      # actionable warnings) are NOT disabled by these keys — only the mutations.
+      # A project's own .pi-lens.json can re-enable per-repo.
+      home.file.".pi-lens/config.json".text = builtins.toJSON {
+        format = {enabled = false;};
+        autofix = {enabled = false;};
+      };
     };
 }
