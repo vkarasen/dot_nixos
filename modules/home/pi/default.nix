@@ -97,9 +97,21 @@
           hasDeepseek = sopsSecrets ? deepseek_api_key;
           hasAnthropic = sopsSecrets ? anthropic_api_key;
           resolved =
-            if hasCopilot then {provider = "github-copilot"; model = "claude-sonnet-5";}
-            else if hasDeepseek then {provider = "deepseek"; model = "deepseek-v4-pro";}
-            else if hasAnthropic then {provider = "anthropic"; model = "claude-sonnet-5";}
+            if hasCopilot
+            then {
+              provider = "github-copilot";
+              model = "claude-sonnet-5";
+            }
+            else if hasDeepseek
+            then {
+              provider = "deepseek";
+              model = "deepseek-v4-pro";
+            }
+            else if hasAnthropic
+            then {
+              provider = "anthropic";
+              model = "claude-sonnet-5";
+            }
             else null;
         in {
           theme = lib.mkDefault "catppuccin-mocha";
