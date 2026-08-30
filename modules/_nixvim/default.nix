@@ -19,6 +19,20 @@
     settings.flavor = "mocha";
   };
 
+  # Startup performance: byte-compile Lua to cut cold-start parse/compile time.
+  performance.byteCompileLua = {
+    enable = true;
+    plugins = true;
+  };
+
+  # Merge plugins into a single pack to cut runtimepath scanning (the `access`/
+  # `readlink`/`statx` storm over ~50 symlinked plugin dirs that dominates cold start).
+  # friendly-snippets must stay standalone so luasnip's from_vscode loader finds its snippet files.
+  performance.combinePlugins = {
+    enable = true;
+    standalonePlugins = ["friendly-snippets"];
+  };
+
   globals = {
     mapleader = ";";
     maplocalleader = " ";
