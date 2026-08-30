@@ -4,7 +4,11 @@
       enable = true;
       lazyLoad.settings.cmd = "Neogit";
     };
-    gitsigns.enable = true;
+    gitsigns = {
+      enable = true;
+      # Recommended lazy trigger from gitsigns' own docs.
+      lazyLoad.settings.event = ["BufReadPre" "BufNewFile"];
+    };
     diffview = {
       enable = true;
       lazyLoad.settings.cmd = [

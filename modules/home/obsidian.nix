@@ -70,6 +70,10 @@
 
         plugins.obsidian = {
           enable = true;
+          # Lazy-load on the Obsidian commands (all `<leader>o*` keymaps use
+          # `:Obsidian ...`). Deliberately NOT `ft = "markdown"` — most edited
+          # markdown files are not vault notes.
+          lazyLoad.settings.cmd = "Obsidian";
           settings = {
             legacy_commands = false;
             workspaces = [

@@ -122,6 +122,7 @@
     guess-indent.enable = true;
     ts-comments = {
       enable = true;
+      lazyLoad.settings.event = "DeferredUIEnter";
       settings.lang = {
         snakemake = "# %s";
       };

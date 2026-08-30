@@ -227,6 +227,8 @@ in {
     };
     conform-nvim = {
       enable = true;
+      # Formatting is manual (`<leader>cf`), no format-on-save, so DeferredUIEnter is safe.
+      lazyLoad.settings.event = "DeferredUIEnter";
       autoInstall.enable = true;
       settings = {
         formatters_by_ft = {

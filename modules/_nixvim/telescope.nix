@@ -2,6 +2,9 @@
   plugins = {
     telescope = {
       enable = true;
+      # All picker keymaps invoke `:Telescope ...` commands, so a cmd trigger is
+      # sufficient and moves setup + extension loading out of startup.
+      lazyLoad.settings.cmd = "Telescope";
       keymaps = {
         "<leader>ff" = "find_files";
         "<leader>fg" = "live_grep";
