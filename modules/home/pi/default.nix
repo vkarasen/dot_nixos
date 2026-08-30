@@ -83,6 +83,7 @@
           "obsidian-vault-read" = ./skills/obsidian-vault-read;
           "oss-contrib" = ./skills/oss-contrib;
           "userspace-mounts" = ./skills/userspace-mounts;
+          "video-analyzer" = ./skills/video-analyzer;
         };
         # Role prompt templates — mkDefault so the corporate flake can override
         # any individual key with lib.mkForce.
