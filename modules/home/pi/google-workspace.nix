@@ -117,23 +117,18 @@
   in
     lib.mkIf isPrivate {
       # ── MCP server declaration ─────────────────────────────────────────────
-      # pi-mcp-adapter reads ~/.pi/agent/mcp.json at startup.
-      # This is a static file (no secrets) — credentials live in credentials.json.
-      # NOTE: home.file creates a read-only symlink; pi-mcp-adapter only reads
-      #       this file, it never writes to it, so read-only is fine.
-      home.file.".pi/agent/mcp.json".text = builtins.toJSON {
-        mcpServers = {
-          google-workspace = {
-            type = "stdio";
-            command = "npx";
-            args = ["-y" "@dguido/google-workspace-mcp"];
-            env = {
-              GOOGLE_WORKSPACE_SERVICES = workspaceServices;
-              # TOON format is disabled: it strips structuredContent from
-              # responses, which breaks the MCP outputSchema contract and
-              # causes every tool call to fail.
-            };
-          };
+      # Contributed via my.pi.mcpServers; modules/home/pi/mcp.nix is the
+      # single writer of ~/.pi/agent/mcp.json. This entry is static (no
+      # secrets) — credentials live in credentials.json, written below.
+      my.pi.mcpServers."google-workspace" = {
+        type = "stdio";
+        command = "npx";
+        args = ["-y" "@dguido/google-workspace-mcp"];
+        env = {
+          GOOGLE_WORKSPACE_SERVICES = workspaceServices;
+          # TOON format is disabled: it strips structuredContent from
+          # responses, which breaks the MCP outputSchema contract and
+          # causes every tool call to fail.
         };
       };
 
