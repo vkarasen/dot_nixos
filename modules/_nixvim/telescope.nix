@@ -39,12 +39,6 @@
       extensions = {
         fzf-native.enable = true;
         live-grep-args.enable = true;
-        advanced-git-search = {
-          enable = true;
-          settings = {
-            diff_plugin = "diffview";
-          };
-        };
       };
     };
   };
