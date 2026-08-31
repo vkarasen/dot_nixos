@@ -425,10 +425,16 @@ Risks:
    But the allowlist resolves skill names by **directory basename**, not the
    SKILL.md frontmatter `name`, so store-path skills resolve only under their
    hash-prefixed basename. Details + design fix below.
-2. **`tools: "inherit"`** — documented for builtins; unconfirmed for custom
-   agents. It is the intended escape hatch for "give this role everything".
-3. **`ask` forwarding** with nicobailon children (§6). If wanted, an
-   `env`-injection shim setting `PI_SUBAGENT_PARENT_SESSION` might work.
+2. ~~`tools: "inherit"`~~ **RESOLVED** — an *override-surface* value only
+   (`settings.json agentOverrides`), not a frontmatter value. It reaches builtins
+   always, and custom agents only when their frontmatter omits `tools` (the
+   `agentHasFrontmatterField` guard). In a custom agent's own frontmatter,
+   `tools: "inherit"` is parsed as a literal tool name `inherit` and fails closed.
+   The escape hatch for `mkAgent` is to **omit `tools`** (omitted = ambient tools).
+3. ~~`ask` forwarding~~ **MOOT** — the permission system (§6) was dropped, the
+   current `permissions.rules` are allow/deny only (no `ask`), and §5b says keep
+   it that way. Children escalate via `contact_supervisor`, not permission
+   prompts.
 4. ~~merge or replace~~ **RESOLVED** — independent channels, so they **merge**
    (union). All 12 builtins set `inheritSkills: false` (and
    `defaultInheritSkills()` returns `false`), so builtin children inherit **no
