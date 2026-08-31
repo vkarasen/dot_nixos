@@ -293,11 +293,39 @@ For the full sops encrypt/edit workflow suitable for an agent, see the
 ## Adding a global always-on instruction (AGENTS.md policy)
 
 Skills are opt-in (description-triggered). For **always-on** behavioral
-directives that apply in every session — e.g. "never search /nix/store",
-"prefer Node.js for scripting" — use the `my.pi.globalAgentPolicies` option
-instead. Pi loads `~/.pi/agent/AGENTS.md` at startup unconditionally.
+directives, `~/.pi/agent/AGENTS.md` is generated from **two** options, and
+picking the right one matters:
 
-The option is declared in `modules/options.nix` (generic class, so it is
+| | `my.pi.agentInvariants` | `my.pi.globalAgentPolicies` |
+| --- | --- | --- |
+| Renders as | one `# Invariants` block, first | policy sections, after it |
+| Audience | every agent, **including delegated subagents** | the interactive session only |
+| Content | terse prohibitions | procedures, judgment, full sections |
+| Values | strings only | strings **or** sops paths |
+
+Delegated subagents do not inherit the operator's global context file
+(pi-subagents defaults `inheritGlobalContext` to false), so a child sees the
+invariants block and nothing else from this file. That is what makes the split
+necessary rather than cosmetic.
+
+**Decision rule — three questions, in order:**
+
+1. *Can a guardrail enforce it?* A permission gate or a withheld tool beats
+   prose that competes for attention. Enforce it there and write no policy at
+   all. ("Never commit without approval" is destined for this.)
+2. *Is it a procedure or a prohibition?* "How to do X well" is useless until X
+   is happening, and stage-irrelevant guidance actively degrades smaller models.
+   Procedures → `globalAgentPolicies`, a capability bundle, or a skill.
+   Prohibitions → continue.
+3. *Must a subagent obey it too?* Yes → `agentInvariants`, kept to a few lines.
+   No → `globalAgentPolicies`.
+
+So "never brute-force /nix/store" is an invariant, while "prefer Node.js for
+scripting" — a procedure, and only once you are already writing a script — is a
+policy section. Both currently live in `modules/home/pi/policies.nix`; see
+`docs/pi-subagents-rollout.md` for the full reasoning.
+
+Both options are declared in `modules/options.nix` (generic class, so they are
 available to home-manager, NixOS, and darwin configs alike). Values are merged
 by the module system — multiple flakes can each add their own sections without
 conflicting.
@@ -327,6 +355,9 @@ Rules:
 - The base always-on policy sections live in `modules/home/pi/policies.nix`.
   Treat the generated `~/.pi/agent/AGENTS.md` or the policy source as the live
   inventory if you need the exact current set; avoid copying it here.
+- `my.pi.agentInvariants` follows the same key-ordering and additive-merge
+  rules, but takes strings only — a sops path is decrypted at activation time
+  and so is not available for injection into a subagent prompt.
 
 ---
 
@@ -345,7 +376,7 @@ Prompt templates follow the same pattern via `settings.prompts`.
 
 - **Public** (string) sections are collected by the `pi-policies` aspect,
   sorted by key, and written to `home.file.".pi/agent/AGENTS.md"` as a
-  Nix-store file.
+  Nix-store file — preceded by the rendered `my.pi.agentInvariants` block.
 - **Private** (path) sections are handled by the `pi-private` aspect: at
   activation time, it reads the public base, appends the decrypted private
   sections in key order, and writes the final `AGENTS.md` (overwriting the
