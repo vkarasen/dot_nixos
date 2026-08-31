@@ -235,7 +235,80 @@ bundle only · `rpiv-web-tools` burns Tavily credits → researcher only ·
 
 ---
 
-## 6. `@gotgenes/pi-permission-system`
+## 5b. State at handoff — start here
+
+`pi-subagents@0.62.0` and `pi-death-loop-guard@0.1.2` are **installed but never
+exercised**. Before anything else:
+
+- **restart pi** (new packages load at startup; the MCP adapter caches then too)
+- **use a fresh login shell** — `PI_SUBAGENT_FS_RETRY_MAX_TOTAL_MS` comes from
+  `home.sessionVariables`, so an existing shell will not have it
+
+What is live, and what to watch for:
+
+| | setting | expect |
+| --- | --- | --- |
+| Watchdog | `enabled`, `scope`, `cadence.everyNTools: 10`, `deepseek-v4-flash` | a cheap review every ~10 tool results in **this** session, arriving as a transcript-visible steer. `/subagents-watchdog off` if noisy; raise the model if drift calls are poor |
+| Death-loop guard | defaults (warn 3 / block 5 / abort 3) | silent unless a call repeats identically |
+| Child permissions | `write`/`edit` → `deny` | **builtin writers (`worker`, `reviewer`, `delegate`) will fail their edits.** Intended — bootstrap is retrieval only |
+| Read-only builtins | `scout`/`researcher`/`oracle` → `read,grep,find,ls` | no bash, so no `rg`/`git log`/`nix-search-tv` |
+| Worktrees | `$XDG_CACHE_HOME/pi-subagents/worktrees` | only used by `worktree: true` runs, which nothing requests yet |
+
+First real task: a `scout` run against a bounded question in this repo, to see
+whether `read,grep,find,ls` is actually sufficient for recon. If it is not, that
+is evidence for adding the investigator tier sooner rather than loosening the
+scout.
+
+### The threat model, and why one obvious package is absent
+
+The risk being managed is **drift** — an agent spiraling into unrequested
+debugging and "fixing" — not malicious input. That distinction decided the
+tooling.
+
+`@gotgenes/pi-permission-system` was evaluated and **rejected**; §6 keeps the
+research so it is not redone. It gates *syntax*, and drift is *semantic*: a
+drifting agent runs perfectly ordinary commands. `git commit` is not dangerous
+as a command, only as a decision at the wrong moment. It also floors `timeout`,
+`env` and `sudo` to `ask` regardless of rules, so the cost would be approval
+fatigue — which makes catastrophic approvals *more* likely.
+
+**Nothing in the current setup asks. Keep it that way.** If a future guardrail
+needs a prompt to work, that is a strong signal it is aimed at the wrong threat.
+
+### Roles are separated by blast radius, not by read vs. write
+
+"Read-only" was an early framing error. An agent that cannot write cannot test a
+hypothesis, and hypothesis-testing is what separates an investigator from a
+guesser — the two highest-value results on this branch (the context-baseline
+probe, the 11-case shim harness) both required writing and running throwaway
+code. Worse, write-run-read-fix-rerun is the most token-heavy loop there is, so
+a taxonomy with nowhere to put it forces exactly that loop back into the
+frontier model, defeating §1.
+
+| Role | reads | writes | blast radius |
+| --- | --- | --- | --- |
+| `scout` | project | — | none |
+| `investigator` | project | scratch + own worktree | **discarded** |
+| `executor` | project | project files, bounded | gated by VERIFY + review |
+| `reviewer` | project + diff | — | none |
+
+The investigator is enforced by `worktree: true`, not by a path rule — the
+boundary is a filesystem location, with no pattern to evade. `worktreeSetupHook`
+returns `syntheticPaths` to keep helper files out of diff capture, which is what
+that hook is for. `modules/home/pi/prompts/investigator.md` already exists and
+needs rewording for this: not "avoid edits" but "you are in a disposable
+worktree — experiment freely, report findings, do not propose keeping your
+changes".
+
+The wider direction is *sandbox the environment, not the tool list* — tool
+allowlists are brittle because capability is fungible; filesystem boundaries are
+not. A worktree is the cheap 90%. The strong local version would be `bwrap` with
+a read-only project bind and a writable `/tmp`, wired through a
+`PI_SUBAGENT_PI_BINARY` wrapper. Do not build that speculatively.
+
+---
+
+## 6. `@gotgenes/pi-permission-system` — evaluated and rejected
 
 Closes the bash gap and replaces `pi-guard`. Two-layer model, no code coupling:
 layer 1 (pi-subagents `tools:`) controls *visibility*, layer 2 (`permission:`
@@ -340,14 +413,13 @@ repo follows this repo's `AGENTS.md` on day one.
 
 So bootstrap in this order:
 
-1. **Install `pi-subagents` + `@gotgenes/pi-permission-system` together.** Not
-   subagents alone: builtin agents get `bash`, and bash is ungateable without
-   the permission system (§6). Set the child policy to allow-with-denies and
-   deny `git commit`/`push`/`merge` for children immediately.
-2. **Restart pi** (the MCP adapter caches tool metadata at startup).
-3. **Use builtin agents for retrieval only** — recon and research, `readOnly`,
-   no mutation — while resolving the §7 unknowns empirically.
-4. **Then** build phases 2 / 2.5 / 4 / 5 with that help.
+1. ~~Install pi-subagents + permission system~~ — **done**, see §5b. The
+   permission system was rejected; bash is handled by withholding it from
+   read-only roles instead.
+2. **Restart pi and open a fresh login shell** (§5b).
+3. **Use builtin agents for retrieval only** — recon and research, no mutation
+   — while resolving the §7 unknowns empirically.
+4. **Then** build phases 2 / 4 / 5 with that help.
 
 Do not delegate the scaffolding *design* (§3: never delegate synthesis). Delegate
 reading upstream docs, enumerating option names, and drafting per-agent
@@ -368,19 +440,23 @@ userspace-mounts, bundle-module, pi-config) · `web` (rpiv-web-tools) · `vault`
 linkedin-profile) · `media` (video-analyzer MCP, pi-docparser) · `vcs`
 (worktrunk, gh, git).
 
-**2.5 — permissions.** Install `@gotgenes/pi-permission-system` pinned; generate
-global `config.json` from `my.pi.permissions`; set the orchestrator gate (`ask`
-on `git commit`/`push`/`wt merge`, `deny` on `.env` and `~/.ssh`); extend
-`mkAgent` with a `permission` attr and a `readOnly` flag emitting
-`path_write: deny`. **Then delete the commit-approval prose** — the first policy
-retired by enforcement rather than relocation. Do this before phase 4 so agents
-are born gated.
+**2.5 — permissions.** ~~Install a permission system.~~ **Dropped** — see §5b.
+The replacement is already in place: native child `write`/`edit` denies, no bash
+for read-only roles, and worktree isolation for anything that writes. `mkAgent`
+still gains a `permission` attr, since custom agents override the global rules
+per-agent with a `permission:` frontmatter block — that is how the investigator
+gets write access inside its worktree.
 
-**3 — install** `pi-subagents` + `pi-intercom`; set
-`PI_SUBAGENT_FS_RETRY_MAX_TOTAL_MS`; make `label` mandatory in the spawn
+The commit-approval prose therefore does **not** get deleted yet. It was going
+to be retired by a gate that no longer exists; retiring it now would remove the
+only thing covering the orchestrator, which is the one agent with no capability
+restrictions at all. Revisit once drift monitoring has a track record.
+
+**3 — install.** `pi-subagents` **done**. Still outstanding: `pi-intercom` for
+`contact_supervisor` escalation; making `label` mandatory in the spawn
 convention (the orchestrator names a child's herdr pane — the child must never
-name its own, and cannot: see `ee22ced`); consider
-`toolDescriptionMode: compact`. **Resolve §7 items 1–4 here**, empirically.
+name its own, and cannot: see `ee22ced`); `toolDescriptionMode: compact`.
+**Resolve §7 items 1–4 here**, empirically.
 
 **4 — read-mostly agents:** `scout` (cheap/code), `nix-scout` (cheap/nix),
 `researcher` (worker/web), `reviewer` (executive/code, read-only), `oracle`
@@ -388,7 +464,10 @@ name its own, and cannot: see `ee22ced`); consider
 `toolBudget` hard caps. Measure a real scout run before narrowing this repo's
 context — do not guess the narrowing up front.
 
-**5 — write agents + twin:** `executor` (executive/code+vcs, cannot commit),
+**5 — write agents + twin:** `investigator` (worker tier, `worktree: true`, full
+tools inside it, `permission:` frontmatter re-allowing write/edit, bounded by
+`timeoutMs` not `toolBudget` — see §5b; this is the highest-value one and should
+probably come first), `executor` (executive/code+vcs, cannot commit),
 `workspace` (worker/workspace), `twin` (worker/vault). `twin` needs
 `enable = mkDefault false` — the corporate vault has no digital twin yet, so it
 must be optional rather than a stub. Per-agent memory: frontmatter
