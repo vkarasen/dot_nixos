@@ -330,6 +330,29 @@ Risks:
 
 ## 9. Remaining phases
 
+### Bootstrapping order — read this first
+
+The intent is to implement the rest of this *using* subagents, which inverts the
+phase order below. Phases 2 and 2.5 build Nix scaffolding for **custom** agents,
+but the **builtin** agents (`scout`, `researcher`, `reviewer`, …) need none of
+it — `inheritProjectContext` already defaults true, so a builtin scout in this
+repo follows this repo's `AGENTS.md` on day one.
+
+So bootstrap in this order:
+
+1. **Install `pi-subagents` + `@gotgenes/pi-permission-system` together.** Not
+   subagents alone: builtin agents get `bash`, and bash is ungateable without
+   the permission system (§6). Set the child policy to allow-with-denies and
+   deny `git commit`/`push`/`merge` for children immediately.
+2. **Restart pi** (the MCP adapter caches tool metadata at startup).
+3. **Use builtin agents for retrieval only** — recon and research, `readOnly`,
+   no mutation — while resolving the §7 unknowns empirically.
+4. **Then** build phases 2 / 2.5 / 4 / 5 with that help.
+
+Do not delegate the scaffolding *design* (§3: never delegate synthesis). Delegate
+reading upstream docs, enumerating option names, and drafting per-agent
+frontmatter from a settled spec.
+
 **1.5 — write the contract** into the orchestrator policy, annotated with which
 fields are prose and which are real parameters (§4).
 
