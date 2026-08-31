@@ -356,6 +356,11 @@
     # day + month + time), refreshed on agent_settled and restored on load.
     home.file.".pi/agent/extensions/last-activity.ts".source =
       ./extensions/last-activity.ts;
+    # Keeps pi-worktrunk's ~27KB inlined `wt` reference out of the always-on
+    # tool budget by deactivating the tool until the model asks for it.
+    # See the file header; drop once pi-worktrunk can defer it natively.
+    home.file.".pi/agent/extensions/worktrunk-deferred.ts".source =
+      ./extensions/worktrunk-deferred.ts;
     home.file.".pi/agent/extensions/tsconfig.json".text = builtins.toJSON {
       compilerOptions = {
         target = "ES2022";
