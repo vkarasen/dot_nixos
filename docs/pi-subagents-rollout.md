@@ -9,6 +9,82 @@ Delete this file when the rollout lands.
 
 ---
 
+## 0. Where to pick up
+
+**Status:** phases 0, 0.5, 1 and the install are committed on branch
+`pi-subagents`. `pi-subagents@0.62.0` and `pi-death-loop-guard@0.1.2` are
+installed but **never exercised** — nothing here has been run even once.
+`main` is untouched; merge with `wt merge` when satisfied.
+
+### Bring it online
+
+```bash
+nh home switch . -c vkarasen     # from this worktree
+exec $SHELL -l                   # PI_SUBAGENT_FS_RETRY_MAX_TOTAL_MS comes from
+                                 # home.sessionVariables — an existing shell
+                                 # will not have it
+pi                               # new packages only load at startup
+```
+
+### Verify before trusting anything
+
+```text
+/subagents-doctor        installation health
+/subagents-models        confirm deepseek/deepseek-v4-flash actually resolves
+/subagents               list discovered agents
+/subagents-watchdog check
+```
+
+If `deepseek-v4-flash` does not resolve, the watchdog silently has no model.
+Fall back to `anthropic/claude-haiku-4-5` in
+`modules/home/pi/default.nix` → `subagents.watchdog.main.model`.
+
+### You are already the orchestrator — but nothing delegates on its own
+
+There is no orchestrator mode to enter. `pi-subagents` registers a `subagent`
+tool in the main session at startup, so the capability is present from the first
+turn.
+
+**But delegation is model-initiated, and no policy tells the model when to
+delegate.** A frontier model holding full context will almost always just do the
+work itself, because that is easier. So expect approximately zero spontaneous
+delegation until the orchestrator policy lands (phase 1.5 + §4).
+
+Until then, **ask explicitly**: *"use a scout to find where X is defined"*,
+*"run three parallel scouts for A, B, C"*. That is the intended bootstrap mode —
+manual delegation to learn what the agents are actually good at, before writing
+policy that automates it.
+
+### What will look different, and what will look broken but isn't
+
+| | expect |
+| --- | --- |
+| Watchdog | a cheap review roughly every 10 tool results **in your own session**, arriving as a transcript-visible steer, plus an edit review at turn end. `/subagents-watchdog off` if noisy |
+| Death-loop guard | silent unless a call repeats identically (warn 3 / block 5 / abort 3) |
+| Builtin writers | **`worker`, `reviewer` and `delegate` will fail their edits** — global `write`/`edit` deny. Intended: bootstrap is retrieval-only. Not a bug |
+| Read-only builtins | `scout`/`researcher`/`oracle` have no bash, so no `rg`, `git log` or `nix-search-tv` |
+| Worktrees | `$XDG_CACHE_HOME/pi-subagents/worktrees`, unused until something requests `worktree: true` |
+
+### First tasks, in order
+
+1. **Scout sufficiency test.** Run a `scout` against a bounded question in this
+   repo (e.g. *"which files wire the pi aspect into the home configuration, and
+   what is the fold order?"*). The question being answered is whether
+   `read,grep,find,ls` is enough for recon without bash. If it is not, that is
+   evidence to add the `investigator` tier sooner — **not** to loosen the scout.
+2. **Resolve §7 items 1–4 empirically.** Item 1 (does a `skill:` deny prune the
+   catalog?) is the highest-value unknown; it decides whether children can be
+   narrowed in repos we do not own.
+3. **Re-measure the always-on payload.** The `subagent` tool description is now
+   in every prompt; `toolDescriptionMode: "compact"` is available and unset.
+   Method is in §2 — a probe extension capturing at `before_agent_start`.
+4. **Then** phase 5, leading with `investigator` (§9).
+
+Read §1 before optimising anything, §5b before adding a guardrail, and §8
+before running `nix build` or `git stash`.
+
+---
+
 ## 1. Why this exists — and the metric that was wrong
 
 The goal is **cost reduction and better task performance**, not a smaller
@@ -235,29 +311,11 @@ bundle only · `rpiv-web-tools` burns Tavily credits → researcher only ·
 
 ---
 
-## 5b. State at handoff — start here
+## 5b. Design corrections that arrived late
 
-`pi-subagents@0.62.0` and `pi-death-loop-guard@0.1.2` are **installed but never
-exercised**. Before anything else:
-
-- **restart pi** (new packages load at startup; the MCP adapter caches then too)
-- **use a fresh login shell** — `PI_SUBAGENT_FS_RETRY_MAX_TOTAL_MS` comes from
-  `home.sessionVariables`, so an existing shell will not have it
-
-What is live, and what to watch for:
-
-| | setting | expect |
-| --- | --- | --- |
-| Watchdog | `enabled`, `scope`, `cadence.everyNTools: 10`, `deepseek-v4-flash` | a cheap review every ~10 tool results in **this** session, arriving as a transcript-visible steer. `/subagents-watchdog off` if noisy; raise the model if drift calls are poor |
-| Death-loop guard | defaults (warn 3 / block 5 / abort 3) | silent unless a call repeats identically |
-| Child permissions | `write`/`edit` → `deny` | **builtin writers (`worker`, `reviewer`, `delegate`) will fail their edits.** Intended — bootstrap is retrieval only |
-| Read-only builtins | `scout`/`researcher`/`oracle` → `read,grep,find,ls` | no bash, so no `rg`/`git log`/`nix-search-tv` |
-| Worktrees | `$XDG_CACHE_HOME/pi-subagents/worktrees` | only used by `worktree: true` runs, which nothing requests yet |
-
-First real task: a `scout` run against a bounded question in this repo, to see
-whether `read,grep,find,ls` is actually sufficient for recon. If it is not, that
-is evidence for adding the investigator tier sooner rather than loosening the
-scout.
+Both of these reversed an earlier decision on this branch. They are recorded
+because the reasoning is not obvious from the resulting config, and both would
+otherwise be re-litigated. Operational state is in §0.
 
 ### The threat model, and why one obvious package is absent
 
@@ -403,27 +461,18 @@ Risks:
 
 ## 9. Remaining phases
 
-### Bootstrapping order — read this first
+### Why the numbering is not the running order
 
-The intent is to implement the rest of this *using* subagents, which inverts the
-phase order below. Phases 2 and 2.5 build Nix scaffolding for **custom** agents,
-but the **builtin** agents (`scout`, `researcher`, `reviewer`, …) need none of
-it — `inheritProjectContext` already defaults true, so a builtin scout in this
-repo follows this repo's `AGENTS.md` on day one.
+These are dependency phases, not an execution order — **§0 is the running
+order.** The inversion is deliberate: the rest is meant to be built *using*
+subagents, and the **builtin** agents need none of the scaffolding below
+(`inheritProjectContext` already defaults true, so a builtin scout follows this
+repo's `AGENTS.md` on day one). So the install came first and the custom layer
+is built with its help.
 
-So bootstrap in this order:
-
-1. ~~Install pi-subagents + permission system~~ — **done**, see §5b. The
-   permission system was rejected; bash is handled by withholding it from
-   read-only roles instead.
-2. **Restart pi and open a fresh login shell** (§5b).
-3. **Use builtin agents for retrieval only** — recon and research, no mutation
-   — while resolving the §7 unknowns empirically.
-4. **Then** build phases 2 / 4 / 5 with that help.
-
-Do not delegate the scaffolding *design* (§3: never delegate synthesis). Delegate
-reading upstream docs, enumerating option names, and drafting per-agent
-frontmatter from a settled spec.
+When delegating that work: do not delegate the scaffolding *design* (§3 — never
+delegate synthesis). Delegate reading upstream docs, enumerating option names,
+and drafting per-agent frontmatter from a settled spec.
 
 **1.5 — write the contract** into the orchestrator policy, annotated with which
 fields are prose and which are real parameters (§4).
@@ -459,8 +508,10 @@ name its own, and cannot: see `ee22ced`); `toolDescriptionMode: compact`.
 **Resolve §7 items 1–4 here**, empirically.
 
 **4 — read-mostly agents:** `scout` (cheap/code), `nix-scout` (cheap/nix),
-`researcher` (worker/web), `reviewer` (executive/code, read-only), `oracle`
-(orchestrator tier, no tools), `media` (vision/media). All `readOnly`, all with
+`researcher` (worker/web), `reviewer` (executive/code, read-only — note this
+deliberately *shadows* the builtin `reviewer`, which does "small fixes"; user
+agents win name collisions), `oracle` (orchestrator tier, no tools), `media`
+(vision/media). All `readOnly`, all with
 `toolBudget` hard caps. Measure a real scout run before narrowing this repo's
 context — do not guess the narrowing up front.
 
