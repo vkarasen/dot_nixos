@@ -129,6 +129,12 @@
       # first guess — verify against the actual packages before phase 4/5
       # agents reference these (a wrong name fails the child closed).
       #
+      # Verified semantics (pi-subagents child launch): a non-empty
+      # `extensions:` list REPLACES ambient extensions (--no-extensions +
+      # only listed), it does not add to them. So a bundle that needs MCP must
+      # list pi-mcp-adapter itself, and the union of an agent's bundle
+      # extensions must be complete for that agent.
+      #
       # Not yet representable here: package-provided skills (worktrunk,
       # parse-document, pi-lens-*, mcp-scripting) and repo-local skills
       # (pi-config, bundle-module, edit-private-skill) are not in the
@@ -155,11 +161,12 @@
         };
         workspace = {
           skills = ["google-workspace" "linkedin-profile"];
+          extensions = ["pi-mcp-adapter"];
           mcpTools = ["google-workspace"];
         };
         media = {
           skills = ["video-analyzer"];
-          extensions = ["pi-docparser"];
+          extensions = ["pi-docparser" "pi-mcp-adapter"];
           mcpTools = ["video-analyzer"];
         };
         vcs = {

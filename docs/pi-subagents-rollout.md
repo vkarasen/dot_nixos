@@ -274,7 +274,11 @@ entries forwarded as direct MCP selections; path-like entries treated as tool
 extension paths. **Allowlisting a name does not load its provider** — before the
 first model turn the child diffs declared names against the filtered registry
 and **fails closed**, naming the missing tools. Load providers via `extensions`
-or `subagentOnlyExtensions` (the latter loads only in children).
+or `subagentOnlyExtensions` (the latter loads only in children). A non-empty
+`extensions:` list **replaces** ambient extensions (`--no-extensions` + only the
+listed ones) rather than adding to them — so any bundle that needs MCP must
+list `pi-mcp-adapter` itself (verified in the child launch arg builder,
+`pi-args.ts`).
 
 **MCP:** requires `pi-mcp-adapter` *and* explicit `mcp:` frontmatter entries —
 global `directTools: true` is insufficient. Metadata is cached at startup, so
