@@ -88,7 +88,86 @@
         };
       };
     in {
-      imports = [./_module.nix];
+      imports = [./_module.nix ./_agents.nix];
+
+      # ── Model tiers (phase 2 scaffolding) ─────────────────────────────
+      # Referenced by my.pi.agents.*.tier. Private/deepseek ladder per §3 of
+      # docs/pi-subagents-rollout.md; corporate flake overrides keys with
+      # lib.mkForce or adds its own tiers additively.
+      my.pi.modelTiers = lib.mkDefault {
+        orchestrator = {
+          model = "deepseek-v4-pro";
+          provider = "deepseek";
+          thinking = "high";
+        };
+        executive = {
+          model = "deepseek-v4-pro";
+          provider = "deepseek";
+          thinking = "high";
+        };
+        worker = {
+          model = "deepseek-v4-pro";
+          provider = "deepseek";
+          thinking = "medium";
+        };
+        simple = {
+          model = "deepseek-v4-flash";
+          provider = "deepseek";
+          thinking = "low";
+        };
+        vision = {
+          model = "claude-haiku-4-5";
+          provider = "anthropic";
+          thinking = null;
+        };
+      };
+
+      # ── Capability bundles (phase 2 scaffolding, first cut) ─────────────
+      # Repo-independent units of skills + extensions + tools + mcpTools.
+      # `skills` are logical keys of programs.pi-coding-agent.skills, resolved
+      # via the skillPath tree in _agents.nix. Extension/tool/MCP names are a
+      # first guess — verify against the actual packages before phase 4/5
+      # agents reference these (a wrong name fails the child closed).
+      #
+      # Not yet representable here: package-provided skills (worktrunk,
+      # parse-document, pi-lens-*, mcp-scripting) and repo-local skills
+      # (pi-config, bundle-module, edit-private-skill) are not in the
+      # skillPath tree; phase 4/5 must materialise them or drop the references.
+      my.pi.capabilityBundles = lib.mkDefault {
+        code = {
+          skills = ["ast-bro"];
+          extensions = ["pi-lens"];
+          tools = null;
+        };
+        nix = {
+          skills = ["nix-search" "userspace-mounts"];
+          # bundle-module / pi-config are repo-local, omitted until skillPath
+          # can point at the repo's .pi/skills.
+          tools = null; # nix agents need bash for nix-search-tv / nix build
+        };
+        web = {
+          extensions = ["@juicesharp/rpiv-web-tools"];
+          tools = ["web_search" "web_fetch"];
+        };
+        vault = {
+          skills = ["obsidian-vault-read" "obsidian-vault-maintenance"];
+          tools = null;
+        };
+        workspace = {
+          skills = ["google-workspace" "linkedin-profile"];
+          mcpTools = ["google-workspace"];
+        };
+        media = {
+          skills = ["video-analyzer"];
+          extensions = ["pi-docparser"];
+          mcpTools = ["video-analyzer"];
+        };
+        vcs = {
+          skills = ["worktrunk"];
+          extensions = ["pi-worktrunk"];
+          tools = null;
+        };
+      };
 
       # Defaults: corporate (or any consumer) can override with lib.mkForce,
       # or extend lists (packages, skills) via normal module merging.

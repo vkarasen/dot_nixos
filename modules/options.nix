@@ -173,6 +173,138 @@
         aggregation aspect folds the result into the mcp.json file.
       '';
     };
+    options.my.pi.modelTiers = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule {
+        options = {
+          model = lib.mkOption {
+            type = lib.types.nonEmptyStr;
+            description = "Model id for this tier (bare, or provider-qualified).";
+          };
+          provider = lib.mkOption {
+            type = lib.types.nullOr lib.types.nonEmptyStr;
+            default = null;
+            description = "Provider id. When set, mkAgent emits provider/model.";
+          };
+          thinking = lib.mkOption {
+            type = lib.types.nullOr (lib.types.enum ["off" "minimal" "low" "medium" "high" "xhigh" "max"]);
+            default = null;
+            description = "Thinking level for agents on this tier (null = omit).";
+          };
+        };
+      });
+      default = {};
+      description = ''
+        Model tiers referenced by my.pi.agents.*.tier. Each tier bundles a
+        model, optional provider, and optional thinking level so an agent
+        selects a whole capability/price band at once instead of a raw model.
+
+        Resolve the values from the hasCopilot/hasDeepseek/hasAnthropic ladder
+        (§3 of docs/pi-subagents-rollout.md); the corporate flake overrides or
+        adds tiers additively.
+      '';
+    };
+
+    options.my.pi.capabilityBundles = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule {
+        options = {
+          skills = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [];
+            description = "Skill names (logical keys, resolved via skillPath).";
+          };
+          extensions = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [];
+            description = "Extension/package names to load for the child.";
+          };
+          tools = lib.mkOption {
+            type = lib.types.nullOr (lib.types.listOf lib.types.str);
+            default = null;
+            description = "Tool allowlist; null = omit (inherit ambient tools).";
+          };
+          mcpTools = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [];
+            description = "MCP tools to select, rendered as mcp:-prefixed tools.";
+          };
+          policy = lib.mkOption {
+            type = lib.types.lines;
+            default = "";
+            description = "Bundle policy prose injected into the agent prompt.";
+          };
+        };
+      });
+      default = {};
+      description = ''
+        Capability bundles: repo-independent units that declare skills,
+        extensions, tools, and MCP selections together with the policy prose
+        that goes with them. Agents compose bundles via my.pi.agents.*.bundles.
+
+        Each axis maps onto a pi-subagents frontmatter field; mkAgent in
+        modules/home/pi/_agents.nix renders them. See
+        docs/pi-subagents-rollout.md §7 for the skill-naming caveat that makes
+        the skillPath tree necessary.
+      '';
+    };
+
+    options.my.pi.agents = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule {
+        options = {
+          description = lib.mkOption {
+            type = lib.types.nonEmptyStr;
+            description = "One-line agent description (frontmatter description).";
+          };
+          tier = lib.mkOption {
+            type = lib.types.str;
+            description = "Key into my.pi.modelTiers for model/thinking.";
+          };
+          bundles = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [];
+            description = "Keys into my.pi.capabilityBundles to compose.";
+          };
+          prompt = lib.mkOption {
+            type = lib.types.lines;
+            default = "";
+            description = "Role prompt body, after frontmatter and invariants.";
+          };
+          inheritProjectContext = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = "Keep inherited repo AGENTS.md/CLAUDE.md.";
+          };
+          inheritGlobalContext = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Also keep the operator's global AGENTS.md.";
+          };
+          inheritSkills = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Let the child see pi's full discovered skills catalog.";
+          };
+          worktree = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Launch in a disposable worktree (worktree: true).";
+          };
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = "When false, the agent file is not emitted.";
+          };
+        };
+      });
+      default = {};
+      description = ''
+        Subagents to generate into ~/.pi/agent/agents/<name>.md. Each is a
+        tier × bundle composition plus a role prompt. mkAgent injects
+        my.pi.agentInvariants verbatim and sets inherit* explicitly.
+
+        Built by phases 4/5 of docs/pi-subagents-rollout.md; this option is
+        declared here so the corporate flake can add agents additively.
+      '';
+    };
     options.my.homeConfigurationName = lib.mkOption {
       type = lib.types.nonEmptyStr;
       default = let
