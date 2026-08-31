@@ -48,6 +48,45 @@
         debug = false;
         debugLog = false;
       };
+
+      # pi-subagents extension config (distinct from the settings.json keys
+      # below — upstream splits them: runtime/config knobs live here, while
+      # watchdog/agentOverrides/model routing live in Pi settings).
+      subagentConfig = {
+        # Disposable worktrees for `worktree: true` runs. Deliberately NOT
+        # under the repo's own .worktrees/ — that namespace belongs to
+        # worktrunk, and agent scratch worktrees would clutter `wt list`.
+        #
+        # Layout is flat and not repo-namespaced (worktree.ts builds
+        # <base>/pi-worktree-<runId>-<index>), but runId is a randomUUID, so
+        # worktrees from different repos coexist without collision. The cost
+        # is that an orphan left by a crash has an opaque name; living under
+        # XDG_CACHE_HOME makes wiping the directory a legitimate recovery,
+        # followed by `git worktree prune` in the affected repos.
+        worktreeBaseDir = "${config.xdg.cacheHome}/pi-subagents/worktrees";
+
+        # Native child tool permissions — pi-subagents' own gate, not a
+        # third-party one. Applies ONLY to Pi child runtimes, never this
+        # interactive session, and is not registered at all when no ask/deny
+        # rule is present. `deny` refuses outright instead of prompting, so
+        # there is no approval-fatigue surface to get wrong.
+        #
+        # Note this does NOT cover bash — pi-subagents passes bash through
+        # ungated by design. Read-only children therefore get no bash at all
+        # (see agentOverrides below) rather than a bash policy.
+        #
+        # Bootstrap posture: retrieval only. The builtin writers (`worker`,
+        # `reviewer`, `delegate`) will fail their edits under this rule —
+        # intended while only scout/researcher/oracle are in use. Custom
+        # agents override it per-agent with a `permission:` frontmatter block;
+        # the investigator role gets write access inside its own disposable
+        # worktree that way.
+        permissions.rules = {
+          read = "allow";
+          write = "deny";
+          edit = "deny";
+        };
+      };
     in {
       imports = [./_module.nix];
 
@@ -133,9 +172,69 @@
             "npm:pi-lens"
             "npm:@latentminds/pi-quotas"
             "npm:pi-blackhole"
+            "npm:pi-subagents"
+            # Pinned: 3 releases in its first week and a single author. Small,
+            # dependency-free and deterministic (no model calls), so it is
+            # cheap to audit — but not yet a package to track latest on.
+            "npm:pi-death-loop-guard@0.1.2"
           ];
+
+          # ── Anti-spiral, not anti-adversary ────────────────────────────
+          # The failure mode being defended against is an agent that drifts
+          # into unrequested debugging and "fixing", not a malicious command.
+          # Command-pattern gating does not see that — a drifting agent runs
+          # perfectly ordinary commands — and prompting on each one only buys
+          # approval fatigue. So: observe and bound, never ask.
+          subagents = {
+            watchdog = {
+              enabled = true;
+              # One model serves every watchdog check, so this trades
+              # adversarial-review depth for cheap frequent monitoring.
+              # Frequent monitoring is the point here. Thinking is left off
+              # (omitted = off upstream). Raise to a stronger model if the
+              # scope-drift calls turn out to be poor.
+              main.model = "deepseek/deepseek-v4-flash";
+              # Reviews work against a scope artifact built from real user
+              # prompts, flagging work that no longer serves the request.
+              scope.enabled = true;
+              # Scopey-style: a non-blocking review every N tool results,
+              # delivered as a transcript-visible steer rather than a prompt.
+              cadence.everyNTools = 10;
+              # Bounded so the correction cannot itself loop.
+              autoFollow = {
+                blockers = true;
+                maxAttempts = 3;
+                stalemateRepeats = 3;
+              };
+            };
+
+            # Read-only builtins get no bash. pi-subagents cannot gate bash,
+            # so withholding it is the only structural way to keep a recon
+            # child from mutating the repo it is reading. Matching pi's own
+            # read-only example (`pi --tools read,grep,find,ls`).
+            #
+            # This is a real capability cut: no rg, git log or nix-search-tv.
+            # It is the line between roles rather than an oversight — work
+            # that needs to run something belongs to an investigator agent
+            # with its own disposable worktree, added in a later phase.
+            agentOverrides = let
+              readOnly = {tools = "read,grep,find,ls";};
+            in {
+              scout = readOnly;
+              researcher = readOnly;
+              oracle = readOnly;
+            };
+          };
         };
       };
+
+      # Wide fan-out contends on a single status.json; the default retry
+      # ladder parks the thread synchronously for ~7.9s and presents as a hung
+      # process at 0% CPU.
+      home.sessionVariables.PI_SUBAGENT_FS_RETRY_MAX_TOTAL_MS = "1000";
+
+      home.file.".pi/agent/extensions/subagent/config.json".text =
+        builtins.toJSON subagentConfig;
 
       xdg.configFile."rpiv-web-tools/config.json".text = builtins.toJSON {
         provider = "tavily";
