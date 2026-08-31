@@ -79,13 +79,58 @@
       default = false;
       description = "Enable GitHub Copilot integration (neovim, CLI, pi provider).";
     };
+    options.my.pi.agentInvariants = lib.mkOption {
+      type = lib.types.attrsOf lib.types.lines;
+      default = {};
+      description = ''
+        Non-negotiable rules that apply in every context and at every stage,
+        rendered as a single "# Invariants" block at the top of
+        ~/.pi/agent/AGENTS.md.
+
+        This is deliberately separate from globalAgentPolicies. Delegated
+        subagents do not inherit the operator's global context file
+        (pi-subagents defaults inheritGlobalContext to false), so anything a
+        child must never get wrong has to be injected into the child's own
+        prompt. Keeping invariants in their own option makes that block
+        reusable instead of requiring the whole policy file to be re-read.
+
+        Admission is strict, because everything here competes for attention in
+        every session:
+
+        - It must be a PROHIBITION, not a procedure. "How to do X well" is
+          stage-specific and belongs in globalAgentPolicies, a capability
+          bundle, or a skill, where it is loaded only when X is happening.
+        - It must not be enforceable structurally. A rule a guardrail can
+          enforce (a permission gate, a withheld tool) should be enforced
+          there and deleted from prose entirely.
+        - It must be terse. Full sections belong in globalAgentPolicies.
+
+        Values are string-only: unlike globalAgentPolicies these are also
+        destined for subagent prompts, where a sops path decrypted at
+        activation time is not available. Keys are sorted alphabetically;
+        use numeric prefixes.
+      '';
+      example = lib.literalExpression ''
+        {
+          "00-nix-store" = "**Never brute-force the Nix store.** ...";
+        }
+      '';
+    };
+
     options.my.pi.globalAgentPolicies = lib.mkOption {
       type = lib.types.attrsOf (lib.types.either lib.types.lines lib.types.path);
       default = {};
       description = ''
         Named policy sections merged into ~/.pi/agent/AGENTS.md, which pi
         loads as global always-on instructions at startup (not opt-in like
-        a skill). Keys are sorted alphabetically before concatenation, so
+        a skill).
+
+        These sections are for the interactive/orchestrating session. They may
+        be long and may exercise judgment. Rules that must reach a delegated
+        subagent as well belong in my.pi.agentInvariants instead, which is
+        rendered ahead of these and is separately reusable.
+
+        Keys are sorted alphabetically before concatenation, so
         use numeric prefixes to control order:
           "00-nix-workspace"       – base Nix exploration policy (defined here)
           "10-scripting"           – scripting runtime preference (defined here)

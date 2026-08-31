@@ -23,6 +23,45 @@
     ...
   }: {
     # -----------------------------------------------------------------------
+    # Invariants — the floor every agent gets
+    #
+    # Prohibitions only, and only ones no guardrail can enforce for us. A
+    # delegated subagent never sees the policy sections below (pi-subagents
+    # defaults inheritGlobalContext to false), so this block is what gets
+    # injected into child prompts instead. Everything here is paid for in
+    # every session and in every child, so keep it short and keep it absolute.
+    #
+    # Deliberately NOT here:
+    #   - commit/push approval  -> a permission gate can ask before it happens,
+    #                              which prose cannot; stays a policy section
+    #                              until that gate exists, then gets deleted
+    #   - lookup order, devshell detection, JS-for-glue  -> procedures, useless
+    #                              until you are already doing the thing
+    # -----------------------------------------------------------------------
+    my.pi.agentInvariants = {
+      "00-nix-store" = ''
+        **Never brute-force the Nix store.** Do not `find /nix/store ...` and do
+        not `grep -r` over `/nix/store`. It is inspectable only by exact,
+        already-known path. The store is enormous; blind traversal will time out
+        or exhaust your context before it finds anything.
+      '';
+
+      "10-environment" = ''
+        **Never mutate the environment to obtain a runtime.** No `npm install -g`,
+        no `pip install`, no editing system state to make a tool available. Use
+        `nix run nixpkgs#<pkg> -- ...` or a project devshell.
+      '';
+
+      "20-missing-capability" = ''
+        **Report a missing capability instead of working around it.** If an
+        instruction, skill, or inherited project convention requires a tool you
+        do not have, stop and say which tool is missing. Do not substitute a
+        different approach to reach the same goal — a withheld tool is a
+        deliberate boundary, not an obstacle to route around.
+      '';
+    };
+
+    # -----------------------------------------------------------------------
     # Base policy sections
     # -----------------------------------------------------------------------
     my.pi.globalAgentPolicies =
@@ -44,11 +83,8 @@
           5. **`ast_grep_search`** scoped to the repo for structural queries.
           6. **Repo-local `rg` / `find`** when the above are insufficient.
 
-          ## Hard rule — never brute-force the Nix store
-          - Do NOT run `find /nix/store ...` for discovery.
-          - Do NOT `grep -r` over `/nix/store`.
-          - `/nix/store` is only inspectable by **exact, already-known path**.
-          - The store is large; blind traversal will time out or exhaust context.
+          (The prohibition on brute-forcing `/nix/store` is an invariant, stated
+          at the top of this file.)
 
           ## Pi documentation
           Pi docs live at a pinned store path provided in the system prompt.
@@ -170,9 +206,8 @@
           Use `nix run nixpkgs#runtime -- script` to access Python, Ruby, etc.
           The Nix daemon is always accessible so this always works.
 
-          ## Never mutate the environment
-          Do not `npm install -g`, `pip install`, or otherwise modify the system
-          environment to obtain a runtime.  Use `nix run` or a project devshell instead.
+          (Never mutating the environment to obtain a runtime is an invariant,
+          stated at the top of this file.)
         '';
 
         "15-collaboration" = ''
@@ -386,10 +421,25 @@
       allPolicies = config.my.pi.globalAgentPolicies;
       isPublic = v: builtins.isString v;
       publicPolicies = lib.filterAttrs (_: isPublic) allPolicies;
+
+      # Invariants lead the file: they are the shortest, the most absolute, and
+      # the only part a delegated subagent will also be given verbatim.
+      invariants = config.my.pi.agentInvariants;
+      invariantBlock = ''
+        # Invariants
+
+        These rules always apply — every context, every stage, no exceptions.
+
+        ${lib.removeSuffix "\n" (lib.concatStringsSep "\n" (lib.attrValues invariants))}
+      '';
+
+      sections =
+        lib.optional (invariants != {}) invariantBlock
+        ++ lib.attrValues publicPolicies;
     in
-      lib.mkIf (publicPolicies != {}) {
+      lib.mkIf (sections != []) {
         force = true;
-        text = lib.concatStringsSep "\n\n" (lib.attrValues publicPolicies);
+        text = lib.concatStringsSep "\n\n" sections;
       };
   };
 }
