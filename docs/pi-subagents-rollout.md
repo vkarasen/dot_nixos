@@ -419,19 +419,56 @@ Risks:
 
 ## 7. Unverified — test before designing on these
 
-1. **Does the `skill:` deny surface prune the inherited *catalog*, or only block
-   loading?** If it prunes, a child's skills can be narrowed from *our* agent
-   frontmatter with no file added to an unowned repo — which would close the last
-   hole in the fallback design. Highest-value unknown.
+1. ~~`skill:` deny surface~~ **RESOLVED** — there is no per-skill deny surface.
+   Narrowing works via the `skills` allowlist + `inheritSkills` flag, and both
+   *prune* (remove from the child prompt) — no "blocked loading" state exists.
+   But the allowlist resolves skill names by **directory basename**, not the
+   SKILL.md frontmatter `name`, so store-path skills resolve only under their
+   hash-prefixed basename. Details + design fix below.
 2. **`tools: "inherit"`** — documented for builtins; unconfirmed for custom
    agents. It is the intended escape hatch for "give this role everything".
 3. **`ask` forwarding** with nicobailon children (§6). If wanted, an
    `env`-injection shim setting `PI_SUBAGENT_PARENT_SESSION` might work.
-4. **Do `skills` and `inheritSkills: true` merge or replace?** Determines
-   whether a bundle's skills add to, or override, an unowned repo's catalog.
+4. ~~merge or replace~~ **RESOLVED** — independent channels, so they **merge**
+   (union). All 12 builtins set `inheritSkills: false` (and
+   `defaultInheritSkills()` returns `false`), so builtin children inherit **no
+   skills catalog at all** — the "unowned repo's catalog" hole does not exist for
+   skills. Details below.
 5. **Does pi honour `npm:<pkg>@<version>`** in `my.pi.packages`?
 6. **Is `PI_SUBAGENT_FS_RETRY_MAX_TOTAL_MS` actually needed** at our fan-out
    width (3–5), or only at much wider ones?
+
+### Resolved: skill wiring (items 1 & 4)
+
+Verified empirically (pi-subagents@0.62.0) and against `src/agents/skills.ts`:
+
+- **No per-skill deny surface exists.** `excludeSkills` / negative selection:
+  absent. The only controls are `skills` (explicit allowlist) and
+  `inheritSkills` (bool). Both *prune* what appears in the child prompt; there
+  is no mechanism that lists a skill but blocks reading it.
+- **`skills` names skills by directory basename, never the frontmatter `name`.**
+  `settings.json skills` are `/nix/store/…` paths, so their resolvable name is
+  the hash-prefixed basename (`f7qq33xlc71s9bcfa64v9rxhi7kkzmlv-nix-search-skill`),
+  not the logical name (`nix-search`). Live test: `skill: "nix-search"` injected
+  nothing; `skill: "<store-basename>"` injected one correctly-loadable entry.
+  pi-core (the parent session) names the *same* skill `nix-search` from its
+  frontmatter, so parent and child naming disagree.
+- **`inheritSkills` and `skills` are independent → they merge, not replace.**
+  `inheritSkills: false` (the universal builtin default) sends `--no-skills`;
+  `skills: [a,b]` injects a *separate* `<available_skills>` block. Both set →
+  union. But since builtins default to `inheritSkills: false`, children start
+  with zero skills and nothing from an unowned repo leaks in.
+
+**Design consequence for phase 2:** a bundle's `skills: [nix-search, …]` will
+silently no-op under store-path naming. Fix by pairing it with **`skillPath`**
+pointing at a Nix-materialised tree of logical-name dirs
+(`~/.pi/agent/agents/skills/<name>/SKILL.md`), so `skillPath: ./skills` +
+`skills: [nix-search]` resolves by logical name and is rebuild-stable (store
+basenames change every rebuild; logical dir names do not). `skillPath` already
+exists for exactly this (§5: "local matches take precedence"). Alternatives:
+inject always-needed skill content via `defaultReads`/system prompt (drops
+on-demand loading), or `inheritSkills: true` (drops narrowing). Not a redesign —
+a wiring detail.
 
 ---
 
@@ -487,7 +524,9 @@ explicitly. Proposed bundles: `code` (pi-lens, ast-bro) · `nix` (nix-search,
 userspace-mounts, bundle-module, pi-config) · `web` (rpiv-web-tools) · `vault`
 (obsidian-read/-maintenance) · `workspace` (google-workspace MCP,
 linkedin-profile) · `media` (video-analyzer MCP, pi-docparser) · `vcs`
-(worktrunk, gh, git).
+(worktrunk, gh, git). Bundle `skills` must be wired via `skillPath` + a
+materialised logical-name tree, not bare logical names — see §7 (resolved,
+items 1 & 4).
 
 **2.5 — permissions.** ~~Install a permission system.~~ **Dropped** — see §5b.
 The replacement is already in place: native child `write`/`edit` denies, no bash
