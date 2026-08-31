@@ -218,7 +218,7 @@
             # that needs to run something belongs to an investigator agent
             # with its own disposable worktree, added in a later phase.
             agentOverrides = let
-              readOnly = {tools = "read,grep,find,ls";};
+              readOnly = {tools = ["read" "grep" "find" "ls"];};
             in {
               scout = readOnly;
               researcher = readOnly;
