@@ -217,22 +217,23 @@
               };
             };
 
-            # Read-only builtins get no bash. pi-subagents cannot gate bash,
-            # so withholding it is the only structural way to keep a recon
-            # child from mutating the repo it is reading. Matching pi's own
-            # read-only example (`pi --tools read,grep,find,ls`).
+            # NOTE: there are deliberately no `agentOverrides` here.
             #
-            # This is a real capability cut: no rg, git log or nix-search-tv.
-            # It is the line between roles rather than an oversight — work
-            # that needs to run something belongs to an investigator agent
-            # with its own disposable worktree, added in a later phase.
-            agentOverrides = let
-              readOnly = {tools = ["read" "grep" "find" "ls"];};
-            in {
-              scout = readOnly;
-              researcher = readOnly;
-              oracle = readOnly;
-            };
+            # This key used to pin scout/researcher/oracle to a read-only tool
+            # list, from before those names were real agents. It is now handled
+            # by each agent's own frontmatter (my.pi.agents.*.tools), and
+            # re-adding it here would be worse than redundant: `tools` in an
+            # override only reaches a custom agent whose frontmatter OMITS
+            # `tools`, so the entry is silently inert today, and silently
+            # destructive the moment an agent drops its frontmatter list — it
+            # would strip researcher's web_search and reviewer's lens tools
+            # with no error. Set tool policy in one place: my.pi.agents.
+            #
+            # The read-only posture itself is unchanged and still deliberate:
+            # pi-subagents cannot gate bash, so withholding bash is the only
+            # structural way to stop a recon child mutating what it reads. That
+            # is a real cut — no rg, git log or nix-search-tv — and work needing
+            # to run something belongs to `investigator` in its own worktree.
           };
         };
       };
