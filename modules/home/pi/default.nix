@@ -279,12 +279,14 @@
         # ── Phase 5: write agents ─────────────────────────────────────────
         # Writers re-allow write/edit via per-agent permission overrides and are
         # bounded by timeoutMs, not toolBudget (§5). None of these may commit.
+        # NOTE: `worktree` is a launch param, not a frontmatter field — the
+        # orchestrator must pass worktree: true when launching the investigator
+        # (see docs/pi-subagents-rollout.md §5b).
         investigator = {
           description = "Disposable-worktree investigator that tests hypotheses and reports findings";
           tier = "worker";
           bundles = ["code" "lens"];
           tools = ["read" "grep" "find" "ls" "bash" "write" "edit"];
-          worktree = true;
           permission = {
             write = "allow";
             edit = "allow";

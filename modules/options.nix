@@ -332,11 +332,6 @@
             default = false;
             description = "Let the child see pi's full discovered skills catalog.";
           };
-          worktree = lib.mkOption {
-            type = lib.types.bool;
-            default = false;
-            description = "Launch in a disposable worktree (worktree: true).";
-          };
           enable = lib.mkOption {
             type = lib.types.bool;
             default = true;

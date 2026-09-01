@@ -360,7 +360,12 @@ frontier model, defeating §1.
 | `reviewer` | project + diff | — | none |
 
 The investigator is enforced by `worktree: true`, not by a path rule — the
-boundary is a filesystem location, with no pattern to evade. `worktreeSetupHook`
+boundary is a filesystem location, with no pattern to evade. **Correction:**
+`worktree` is a *launch param*, not a single-agent frontmatter field — a
+frontmatter `worktree: true` is inert (verified: the child ran in the repo and
+wrote there). The orchestrator must pass `worktree: true` in the launch, which
+is a delegation-contract boundary (§4), not something `mkAgent` can emit.
+`worktreeSetupHook`
 returns `syntheticPaths` to keep helper files out of diff capture, which is what
 that hook is for. `modules/home/pi/prompts/investigator.md` already exists and
 needs rewording for this: not "avoid edits" but "you are in a disposable

@@ -122,7 +122,6 @@
         else ["permission:"] ++ lib.mapAttrsToList (k: v: "  ${k}: ${v}") spec.permission
       )
       ++ lib.optional (spec.timeoutMs != null) "timeoutMs: ${toString spec.timeoutMs}"
-      ++ lib.optional spec.worktree "worktree: true"
       ++ ["---"];
 
     body =
