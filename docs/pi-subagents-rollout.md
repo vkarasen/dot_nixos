@@ -255,8 +255,38 @@ prevents misfires. Trimming attacks the routing signal. The only real lever is
 Private: Opus orchestrator · Sonnet / Deepseek-pro executive · Deepseek-flash
 simple · Haiku where vision is involved. Corporate: `github-copilot` only.
 Orchestrator tier must itself be configurable — not every session needs Opus.
-Resolve via the existing `hasCopilot`/`hasDeepseek`/`hasAnthropic` ladder into
-`agentOverridesByProvider`.
+
+**Superseded 2026-09-01.** `agentOverridesByProvider` is not used at all. Tiers
+are declared directly in `my.pi.modelTiers`, defaulting to the deepseek ladder;
+the `hasCopilot`/`hasDeepseek`/`hasAnthropic` ladder in `default.nix` survives
+only as the FALLBACK for when no orchestrator tier is readable — i.e. the
+isolated `packages.pi` build.
+
+**The `orchestrator` tier IS the session default.** You always drop into an
+orchestrator and delegate from there, so `defaultModel` / `defaultProvider` /
+`defaultThinkingLevel` are derived from that single tier instead of being
+declared independently. Repointing it moves both the session you type into and
+the routing for every delegation, so a consumer flake states "use copilot"
+once rather than in two shapes that can silently disagree.
+
+**Option defaults are applied per FIELD, not per attrset.** `lib.mkDefault` on
+a whole attrset lowers the priority of the *entire* definition, so a consumer
+flake defining one key discards every sibling. Measured with `evalModules`: a
+corporate `modelTiers.orchestrator = {…}` dropped worker/simple/vision/
+executive. For tiers and bundles that fails loudly (`_agents.nix` throws
+`unknown tier` / `unknown bundle`), but for `my.pi.agents` it is **silent** —
+the base roster simply stops being written, and the generated roster table in
+AGENTS.md shrinks to match, so the result looks self-consistent. `perField` in
+agents.nix pushes the default down to each field, and is idempotent so a field
+that already carries its own `mkDefault` is not double-wrapped (that produces
+`mkDefault (mkDefault x)`, and the module system unwraps only one level).
+
+Verified against a simulated corporate flake that repointed the orchestrator
+tier to copilot, tweaked one field of another tier, added a new tier, added a
+new agent and enabled `twin`: 11 agents rendered, the session default followed
+the tier to `github-copilot/claude-sonnet-5`, `worker` kept its inherited
+model while taking the new thinking level, and agents on untouched tiers were
+byte-identical.
 
 ---
 

@@ -72,15 +72,21 @@
         # there is no approval-fatigue surface to get wrong.
         #
         # Note this does NOT cover bash — pi-subagents passes bash through
-        # ungated by design. Read-only children therefore get no bash at all
-        # (see agentOverrides below) rather than a bash policy.
+        # ungated by design. Read-only children therefore get no bash at all,
+        # withheld via each agent's `tools` in the sibling agents.nix rather
+        # than expressed as a bash policy here. The `nix` capability bundle is
+        # the one deliberate exception, and carries its own scoping prose.
         #
-        # Bootstrap posture: retrieval only. The builtin writers (`worker`,
-        # `reviewer`, `delegate`) will fail their edits under this rule —
-        # intended while only scout/researcher/oracle are in use. Custom
-        # agents override it per-agent with a `permission:` frontmatter block;
-        # the investigator role gets write access inside its own disposable
-        # worktree that way.
+        # Default-deny is the floor, not the whole posture: a newly added
+        # agent is read-only until someone opts it out, which is the right
+        # direction to fail. The three writers in the roster (executor,
+        # investigator, workspace) each opt out by rendering
+        # `permission: {edit = "allow"; write = "allow";}` from their role
+        # definition — verify with:
+        #   grep -A2 '^permission:' ~/.pi/agent/agents/*.md
+        # Pi's builtin `worker` / `delegate` agents declare no such block and
+        # so will fail their edits under this rule. That is intended: this
+        # roster routes writes through its own three agents.
         permissions.rules = {
           read = "allow";
           write = "deny";
@@ -141,25 +147,48 @@
           "planner" = lib.mkDefault ./prompts/planner.md;
         };
         settings = let
+          # The `orchestrator` model tier IS the interactive session default.
+          # You always drop into an orchestrator and let it delegate, so "the
+          # model I talk to" and "the tier that routes delegation" must be one
+          # knob rather than two independent ones that can silently disagree.
+          # A consumer flake repoints both by setting that single tier.
+          #
+          # Read with `or` guards, deliberately: this aspect is evaluated in
+          # ISOLATION by the standalone packages.pi build, where my-options
+          # (and therefore my.pi.modelTiers) does not exist. Guarded reads are
+          # safe there, definitions are not — pitfall #6. In that isolated
+          # build the read yields null and we fall through to the provider
+          # ladder below, which is exactly the previous behaviour.
+          orchestratorTier = (config.my.pi.modelTiers or {}).orchestrator or null;
+
+          # Fallback ladder, used when no orchestrator tier is available (the
+          # isolated packages.pi build) or it declares no provider.
           hasCopilot = config.my.copilot.enable or false;
           sopsSecrets = config.sops.secrets or {};
           hasDeepseek = sopsSecrets ? deepseek_api_key;
           hasAnthropic = sopsSecrets ? anthropic_api_key;
           resolved =
-            if hasCopilot
+            if orchestratorTier != null && orchestratorTier.provider != null
+            then {
+              inherit (orchestratorTier) provider model thinking;
+            }
+            else if hasCopilot
             then {
               provider = "github-copilot";
               model = "claude-sonnet-5";
+              thinking = null;
             }
             else if hasDeepseek
             then {
               provider = "deepseek";
               model = "deepseek-v4-pro";
+              thinking = null;
             }
             else if hasAnthropic
             then {
               provider = "anthropic";
               model = "claude-sonnet-5";
+              thinking = null;
             }
             else null;
         in {
@@ -167,6 +196,9 @@
           quietStartup = lib.mkDefault true;
           defaultProvider = lib.mkIf (resolved != null) (lib.mkDefault resolved.provider);
           defaultModel = lib.mkIf (resolved != null) (lib.mkDefault resolved.model);
+          defaultThinkingLevel =
+            lib.mkIf (resolved != null && resolved.thinking != null)
+            (lib.mkDefault resolved.thinking);
           packages = [
             "npm:pi-mcp-adapter"
             "npm:rpiv-todo"

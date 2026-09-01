@@ -21,14 +21,61 @@
     # allowlist over all tools, so extension tools (pi-lens, pi-docparser,
     # web) come from their bundles and are unioned in by mkAgent.
     readOnly = ["read" "grep" "find" "ls"];
+
+    # Per-FIELD mkDefault, and it has to be per-field.
+    #
+    # `lib.mkDefault` applied to a whole attrset lowers the priority of the
+    # ENTIRE definition, so a consumer flake that defines a single key
+    # discards every sibling. Measured with evalModules: with a whole-attrset
+    # default, a corporate `modelTiers.orchestrator = {...}` silently dropped
+    # worker/simple/vision/executive. For modelTiers and capabilityBundles
+    # that fails loudly (_agents.nix throws `unknown tier`/`unknown bundle`),
+    # but for `agents` it is SILENT — the other nine agents simply stop being
+    # emitted, and the generated roster table shrinks to match, so the result
+    # looks self-consistent.
+    #
+    # Per-key is also not enough: it makes the whole submodule value one
+    # definition, so a partial override like `modelTiers.worker.thinking`
+    # discards the sibling fields and `model` ends up with no value at all.
+    # Pushing the default down to each field supports all four consumer
+    # moves: replace a key, add a key, tweak one field, or repoint one field
+    # across every key.
+    #
+    # Note the semantics this gives list-valued fields (skills, extensions,
+    # bundles, tools): a consumer definition REPLACES the list rather than
+    # appending to it. That is deliberate — corporate needs to drop
+    # private-only skills, which additive merging cannot express. To extend,
+    # restate the full list.
+    # The guard keeps this idempotent: a field that already carries its own
+    # priority wrapper (mkDefault / mkForce / mkIf) is passed through
+    # untouched. Double-wrapping produces mkDefault (mkDefault x), and the
+    # module system only unwraps one level, so the inner wrapper reaches the
+    # type check as a bare attrset — "a definition for option `…' is not of
+    # type `boolean'". Cheap guard, obscure failure.
+    perField = lib.mapAttrs (
+      _: entry:
+        lib.mapAttrs (
+          _: value:
+            if lib.isAttrs value && value ? _type
+            then value
+            else lib.mkDefault value
+        )
+        entry
+    );
   in {
     imports = [./_agents.nix];
 
     # ── Model tiers (phase 2 scaffolding) ─────────────────────────────
     # Referenced by my.pi.agents.*.tier. Private/deepseek ladder per §3 of
-    # docs/pi-subagents-rollout.md; corporate flake overrides keys with
-    # lib.mkForce or adds its own tiers additively.
-    my.pi.modelTiers = lib.mkDefault {
+    # docs/pi-subagents-rollout.md; a consumer flake overrides any field of
+    # any tier, or adds tiers, with a plain definition — no mkForce needed,
+    # because `perField` above leaves each field individually defaultable.
+    #
+    # The `orchestrator` tier is special: it also drives the interactive
+    # session's defaultModel/defaultProvider/defaultThinkingLevel (see
+    # modules/home/pi/default.nix). You always drop into an orchestrator, so
+    # the model you talk to and the tier that routes delegation are one knob.
+    my.pi.modelTiers = perField {
       orchestrator = {
         model = "deepseek-v4-pro";
         provider = "deepseek";
@@ -84,7 +131,7 @@
     # parse-document, pi-lens-*, mcp-scripting) and repo-local skills
     # (pi-config, bundle-module, edit-private-skill) are not in the
     # skillPath tree; phase 4/5 must materialise them or drop the references.
-    my.pi.capabilityBundles = lib.mkDefault {
+    my.pi.capabilityBundles = perField {
       # Light code recon (ast-bro navigation). pi-lens is split into `lens`
       # because it is executor/reviewer-only (§5) and cheap scouts must not
       # pay its session_start cost.
@@ -168,7 +215,7 @@
     # Read-only posture = strict tool allowlist, no bash/write/edit. Roles
     # are separated by blast radius (§5b); none of these can mutate. toolBudget
     # hard caps bound runaway loops (read-only agents only — see §5).
-    my.pi.agents = lib.mkDefault {
+    my.pi.agents = perField {
       scout = {
         description = "Fast codebase recon that returns compressed context for handoff";
         tier = "simple";
@@ -333,7 +380,9 @@
         };
         timeoutMs = 900000;
         # Optional: the corporate vault has no digital twin yet (§9).
-        enable = lib.mkDefault false;
+        # `perField` supplies the mkDefault, so a consumer flake flips this
+        # with a plain `my.pi.agents.twin.enable = true;`.
+        enable = false;
         prompt = ''
           You are the digital twin: keep the Obsidian vault's identity and
           memory notes accurate. Read the vault for context and update notes

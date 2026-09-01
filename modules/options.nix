@@ -198,9 +198,22 @@
         model, optional provider, and optional thinking level so an agent
         selects a whole capability/price band at once instead of a raw model.
 
-        Resolve the values from the hasCopilot/hasDeepseek/hasAnthropic ladder
-        (§3 of docs/pi-subagents-rollout.md); the corporate flake overrides or
-        adds tiers additively.
+        The `orchestrator` tier additionally drives the interactive session's
+        defaultModel / defaultProvider / defaultThinkingLevel, because you
+        always drop into an orchestrator and delegate from there. Repointing
+        that one tier moves both the session and the delegation routing.
+
+        Defaults live in modules/home/pi/agents.nix and are the private
+        deepseek ladder (§3 of docs/pi-subagents-rollout.md). They are NOT
+        auto-derived from the hasCopilot/hasDeepseek/hasAnthropic ladder in
+        default.nix — that ladder is only the fallback for when no tier is
+        available. A consumer flake repoints tiers explicitly.
+
+        Defaults are applied per FIELD, so a consumer flake can override one
+        field, replace a whole tier, or add new tiers with a plain definition
+        and inherit everything it did not mention. Do not wrap an override in
+        mkForce; it is not needed. List-valued fields are replaced, not
+        appended — restate the full list to extend one.
       '';
     };
 
@@ -244,6 +257,12 @@
         modules/home/pi/_agents.nix renders them. See
         docs/pi-subagents-rollout.md §7 for the skill-naming caveat that makes
         the skillPath tree necessary.
+
+        Defaults are applied per FIELD (see agents.nix), so a consumer flake
+        overrides one field or adds a bundle with a plain definition and
+        inherits the rest. List fields are replaced, not appended. Referencing
+        a bundle key that does not exist is a hard error from mkAgent, which
+        is the intended fast failure.
       '';
     };
 
@@ -346,7 +365,15 @@
         my.pi.agentInvariants verbatim and sets inherit* explicitly.
 
         Built by phases 4/5 of docs/pi-subagents-rollout.md; this option is
-        declared here so the corporate flake can add agents additively.
+        declared here so a consumer flake can add agents additively.
+
+        Additive really means additive, but only because agents.nix applies
+        its defaults per FIELD. A whole-attrset mkDefault would make a
+        consumer's single new agent discard the entire base roster, and
+        because a missing agent throws no error — it just stops being written
+        to ~/.pi/agent/agents/ — that failure would be silent. If you ever
+        touch how these defaults are declared, re-check that adding one agent
+        downstream still leaves the base roster rendered.
       '';
     };
     options.my.homeConfigurationName = lib.mkOption {
