@@ -21,7 +21,38 @@
     lib,
     config,
     ...
-  }: {
+  }: let
+    # Routing table for the "05-delegation" policy, generated from my.pi.agents
+    # rather than written as prose. Two reasons: it cannot drift from the real
+    # agent definitions, and a consumer flake that adds agents additively (the
+    # corporate `jira` agent, say) gets them routed for free with no prose to
+    # update. A hand-written table would be wrong by construction anywhere but
+    # this machine.
+    #
+    # Flags are the traps an orchestrator actually gets wrong: a bash-less agent
+    # cannot build, run git, or use nix-search-tv no matter what its skills say.
+    agentRoster = let
+      tiers = config.my.pi.modelTiers or {};
+      bundles = config.my.pi.capabilityBundles or {};
+      enabled = lib.filterAttrs (_: s: s.enable) (config.my.pi.agents or {});
+      toolsOf = spec:
+        (lib.optionals (spec.tools != null) spec.tools)
+        ++ lib.concatMap (b: let
+          bb = bundles.${b} or {};
+        in
+          lib.optionals ((bb.tools or null) != null) bb.tools)
+        spec.bundles;
+      row = name: spec: let
+        tools = toolsOf spec;
+        tier = tiers.${spec.tier} or {};
+        flags =
+          lib.optional (!(lib.elem "bash" tools)) "no bash"
+          ++ lib.optional (lib.elem "write" tools) "**writes**"
+          ++ lib.optional (spec.toolBudget != null) "cap ${toString spec.toolBudget.hard}";
+      in "| `${name}` | ${tier.model or spec.tier} | ${spec.description} | ${lib.concatStringsSep ", " flags} |";
+    in
+      lib.concatStringsSep "\n" (lib.mapAttrsToList row enabled);
+  in {
     # -----------------------------------------------------------------------
     # Invariants — the floor every agent gets
     #
@@ -66,6 +97,113 @@
     # -----------------------------------------------------------------------
     my.pi.globalAgentPolicies =
       {
+        # Orchestrator-only. Deliberately NOT an invariant: children must not
+        # carry it (they have no `subagent` tool, so it would be pure attention
+        # tax), and it is procedure rather than prohibition.
+        "05-delegation" = ''
+          # Delegation and orchestration
+
+          You have a `subagent` tool and the agent roster below. Delegation is
+          your main lever over both cost and your own reliability — but it is
+          also the fastest way to introduce confusion, so the rules are tight.
+
+          ## Why delegate: the cost model
+
+          Your cost per request is a function of your CURRENT CONTEXT SIZE, not
+          of what the request does. Past roughly 100k context every request
+          costs about the same whether it reads 200 bytes or 20KB.
+
+          > Delegate to move ROUND-TRIPS off your context, not to avoid
+          > reading tokens.
+
+          This inverts the obvious intuition: a task made of many small tool
+          calls is the *best* delegation target. A single large read is the
+          *worst* — one round-trip, and you probably want the content anyway.
+
+          **Trigger.** Delegate when you expect more than about three tool
+          round-trips *and* you can already describe the shape of the answer.
+
+          Fan out in parallel for independent questions. Three scouts cost
+          about what one costs and finish in the time of the slowest.
+
+          ## When not to delegate
+
+          - **Never delegate synthesis.** Gathering and executing are theirs;
+            deciding what to do is yours, always. Synthesis is exactly where
+            confusion would compound, and it is the one thing you cannot check
+            afterwards.
+          - **Never delegate work whose answer shape you cannot describe.**
+            Delegation is a reward for having already reduced uncertainty, not
+            a way to reduce it. "Which files define X" is delegable; "why did
+            this build break" is not.
+          - **Never delegate when a silently wrong answer would be
+            unrecoverable.** See the two failure modes below.
+          - Do not delegate what is already in your context.
+
+          ## Two observed failure modes — design around them
+
+          **A child may decline to escalate.** Children have
+          `contact_supervisor` and it works end to end: the child blocks, you
+          decide, it resumes. But a child that judges your stop condition
+          unwarranted will answer anyway rather than ask. Escalation is a
+          convenience, never a safety net. Never delegate anything whose safety
+          depends on the child choosing to ask.
+
+          **A child result is a draft, not a fact.** A scout once returned a
+          nine-row table that was correct except for one column, wrong in three
+          rows, unhedged, in the least conspicuous place. Cheap models are
+          confidently wrong in precisely the details you are least likely to
+          check.
+
+          > Before relying on a specific claim from a child, verify THAT claim
+          > with one deterministic host command.
+
+          Always require `file:line` citations in retrieval briefs — not for
+          the child's benefit, but because a citation turns verification into a
+          single `grep`. One cheap check beats a careful-sounding paragraph.
+
+          ## The brief
+
+          Write these as prose in the `task` string:
+
+            GOAL           one sentence; an outcome, not an activity
+            FACTS          what you already established, marked
+                           "do not rediscover" — this is what stops the child
+                           burning its budget re-deriving your context
+            DELIVERABLE    the exact shape you want back
+            ESCALATE IF    named stop conditions
+            OUTPUT BUDGET  a hard line limit — always
+
+          The output budget is load-bearing, not politeness: unbounded briefs
+          come back at 8KB, bounded ones at under 1KB for the same work, and
+          the return value lands in your context permanently.
+
+          **If you cannot state how you would check the result, do not
+          delegate it.**
+
+          ## Launch parameters the agent file cannot set
+
+            worktree: true   REQUIRED for `investigator` — its frontmatter
+                             cannot set this, and without it the agent
+                             experiments in your live working tree
+            context: "fork"  for `oracle`; it is useless without your context
+            model:           per-call tier override when the default is wrong
+            async: true      the default; use async:false only when you need
+                             the result inside the current turn
+            label            name every child so its pane is identifiable —
+                             a child cannot name its own
+
+          ## Roster
+
+          | agent | model | use for | flags |
+          |---|---|---|---|
+          ${agentRoster}
+
+          A `no bash` agent cannot run builds, git, or `nix-search-tv`
+          regardless of which skills it carries. Route accordingly rather than
+          asking it to try.
+        '';
+
         "00-nix-workspace" = ''
           # Nix workspace exploration policy
 

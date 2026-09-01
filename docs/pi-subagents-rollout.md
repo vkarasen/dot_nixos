@@ -99,9 +99,48 @@ prompt + tool schemas). That is the wrong target:
   session**
 
 The real cost is **recurring**: anything read into the orchestrator's context is
-re-sent on every subsequent turn. Session cost is therefore roughly quadratic in
-content ingested, not linear, and *when* something is read matters as much as
-whether it is read.
+re-sent on every subsequent turn.
+
+### Correction: the driver is round-trips, not content (measured 2026-09-01)
+
+The original claim here was that session cost is quadratic in *content
+ingested*. Measurement says otherwise. From a live Opus session's own JSONL,
+twelve consecutive requests:
+
+```text
+ctx  91k -> $0.103      ctx 103k -> $0.070
+ctx  96k -> $0.088      ctx 105k -> $0.061
+ctx  99k -> $0.072      ctx 108k -> $0.080
+ctx 101k -> $0.059      ctx 111k -> $0.128
+```
+
+**Cost per request is a function of context size, not of what the request
+does.** A request reading 200 bytes costs the same as one reading 20KB. So the
+quantity to minimise is *frontier round-trips taken while context is large*,
+not bytes ingested.
+
+This inverts the intuition about what is worth delegating:
+
+- **Best** target: many small tool calls (12 reads of 2KB each = 12 avoided
+  $0.09 round-trips, near-zero content).
+- **Worst** target: one big read (a single round-trip, and you probably want
+  the content anyway).
+
+Measured on this branch: 7 child runs / 23 child requests cost **$0.0196**
+total. The same 23 round-trips inside an Opus session at ~115k context would
+have been **≈$1.90** — about **95x** — before counting the permanent context
+the orchestrator never took on.
+
+**Second correction: Anthropic children pay a boot tax.** A one-shot `media`
+child on `claude-haiku-4-5` billed 14,457 **cacheWrite** tokens — $0.018 of a
+$0.023 run — to write a prompt cache it never re-read. Deepseek bills zero
+cacheWrite. A/B on an identical vision task: `deepseek-v4-flash-vision-exp`
+and `claude-haiku-4-5` were both 100% accurate at $0.0019 vs $0.0228. Prefer
+deepseek for short-lived children; Anthropic caching only pays back across
+many turns.
+
+The original estimates below are left for the reasoning, but they undercount
+by modelling content rather than round-trips.
 
 Estimated with Anthropic list prices, 30 orchestrator turns following the read:
 
@@ -561,8 +600,32 @@ When delegating that work: do not delegate the scaffolding *design* (§3 — nev
 delegate synthesis). Delegate reading upstream docs, enumerating option names,
 and drafting per-agent frontmatter from a settled spec.
 
-**1.5 — write the contract** into the orchestrator policy, annotated with which
-fields are prose and which are real parameters (§4).
+**1.5 — write the contract** into the orchestrator policy. **DONE** —
+`my.pi.globalAgentPolicies."05-delegation"` in `modules/home/pi/policies.nix`.
+Orchestrator-only by construction (children have no `subagent` tool, so it
+would be pure attention tax, and it is procedure not prohibition).
+
+The roster table inside it is **generated from `my.pi.agents`**, not written as
+prose: a hand-written table is wrong by construction in any consumer flake that
+adds agents additively, and it would drift the first time a tier changed. It
+renders model, description, and the flags an orchestrator actually gets wrong
+(`no bash`, `writes`, budget cap). Cost: AGENTS.md 13.6KB -> 18.8KB always-on,
+about $0.08/session — bought back by the first delegated retrieval.
+
+Two empirical findings drove the content, and neither was anticipated:
+
+1. **A child may decline to escalate.** Told explicitly to `contact_supervisor`
+   about a manufactured ambiguity, a scout evaluated the premise, judged it
+   false, and answered anyway. Correct reasoning, but it means `ESCALATE IF` is
+   advisory. Escalation is a convenience, never a safety net. (The mechanism
+   itself is verified working against a *genuine* ambiguity: child blocked,
+   supervisor decided, child resumed and honoured the decision.)
+2. **Child output is a draft, not a fact.** A scout returned a nine-row
+   capability table that was correct except for one column, wrong in three
+   rows, unhedged, in the least conspicuous place. Hence the policy's rule to
+   verify any load-bearing claim with one deterministic host command, and to
+   always demand `file:line` citations — a citation makes verification a single
+   `grep`.
 
 **2 — Nix scaffolding.** `my.pi.modelTiers`, `my.pi.capabilityBundles` (each
 declaring skills + extensions + tools + mcpTools + `policy` prose together),
