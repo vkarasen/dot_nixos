@@ -281,7 +281,9 @@ list `pi-mcp-adapter` itself (verified in the child launch arg builder,
 `pi-args.ts`). And `--tools` is a **strict allowlist over all tools** —
 built-in, extension, and custom alike — so an extension's tools must also be
 named explicitly in `tools`; loading the extension alone does not surface them
-(pi `usage.md`).
+(pi `usage.md`). `extensions` entries are passed to `pi --extension`, so npm
+packages need the `npm:` prefix — bare names resolve as filesystem paths and
+fail the child launch.
 
 **MCP:** requires `pi-mcp-adapter` *and* explicit `mcp:` frontmatter entries —
 global `directTools: true` is insufficient. Metadata is cached at startup, so

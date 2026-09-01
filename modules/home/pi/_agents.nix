@@ -7,8 +7,10 @@
 # The skill tree exists because pi-subagents resolves `skills`/`skillPath` by
 # *directory basename* (see docs/pi-subagents-rollout.md §7), so a flat
 # /nix/store/<hash>-<name> path never matches the logical name `name`. A
-# linkFarm keyed by logical name gives `skillPath: ./skills` + `skills: [name]`
-# stable, rebuild-proof resolution.
+# linkFarm keyed by logical name gives `skillPath: ../subagent-skills` +
+# `skills: [name]` stable, rebuild-proof resolution. The tree lives OUTSIDE
+# ~/.pi/agent/agents/ because agent discovery is ~/.pi/agent/agents/**/*.md —
+# a SKILL.md under that path would be parsed as an agent definition.
 {
   pkgs,
   lib,
@@ -104,7 +106,7 @@
       ]
       ++ lib.optional (tier.thinking != null) "thinking: ${tier.thinking}"
       ++ lib.optional (skillNames != []) "skills: ${lib.concatStringsSep ", " skillNames}"
-      ++ lib.optional (skillNames != []) "skillPath: ./skills"
+      ++ lib.optional (skillNames != []) "skillPath: ../subagent-skills"
       ++ lib.optional (extensionNames != []) "extensions: ${lib.concatStringsSep ", " extensionNames}"
       ++ lib.optional (allTools != []) "tools: ${lib.concatStringsSep ", " allTools}"
       ++ lib.optional spec.worktree "worktree: true"
@@ -122,7 +124,7 @@ in {
   config.home.file = lib.mkMerge (
     [
       (lib.mkIf (publicSkills != {}) {
-        ".pi/agent/agents/skills".source = skillsTree;
+        ".pi/agent/subagent-skills".source = skillsTree;
       })
     ]
     ++ lib.mapAttrsToList

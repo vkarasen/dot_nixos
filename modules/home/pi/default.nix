@@ -137,7 +137,9 @@
       # `extensions:` list REPLACES ambient extensions (--no-extensions +
       # only listed), it does not add to them. So a bundle that needs MCP must
       # list pi-mcp-adapter itself, and the union of an agent's bundle
-      # extensions must be complete for that agent.
+      # extensions must be complete for that agent. Entries are passed to
+      # `pi --extension`, so packages need the `npm:` prefix (bare names are
+      # resolved as filesystem paths and fail the child launch).
       #
       # Not yet representable here: package-provided skills (worktrunk,
       # parse-document, pi-lens-*, mcp-scripting) and repo-local skills
@@ -150,7 +152,7 @@
         code = {skills = ["ast-bro"];};
         # LSP diagnostics + structural search (pi-lens read-only tools).
         lens = {
-          extensions = ["pi-lens"];
+          extensions = ["npm:pi-lens"];
           tools = [
             "lens_diagnostics"
             "lsp_diagnostics"
@@ -168,24 +170,24 @@
           # read-only scouts lack — so nix-scout is recon-only over .nix files.
         };
         web = {
-          extensions = ["@juicesharp/rpiv-web-tools"];
+          extensions = ["npm:@juicesharp/rpiv-web-tools"];
           tools = ["web_search" "web_fetch"];
         };
         vault = {skills = ["obsidian-vault-read" "obsidian-vault-maintenance"];};
         workspace = {
           skills = ["google-workspace" "linkedin-profile"];
-          extensions = ["pi-mcp-adapter"];
+          extensions = ["npm:pi-mcp-adapter"];
           mcpTools = ["google-workspace"];
         };
         media = {
           skills = ["video-analyzer"];
-          extensions = ["pi-docparser" "pi-mcp-adapter"];
+          extensions = ["npm:pi-docparser" "npm:pi-mcp-adapter"];
           tools = ["document_parse" "document_search" "document_screenshot"];
           mcpTools = ["video-analyzer"];
         };
         vcs = {
           skills = ["worktrunk"];
-          extensions = ["pi-worktrunk"];
+          extensions = ["npm:pi-worktrunk"];
         };
       };
 
