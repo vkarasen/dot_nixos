@@ -102,11 +102,45 @@
           "project_report"
         ];
       };
+      # This bundle owns `bash` itself, and that is the point. Its value is
+      # nix-search-tv, which is a CLI — a bundle whose skill needs a tool the
+      # agent lacks is worse than no bundle: it spends prompt context
+      # advertising a capability that cannot be exercised, and invites the
+      # model to try anyway. Bundles carrying their own prerequisites is what
+      # keeps "skill without its tool" unrepresentable, the mirror of the
+      # "tool without its extension" rule the other bundles already follow.
+      #
+      # The tradeoff is accepted deliberately: authoritative option lookup is
+      # worth more than the read-only posture, and pi-subagents cannot gate
+      # bash, so the compensation is a more capable model (worker tier, not
+      # simple) plus the scoping policy below. That policy is advisory — it
+      # is prose, and prose does not enforce. The structural fix is to stop
+      # needing the shell at all by wrapping nix-search-tv as a native pi tool
+      # or MCP server; then this bundle drops `bash` and `policy` entirely.
+      #
+      # bundle-module / pi-config are repo-local, omitted until skillPath can
+      # point at the repo's .pi/skills.
       nix = {
         skills = ["nix-search" "userspace-mounts"];
-        # bundle-module / pi-config are repo-local, omitted until skillPath
-        # can point at the repo's .pi/skills. nix-search-tv needs bash, which
-        # read-only scouts lack — so nix-scout is recon-only over .nix files.
+        tools = ["bash"];
+        policy = ''
+          ## Why you have `bash`
+
+          `bash` is in your tool list for one reason: `nix-search-tv` is a
+          command-line tool, and authoritative option and package lookup is
+          the whole point of this capability. Use the shell for
+          `nix-search-tv` queries and for cheap read-only inspection.
+
+          Do not use it for anything else. No writing or editing files, no
+          `git` operations, no `nix build` or other long-running builds, no
+          installing or fetching. If the task appears to need any of those,
+          that is a signal it belongs to a different agent — say so and stop
+          rather than reaching for the shell.
+
+          Never guess an option name, type, or default. If `nix-search-tv`
+          does not return it, report that it is not in the index rather than
+          inferring it from a similar option.
+        '';
       };
       web = {
         extensions = ["npm:@juicesharp/rpiv-web-tools"];
@@ -148,17 +182,32 @@
           key symbols, data flow, likely-change files, constraints, risks.
         '';
       };
+      # Worker tier rather than simple: the `nix` bundle hands this agent a
+      # shell, and flash-at-low-thinking is the wrong model to hold a prose
+      # constraint about how to use one. timeoutMs backstops the toolBudget
+      # because a bash call can hang (a first-run nix-search-tv index build,
+      # a command waiting on input) in a way a read call cannot.
       nix-scout = {
-        description = "Read-only recon for Nix / Home-Manager config trees";
-        tier = "simple";
+        description = "Nix/Home-Manager option lookup and config-tree recon";
+        tier = "worker";
         bundles = ["nix"];
         tools = readOnly;
         toolBudget = {hard = 40;};
+        timeoutMs = 600000;
         prompt = ''
-          You are a Nix recon scout. Read .nix files only — you have no bash,
-          so do not attempt nix build or nix-search-tv. Trace the dendritic
-          module structure: which files declare which flake.modules.* keys,
-          what imports what, and the fold order. Cite exact paths and lines.
+          You are a Nix recon scout with two jobs.
+
+          First, authoritative lookup: use `nix-search-tv` to confirm option
+          and package facts — attribute path, type, default, and whether the
+          thing exists at all in the pinned nixpkgs. Report the index you
+          found it in.
+
+          Second, structure: trace how this repo's dendritic module tree is
+          wired — which files declare which flake.modules.* keys, what
+          imports what, and the fold order. Cite exact paths and line numbers.
+
+          Confirm before asserting. An option name that looks plausible is not
+          evidence that it exists.
         '';
       };
       researcher = {

@@ -182,6 +182,21 @@ prevents misfires. Trimming attacks the routing signal. The only real lever is
   capability or task. Tier = model + thinking. Capabilities = a bundle declaring
   skills + extensions + tools + MCP *together*, so "tool allowlisted but its
   provider not loaded" is unrepresentable. Role = posture + policy prompt.
+- **A bundle owns its prerequisites, including `bash`.** The mirror of the rule
+  above, and it was missed on the first pass: the `nix` bundle shipped the
+  `nix-search` skill to a bash-less agent, so the skill was pure prompt tax for
+  a capability that could not be exercised — and an invitation to try anyway.
+  A bundle must carry every tool its skills require. Where that tool is `bash`,
+  the bundle also carries a `policy` block scoping what the shell is for, and
+  the agent moves up a tier: flash-at-low-thinking is the wrong model to hold a
+  prose constraint about shell use. Both compensations are advisory — prose
+  does not enforce — so this is a deliberate, priced trade, not a safe one.
+  The structural exit is to stop needing a shell: wrap `nix-search-tv` as a
+  native pi tool or MCP server, then the bundle drops `bash` and its policy.
+  Verified after the change: nix-scout ran 8 `nix-search-tv` calls and nothing
+  else, correctly reported three non-existent option paths as absent rather
+  than inventing them, and volunteered the real attribute path — $0.007 for
+  work that would have been ~10 Opus round-trips.
 - **Two axes, decoupled** — this is the answer to "the structured approach can't
   be the whole solution":
   - **Capabilities** are repo-independent (a read-only scout is read-only
