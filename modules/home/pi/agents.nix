@@ -49,9 +49,18 @@
         provider = "deepseek";
         thinking = "low";
       };
+      # Measured A/B on a synthetic ground-truth image (shapes + verbatim
+      # text): deepseek-v4-flash-vision-exp and claude-haiku-4-5 were both
+      # 100% correct, at $0.0019 vs $0.0228 — 12x. The gap is almost entirely
+      # Anthropic cacheWrite: haiku billed 14,457 cacheWrite tokens to boot a
+      # prompt a one-shot child never re-reads; deepseek bills none. Prompt
+      # caching only pays back across many turns, and these children are
+      # short-lived by design. Fall back to anthropic/claude-haiku-4-5 if
+      # `-exp` (experimental upstream) starts refusing images or leaves the
+      # model store.
       vision = {
-        model = "claude-haiku-4-5";
-        provider = "anthropic";
+        model = "deepseek-v4-flash-vision-exp";
+        provider = "deepseek";
         thinking = null;
       };
     };
