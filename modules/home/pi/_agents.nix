@@ -112,12 +112,9 @@
       ++ (
         if spec.toolBudget == null
         then []
-        else
-          [
-            "toolBudget:"
-            "  hard: ${toString spec.toolBudget.hard}"
-          ]
-          ++ lib.optional (spec.toolBudget.soft != null) "  soft: ${toString spec.toolBudget.soft}"
+        else [
+          "toolBudget: ${builtins.toJSON ({hard = spec.toolBudget.hard;} // lib.optionalAttrs (spec.toolBudget.soft != null) {soft = spec.toolBudget.soft;})}"
+        ]
       )
       ++ (
         if spec.permission == {}
