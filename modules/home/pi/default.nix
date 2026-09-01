@@ -139,13 +139,6 @@
           "userspace-mounts" = ./skills/userspace-mounts;
           "video-analyzer" = ./skills/video-analyzer;
         };
-        # Role prompt templates — mkDefault so the corporate flake can override
-        # any individual key with lib.mkForce.
-        promptTemplates = {
-          "reviewer" = lib.mkDefault ./prompts/reviewer.md;
-          "investigator" = lib.mkDefault ./prompts/investigator.md;
-          "planner" = lib.mkDefault ./prompts/planner.md;
-        };
         settings = let
           # The `orchestrator` model tier IS the interactive session default.
           # You always drop into an orchestrator and let it delegate, so "the

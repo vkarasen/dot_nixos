@@ -452,10 +452,10 @@ wrote there). The orchestrator must pass `worktree: true` in the launch, which
 is a delegation-contract boundary (§4), not something `mkAgent` can emit.
 `worktreeSetupHook`
 returns `syntheticPaths` to keep helper files out of diff capture, which is what
-that hook is for. `modules/home/pi/prompts/investigator.md` already exists and
-needs rewording for this: not "avoid edits" but "you are in a disposable
-worktree — experiment freely, report findings, do not propose keeping your
-changes".
+that hook is for. The investigator agent's prompt (in `agents.nix` — the
+prompt-template personas were removed) already carries this wording: "you are
+in a disposable worktree — experiment freely, report findings, do not propose
+keeping your changes".
 
 The wider direction is *sandbox the environment, not the tool list* — tool
 allowlists are brittle because capability is fungible; filesystem boundaries are

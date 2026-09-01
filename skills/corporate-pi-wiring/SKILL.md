@@ -31,7 +31,7 @@ After the refactor these outputs are available on `inputs.private`:
 
 | Output | Type | What it is |
 |---|---|---|
-| `flake.homeModules.pi-module` | HM module (path) | Declares `programs.pi-coding-agent.{skills, promptTemplates}` options and wires them into `settings.skills` / `settings.prompts`. Import this to use the structured option API instead of writing to `settings` directly. |
+| `flake.homeModules.pi-module` | HM module (path) | Declares the `programs.pi-coding-agent.skills` option and wires it into `settings.skills`. Import this to use the structured option API instead of writing to `settings` directly. |
 | `flake.lib.pi.mkSkills` | Function `{ pkgs, ast-bro } → attrset` | Returns `{ mkAstBroSkill, mkSourceSkill }` — the same derivation builders used by the private config. |
 | `flake.modules.homeManager.*` | Attrset of HM modules | Full dendritic aspect store. Individual aspects can be cherry-picked or the whole set folded in. |
 | `flake.modules.generic.*` | Attrset of HM modules | Class-agnostic modules, notably `my-options` which declares `my.is_private`, `my.git.email`, `my.portable.*`, `my.homeConfigurationName`. |
@@ -100,7 +100,7 @@ modules =
   # Your own corporate aspects:
   builtins.attrValues config.flake.modules.homeManager
 
-  # The pi option machinery from private (gives you the skills/promptTemplates options):
+  # The pi option machinery from private (gives you the skills option):
   ++ [ inputs.private.flake.homeModules.pi-module ]
 
   # The generic option declarations from private (my.is_private etc.):

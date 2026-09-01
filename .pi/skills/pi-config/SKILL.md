@@ -15,7 +15,7 @@ frozen inventory. The stable landmarks are:
 - `skills-private/` — sops-encrypted `.md` files for private skill content
   and private AGENTS.md policy sections
 - `_module.nix` — helper that defines
-  `options.programs.pi-coding-agent.{skills,promptTemplates}` and wires them
+  `options.programs.pi-coding-agent.skills` and wires it
   into `programs.pi-coding-agent.settings`
 - `_skills.nix` — builders for complex skills that need a Nix derivation at build time
 - `policies.nix` — the source of truth for public always-on AGENTS.md policy sections
@@ -285,28 +285,6 @@ The derivation must produce a directory with `SKILL.md` at its root.
 
 ---
 
-## Adding a prompt template (slash-command)
-
-Prompt templates become `/name` slash-commands inside pi. Add to
-`programs.pi-coding-agent.promptTemplates` in `modules/home/pi/default.nix`:
-
-```nix
-programs.pi-coding-agent = {
-  promptTemplates = {
-    review = ''
-      ---
-      description: Review staged changes for bugs and security issues
-      ---
-      Review `git diff --cached`. Focus on bugs, security, and error handling.
-    '';
-  };
-};
-```
-
-The key becomes the command name — the above registers `/review`.
-
----
-
 ## Adding a private skill
 
 Private skills are sops-encrypted files whose content must not appear in
@@ -441,8 +419,6 @@ That array is serialised into `settings.json` inside `configDir` (default:
 `~/.pi/agent`). Pi reads `settings.json` at startup and loads skills from the
 listed paths. The store paths are absolute, so the setup is unaffected by
 changes to `configDir`.
-
-Prompt templates follow the same pattern via `settings.prompts`.
 
 `my.pi.globalAgentPolicies` is wired in two stages:
 
