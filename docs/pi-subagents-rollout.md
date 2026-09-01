@@ -496,6 +496,21 @@ a wiring detail.
 
 - **`git add -NA` before `nix build`.** Untracked files do not exist to the
   flake (repo AGENTS.md pitfall #1). Bit this once.
+- **`nix build` and `nix flake check` do not test the same thing, and phase 2
+  shipped broken because of it.** Declaring `my.pi.modelTiers` /
+  `capabilityBundles` / `agents` inside `modules/home/pi/default.nix` left
+  `nix build .#homeConfigurations.vkarasen.activationPackage` green while
+  `nix flake check` failed on ``The option `my' does not exist``:
+  `modules/flake/wrapped-packages.nix` evaluates
+  `flake.modules.homeManager.pi` in isolation for `packages.pi`, without the
+  generic my-options module. Fixed by moving the roster into a sibling aspect,
+  `modules/home/pi/agents.nix` — the same split, for the same reason, that
+  `policies.nix` already uses. Now repo AGENTS.md pitfall #6. Run
+  `nix flake check`, not just `nix build`.
+- **Do not run `alejandra` over all of `modules/`.** `modules/_nixvim/lsp.nix`
+  and `modules/home/neovim/default.nix` carry pre-existing drift that is out of
+  scope (see below); a directory-wide format pulls them into the diff. Scope it
+  to the files you touched.
 - **Never `git stash` with intent-to-add entries present** — the stash silently
   fails to create. Nearly lost three changes; verify with `git stash list`.
 - **`modules/_nixvim/lsp.nix` and `modules/home/neovim/default.nix` have

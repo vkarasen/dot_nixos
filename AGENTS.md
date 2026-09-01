@@ -289,6 +289,25 @@ avoid repetition across classes.
    is the dendritic aspect store surfaced as a freeform flake output, not an
    error.
 
+6. **Aspects consumed by a standalone wrapped package must not DEFINE `my.*`.**
+   `modules/flake/wrapped-packages.nix` builds `packages.pi` from
+   `flake.modules.homeManager.pi` *in isolation* — without
+   `flake.modules.generic.my-options`. So a `my.foo = ...` definition inside
+   `modules/home/pi/default.nix` fails with ``The option `my' does not exist``
+   and breaks `nix flake check`, while `nix build
+   .#homeConfigurations.vkarasen.activationPackage` stays green — the two
+   commands do not test the same thing, which is why this hides.
+
+   *Reads* guarded with `or` (`config.my.copilot.enable or false`) are fine;
+   only definitions break. Put the definitions in a sibling aspect that the
+   wrapper does not consume — `modules/home/pi/policies.nix` (policies) and
+   `modules/home/pi/agents.nix` (subagent roster) both exist for exactly this
+   reason. The same applies to any future aspect added to `homeModules` in
+   `wrapped-packages.nix`.
+
+   **Always run `nix flake check`, not just `nix build`, before calling a
+   change done.**
+
 ## Google Drive bootstrap boundary
 
 This repo is the only place where the private Google Drive mount is wired

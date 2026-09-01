@@ -20,6 +20,11 @@ frozen inventory. The stable landmarks are:
 - `_skills.nix` — builders for complex skills that need a Nix derivation at build time
 - `policies.nix` — the source of truth for public always-on AGENTS.md policy sections
   (private policies are declared here too but materialized by `private.nix`)
+- `agents.nix` — declares the `flake.modules.homeManager.pi-agents` aspect:
+  the subagent roster (`my.pi.modelTiers`, `my.pi.capabilityBundles`,
+  `my.pi.agents`)
+- `_agents.nix` — helper consumed by `agents.nix`; renders each agent to
+  `~/.pi/agent/agents/<name>.md` and builds the logical-name skill tree
 - `prompts/` — role prompt templates / slash commands
 - server-specific adjunct aspects such as
   `google-workspace.nix`
@@ -53,12 +58,24 @@ are mixed: `default.nix` is the aspect entry point, while `_module.nix` and
 layout ever changes, trust the current module tree and the generated policy file
 more than this text.
 
+**Never put a `my.*` DEFINITION in `default.nix`.** That aspect is evaluated in
+isolation by the standalone `packages.pi` build
+(`modules/flake/wrapped-packages.nix`), without the generic my-options module,
+so a definition there fails with ``The option `my' does not exist``. This is
+why `policies.nix` and `agents.nix` are separate aspects rather than sections
+of `default.nix`. Reads guarded with `or` are fine; definitions are not. See
+repo AGENTS.md pitfall #6.
+
 After any edit, verify with (new files must be `git add`ed first — Nix's git
 flake fetcher ignores untracked files):
 
 ```bash
 git add -A && nix flake check --no-build
 ```
+
+`nix flake check` is not optional here: `nix build
+.#homeConfigurations.vkarasen.activationPackage` does **not** exercise
+`packages.pi`, so it stays green against exactly the mistake above.
 
 ---
 
