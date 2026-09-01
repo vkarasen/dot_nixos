@@ -328,7 +328,53 @@
             default = null;
             description = ''
               Runtime deadline for this agent in milliseconds. Writers are
-              bounded by this, not toolBudget (§5).
+              bounded by this, not toolBudget (§5). This is also the hard
+              wall-clock kill, so it caps how long a child can wait on a
+              contact_supervisor ask: the effective wait is min(ask timeout,
+              this). Keep >= the supervisor ask timeout for agents that may
+              need to block on a decision.
+            '';
+          };
+          toolTimeoutMs = lib.mkOption {
+            type = lib.types.nullOr lib.types.int;
+            default = null;
+            description = ''
+              Hard per-tool-call deadline, distinct from timeoutMs so a
+              single hung tool (e.g. a bash call waiting on input) can be cut
+              short without shrinking the whole-run window for a supervisor
+              decision. contact_supervisor / intercom / bg_wait are exempt
+              from this; they are NOT exempt from timeoutMs.
+            '';
+          };
+          memory = lib.mkOption {
+            type = lib.types.nullOr (lib.types.submodule {
+              options = {
+                scope = lib.mkOption {
+                  type = lib.types.enum ["project" "user"];
+                  description = ''
+                    Memory namespace. project resolves under
+                    <repo>/.pi/agent-memory/<path> and travels with the repo;
+                    user resolves under ~/.pi/agent/agent-memory/<path> and is
+                    shared across projects.
+                  '';
+                };
+                path = lib.mkOption {
+                  type = lib.types.nullOr lib.types.str;
+                  default = null;
+                  description = ''
+                    Optional sub-path within the scope's agent-memory dir;
+                    null = the scope root.
+                  '';
+                };
+              };
+            });
+            default = null;
+            description = ''
+              Opt-in role-specific persistent memory (pi-subagents `memory`
+              frontmatter). When set, the first 200 lines of the resolved
+              MEMORY.md are injected into the child prompt each run, and a
+              write-capable agent may append dated entries. null = none. The
+              twin agent is the intended first user once its design settles.
             '';
           };
           prompt = lib.mkOption {

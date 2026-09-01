@@ -90,6 +90,14 @@
         different approach to reach the same goal — a withheld tool is a
         deliberate boundary, not an obstacle to route around.
       '';
+
+      "30-supervisor-expiry" = ''
+        **Never proceed past an expired supervisor request.** If
+        `contact_supervisor` (need_decision) times out with no reply, stop and
+        report that no decision was obtained — do not guess, assume, or answer
+        anyway. A missed decision is recoverable; a confident wrong answer is
+        not.
+      '';
     };
 
     # -----------------------------------------------------------------------
@@ -158,6 +166,12 @@
           > Before relying on a specific claim from a child, verify THAT claim
           > with one deterministic host command.
 
+          The same rule applies to documentation and to your own inferences,
+          not just child output: verify before relying, whatever the source.
+          In one session a tool parameter that did not exist, a hotkey the
+          docs asserted but no code registered, and an inference from a real
+          error that would not reproduce were each confidently wrong.
+
           Always require `file:line` citations in retrieval briefs — not for
           the child's benefit, but because a citation turns verification into a
           single `grep`. One cheap check beats a careful-sounding paragraph.
@@ -190,8 +204,6 @@
             model:           per-call tier override when the default is wrong
             async: true      the default; use async:false only when you need
                              the result inside the current turn
-            label            name every child so its pane is identifiable —
-                             a child cannot name its own
 
           ## Roster
 

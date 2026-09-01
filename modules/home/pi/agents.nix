@@ -231,16 +231,19 @@
       };
       # Worker tier rather than simple: the `nix` bundle hands this agent a
       # shell, and flash-at-low-thinking is the wrong model to hold a prose
-      # constraint about how to use one. timeoutMs backstops the toolBudget
-      # because a bash call can hang (a first-run nix-search-tv index build,
-      # a command waiting on input) in a way a read call cannot.
+      # constraint about how to use one. toolTimeoutMs bounds a single hung
+      # bash call (a first-run nix-search-tv index build, a command waiting on
+      # input) in a way a read call cannot; timeoutMs is the whole-run window
+      # — an hour, so a blocked supervisor ask is not truncated by the run
+      # deadline (the effective wait is min(ask timeout, timeoutMs)).
       nix-scout = {
         description = "Nix/Home-Manager option lookup and config-tree recon";
         tier = "worker";
         bundles = ["nix"];
         tools = readOnly;
         toolBudget = {hard = 40;};
-        timeoutMs = 600000;
+        toolTimeoutMs = 600000;
+        timeoutMs = 3600000;
         prompt = ''
           You are a Nix recon scout with two jobs.
 
@@ -326,7 +329,7 @@
           write = "allow";
           edit = "allow";
         };
-        timeoutMs = 900000;
+        timeoutMs = 3600000;
         prompt = ''
           You are an investigator in a disposable worktree. Experiment
           freely — write throwaway code, run it, and iterate — then report
@@ -344,7 +347,7 @@
           write = "allow";
           edit = "allow";
         };
-        timeoutMs = 1800000;
+        timeoutMs = 3600000;
         prompt = ''
           You are an executor. Implement the requested change in the project
           tree, run the verification commands (build/test/lint), and report
@@ -361,7 +364,7 @@
           write = "allow";
           edit = "allow";
         };
-        timeoutMs = 900000;
+        timeoutMs = 3600000;
         prompt = ''
           You are a workspace operator. Use the google-workspace MCP tools to
           act on Gmail, Drive, Docs, Sheets, Calendar, and Contacts. Follow
@@ -378,7 +381,7 @@
           write = "allow";
           edit = "allow";
         };
-        timeoutMs = 900000;
+        timeoutMs = 3600000;
         # Optional: the corporate vault has no digital twin yet (§9).
         # `perField` supplies the mkDefault, so a consumer flake flips this
         # with a plain `my.pi.agents.twin.enable = true;`.

@@ -275,6 +275,14 @@
       # process at 0% CPU.
       home.sessionVariables.PI_SUBAGENT_FS_RETRY_MAX_TOTAL_MS = "1000";
 
+      # A child blocked on contact_supervisor waits up to this long for a
+      # reply before the ask expires (pi-subagents default is 10 minutes). An
+      # hour so an unattended orchestrator session can still come back to the
+      # question. The effective wait is min(this, the agent's timeoutMs) — the
+      # run deadline is a hard wall-clock kill — so the bounded agents in
+      # agents.nix were raised to match.
+      home.sessionVariables.PI_INTERCOM_ASK_TIMEOUT_MS = "3600000";
+
       home.file.".pi/agent/extensions/subagent/config.json".text =
         builtins.toJSON subagentConfig;
 

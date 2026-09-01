@@ -122,6 +122,15 @@
         else ["permission:"] ++ lib.mapAttrsToList (k: v: "  ${k}: ${v}") spec.permission
       )
       ++ lib.optional (spec.timeoutMs != null) "timeoutMs: ${toString spec.timeoutMs}"
+      ++ lib.optional (spec.toolTimeoutMs != null) "toolTimeoutMs: ${toString spec.toolTimeoutMs}"
+      ++ (
+        if spec.memory == null
+        then []
+        else
+          ["memory:"]
+          ++ ["  scope: ${spec.memory.scope}"]
+          ++ lib.optional (spec.memory.path != null) "  path: ${spec.memory.path}"
+      )
       ++ ["---"];
 
     body =
