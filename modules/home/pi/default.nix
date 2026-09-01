@@ -194,13 +194,14 @@
       # ── Phase 4: read-mostly agents ─────────────────────────────────────
       # Read-only posture = strict tool allowlist, no bash/write/edit. Roles
       # are separated by blast radius (§5b); none of these can mutate. toolBudget
-      # hard caps are added in the next pass once the agents are exercised.
+      # hard caps bound runaway loops (read-only agents only — see §5).
       my.pi.agents = lib.mkDefault {
         scout = {
           description = "Fast codebase recon that returns compressed context for handoff";
           tier = "simple";
           bundles = ["code"];
           tools = readOnly;
+          toolBudget = {hard = 40;};
           prompt = ''
             You are a scouting subagent. Move fast, do not guess. Map the area
             with grep/find/ls before diving deeper, then cite exact paths and
@@ -213,6 +214,7 @@
           tier = "simple";
           bundles = ["nix"];
           tools = readOnly;
+          toolBudget = {hard = 40;};
           prompt = ''
             You are a Nix recon scout. Read .nix files only — you have no bash,
             so do not attempt nix build or nix-search-tv. Trace the dendritic
@@ -225,6 +227,7 @@
           tier = "worker";
           bundles = ["web"];
           tools = readOnly;
+          toolBudget = {hard = 80;};
           prompt = ''
             You are a research subagent. Run focused web research and produce a
             concise, well-sourced brief that answers the question directly.
@@ -236,6 +239,7 @@
           tier = "executive";
           bundles = ["code" "lens"];
           tools = readOnly;
+          toolBudget = {hard = 60;};
           prompt = ''
             You are a disciplined review subagent. Inspect, evaluate, and report
             findings with evidence; do not guess. Verify against source, tests,
@@ -249,6 +253,7 @@
           tier = "orchestrator";
           bundles = [];
           tools = ["read"];
+          toolBudget = {hard = 20;};
           prompt = ''
             You are the oracle: a high-context decision-consistency subagent.
             Treat inherited forked context as the authoritative contract and
@@ -262,6 +267,7 @@
           tier = "vision";
           bundles = ["media"];
           tools = ["read"];
+          toolBudget = {hard = 40;};
           prompt = ''
             You are a media analyst. For videos, use the video-analyzer MCP
             tools to transcribe and inspect frames; for documents, use

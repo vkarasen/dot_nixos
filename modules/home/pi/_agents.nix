@@ -109,6 +109,16 @@
       ++ lib.optional (skillNames != []) "skillPath: ../subagent-skills"
       ++ lib.optional (extensionNames != []) "extensions: ${lib.concatStringsSep ", " extensionNames}"
       ++ lib.optional (allTools != []) "tools: ${lib.concatStringsSep ", " allTools}"
+      ++ (
+        if spec.toolBudget == null
+        then []
+        else
+          [
+            "toolBudget:"
+            "  hard: ${toString spec.toolBudget.hard}"
+          ]
+          ++ lib.optional (spec.toolBudget.soft != null) "  soft: ${toString spec.toolBudget.soft}"
+      )
       ++ lib.optional spec.worktree "worktree: true"
       ++ ["---"];
 

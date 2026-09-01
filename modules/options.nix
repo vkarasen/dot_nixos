@@ -274,6 +274,26 @@
               extensions). Bundle `tools` are unioned into this list.
             '';
           };
+          toolBudget = lib.mkOption {
+            type = lib.types.nullOr (lib.types.submodule {
+              options = {
+                hard = lib.mkOption {
+                  type = lib.types.int;
+                  description = "Hard tool-call cap; after this, tools are blocked.";
+                };
+                soft = lib.mkOption {
+                  type = lib.types.nullOr lib.types.int;
+                  default = null;
+                  description = "Optional soft cap that nudges before hard.";
+                };
+              };
+            });
+            default = null;
+            description = ''
+              Per-agent tool-call budget (read-only agents only — hard caps can
+              strand half-applied edits). null = no budget.
+            '';
+          };
           prompt = lib.mkOption {
             type = lib.types.lines;
             default = "";
