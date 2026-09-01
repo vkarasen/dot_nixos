@@ -275,6 +275,82 @@
             timestamps or page references.
           '';
         };
+
+        # ── Phase 5: write agents ─────────────────────────────────────────
+        # Writers re-allow write/edit via per-agent permission overrides and are
+        # bounded by timeoutMs, not toolBudget (§5). None of these may commit.
+        investigator = {
+          description = "Disposable-worktree investigator that tests hypotheses and reports findings";
+          tier = "worker";
+          bundles = ["code" "lens"];
+          tools = ["read" "grep" "find" "ls" "bash" "write" "edit"];
+          worktree = true;
+          permission = {
+            write = "allow";
+            edit = "allow";
+          };
+          timeoutMs = 900000;
+          prompt = ''
+            You are an investigator in a disposable worktree. Experiment
+            freely — write throwaway code, run it, and iterate — then report
+            findings with evidence. Do not propose keeping your changes: the
+            worktree is discarded. Escalate rather than guess when a stop
+            condition is unclear.
+          '';
+        };
+        executor = {
+          description = "Implementation agent that changes project files but never commits";
+          tier = "executive";
+          bundles = ["code" "lens"];
+          tools = ["read" "grep" "find" "ls" "bash" "write" "edit"];
+          permission = {
+            write = "allow";
+            edit = "allow";
+          };
+          timeoutMs = 1800000;
+          prompt = ''
+            You are an executor. Implement the requested change in the project
+            tree, run the verification commands (build/test/lint), and report
+            the diff and results. Never commit, merge, push, or open a PR —
+            leave the working tree for the orchestrator to review and commit.
+          '';
+        };
+        workspace = {
+          description = "Google Workspace operator (Gmail, Drive, Docs, Calendar)";
+          tier = "worker";
+          bundles = ["workspace"];
+          tools = ["read" "write" "edit"];
+          permission = {
+            write = "allow";
+            edit = "allow";
+          };
+          timeoutMs = 900000;
+          prompt = ''
+            You are a workspace operator. Use the google-workspace MCP tools to
+            act on Gmail, Drive, Docs, Sheets, Calendar, and Contacts. Follow
+            the google-workspace skill's guidance (auth, scoping, idempotency)
+            before any mutating operation.
+          '';
+        };
+        twin = {
+          description = "Digital-twin memory keeper for the Obsidian vault";
+          tier = "worker";
+          bundles = ["vault"];
+          tools = ["read" "write" "edit"];
+          permission = {
+            write = "allow";
+            edit = "allow";
+          };
+          timeoutMs = 900000;
+          # Optional: the corporate vault has no digital twin yet (§9).
+          enable = lib.mkDefault false;
+          prompt = ''
+            You are the digital twin: keep the Obsidian vault's identity and
+            memory notes accurate. Read the vault for context and update notes
+            only when the orchestrator explicitly asks. Never invent or
+            embellish facts.
+          '';
+        };
       };
 
       # Defaults: corporate (or any consumer) can override with lib.mkForce,

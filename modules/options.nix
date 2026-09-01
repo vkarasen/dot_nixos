@@ -294,6 +294,24 @@
               strand half-applied edits). null = no budget.
             '';
           };
+          permission = lib.mkOption {
+            type = lib.types.attrsOf (lib.types.enum ["allow" "ask" "deny"]);
+            default = {};
+            description = ''
+              Per-agent tool permission overrides. These override the global
+              write/edit deny (subagentConfig.permissions.rules), which is how
+              the investigator/executor re-allow write/edit inside their
+              boundary. Bash is never gated (pi-subagents passes it through).
+            '';
+          };
+          timeoutMs = lib.mkOption {
+            type = lib.types.nullOr lib.types.int;
+            default = null;
+            description = ''
+              Runtime deadline for this agent in milliseconds. Writers are
+              bounded by this, not toolBudget (§5).
+            '';
+          };
           prompt = lib.mkOption {
             type = lib.types.lines;
             default = "";
