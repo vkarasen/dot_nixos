@@ -87,6 +87,10 @@
           edit = "deny";
         };
       };
+      # Read-only tool baseline: no bash/write/edit. `--tools` is a strict
+      # allowlist over all tools, so extension tools (pi-lens, pi-docparser,
+      # web) come from their bundles and are unioned in by mkAgent.
+      readOnly = ["read" "grep" "find" "ls"];
     in {
       imports = [./_module.nix ./_agents.nix];
 
@@ -140,25 +144,34 @@
       # (pi-config, bundle-module, edit-private-skill) are not in the
       # skillPath tree; phase 4/5 must materialise them or drop the references.
       my.pi.capabilityBundles = lib.mkDefault {
-        code = {
-          skills = ["ast-bro"];
+        # Light code recon (ast-bro navigation). pi-lens is split into `lens`
+        # because it is executor/reviewer-only (§5) and cheap scouts must not
+        # pay its session_start cost.
+        code = {skills = ["ast-bro"];};
+        # LSP diagnostics + structural search (pi-lens read-only tools).
+        lens = {
           extensions = ["pi-lens"];
-          tools = null;
+          tools = [
+            "lens_diagnostics"
+            "lsp_diagnostics"
+            "symbol_search"
+            "module_report"
+            "read_symbol"
+            "read_enclosing"
+            "project_report"
+          ];
         };
         nix = {
           skills = ["nix-search" "userspace-mounts"];
           # bundle-module / pi-config are repo-local, omitted until skillPath
-          # can point at the repo's .pi/skills.
-          tools = null; # nix agents need bash for nix-search-tv / nix build
+          # can point at the repo's .pi/skills. nix-search-tv needs bash, which
+          # read-only scouts lack — so nix-scout is recon-only over .nix files.
         };
         web = {
           extensions = ["@juicesharp/rpiv-web-tools"];
           tools = ["web_search" "web_fetch"];
         };
-        vault = {
-          skills = ["obsidian-vault-read" "obsidian-vault-maintenance"];
-          tools = null;
-        };
+        vault = {skills = ["obsidian-vault-read" "obsidian-vault-maintenance"];};
         workspace = {
           skills = ["google-workspace" "linkedin-profile"];
           extensions = ["pi-mcp-adapter"];
@@ -167,12 +180,92 @@
         media = {
           skills = ["video-analyzer"];
           extensions = ["pi-docparser" "pi-mcp-adapter"];
+          tools = ["document_parse" "document_search" "document_screenshot"];
           mcpTools = ["video-analyzer"];
         };
         vcs = {
           skills = ["worktrunk"];
           extensions = ["pi-worktrunk"];
-          tools = null;
+        };
+      };
+
+      # ── Phase 4: read-mostly agents ─────────────────────────────────────
+      # Read-only posture = strict tool allowlist, no bash/write/edit. Roles
+      # are separated by blast radius (§5b); none of these can mutate. toolBudget
+      # hard caps are added in the next pass once the agents are exercised.
+      my.pi.agents = lib.mkDefault {
+        scout = {
+          description = "Fast codebase recon that returns compressed context for handoff";
+          tier = "simple";
+          bundles = ["code"];
+          tools = readOnly;
+          prompt = ''
+            You are a scouting subagent. Move fast, do not guess. Map the area
+            with grep/find/ls before diving deeper, then cite exact paths and
+            line ranges. Return compressed context for handoff: entry points,
+            key symbols, data flow, likely-change files, constraints, risks.
+          '';
+        };
+        nix-scout = {
+          description = "Read-only recon for Nix / Home-Manager config trees";
+          tier = "simple";
+          bundles = ["nix"];
+          tools = readOnly;
+          prompt = ''
+            You are a Nix recon scout. Read .nix files only — you have no bash,
+            so do not attempt nix build or nix-search-tv. Trace the dendritic
+            module structure: which files declare which flake.modules.* keys,
+            what imports what, and the fold order. Cite exact paths and lines.
+          '';
+        };
+        researcher = {
+          description = "Autonomous web researcher that returns a sourced brief";
+          tier = "worker";
+          bundles = ["web"];
+          tools = readOnly;
+          prompt = ''
+            You are a research subagent. Run focused web research and produce a
+            concise, well-sourced brief that answers the question directly.
+            Prefer primary sources; flag uncertainty and stale information.
+          '';
+        };
+        reviewer = {
+          description = "Read-only review of code diffs, plans, and PRs";
+          tier = "executive";
+          bundles = ["code" "lens"];
+          tools = readOnly;
+          prompt = ''
+            You are a disciplined review subagent. Inspect, evaluate, and report
+            findings with evidence; do not guess. Verify against source, tests,
+            docs, and requirements. Use lens_diagnostics / lsp_diagnostics for
+            type and structural checks. You are read-only: report what should
+            change, never edit.
+          '';
+        };
+        oracle = {
+          description = "High-context decision-consistency oracle that prevents drift";
+          tier = "orchestrator";
+          bundles = [];
+          tools = ["read"];
+          prompt = ''
+            You are the oracle: a high-context decision-consistency subagent.
+            Treat inherited forked context as the authoritative contract and
+            reconstruct the key decisions, constraints, and open questions
+            before answering. Flag conflicts and drift; do not make new
+            decisions on the orchestrator's behalf.
+          '';
+        };
+        media = {
+          description = "Vision/media analyst for video and documents";
+          tier = "vision";
+          bundles = ["media"];
+          tools = ["read"];
+          prompt = ''
+            You are a media analyst. For videos, use the video-analyzer MCP
+            tools to transcribe and inspect frames; for documents, use
+            document_parse / document_search / document_screenshot. Report with
+            timestamps or page references.
+          '';
         };
       };
 

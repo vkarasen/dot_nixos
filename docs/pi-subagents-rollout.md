@@ -278,7 +278,10 @@ or `subagentOnlyExtensions` (the latter loads only in children). A non-empty
 `extensions:` list **replaces** ambient extensions (`--no-extensions` + only the
 listed ones) rather than adding to them — so any bundle that needs MCP must
 list `pi-mcp-adapter` itself (verified in the child launch arg builder,
-`pi-args.ts`).
+`pi-args.ts`). And `--tools` is a **strict allowlist over all tools** —
+built-in, extension, and custom alike — so an extension's tools must also be
+named explicitly in `tools`; loading the extension alone does not surface them
+(pi `usage.md`).
 
 **MCP:** requires `pi-mcp-adapter` *and* explicit `mcp:` frontmatter entries —
 global `directTools: true` is insufficient. Metadata is cached at startup, so

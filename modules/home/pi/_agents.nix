@@ -65,15 +65,21 @@
 
     skillNames = lib.unique (lib.concatMap (b: b.skills or []) resolvedBundles);
     extensionNames = lib.unique (lib.concatMap (b: b.extensions or []) resolvedBundles);
-    toolNames = lib.unique (lib.concatMap (b:
+    bundleTools = lib.unique (lib.concatMap (b:
       if b.tools == null
       then []
       else b.tools)
     resolvedBundles);
+    agentTools =
+      if spec.tools == null
+      then []
+      else spec.tools;
     mcpNames = lib.unique (lib.concatMap (b: b.mcpTools or []) resolvedBundles);
-    # mcpTools are rendered as mcp:-prefixed entries inside the `tools` list,
-    # which is how pi-subagents represents direct MCP selections.
-    allTools = toolNames ++ map (t: "mcp:${t}") mcpNames;
+    # `--tools` is a strict allowlist over ALL tools (builtin + extension +
+    # custom), so extension tools (pi-lens, pi-docparser, rpiv-web-tools) must
+    # be named explicitly. Agent tools + bundle tools union, and mcpTools are
+    # rendered as mcp:-prefixed entries in the same list.
+    allTools = lib.unique (agentTools ++ bundleTools ++ map (t: "mcp:${t}") mcpNames);
     bundlePolicy = lib.concatMapStrings (b:
       if b.policy or "" == ""
       then ""

@@ -263,6 +263,17 @@
             default = [];
             description = "Keys into my.pi.capabilityBundles to compose.";
           };
+          tools = lib.mkOption {
+            type = lib.types.nullOr (lib.types.listOf lib.types.str);
+            default = null;
+            description = ''
+              Baseline tool allowlist for this agent. null = omit the field and
+              inherit ambient tools (NOT read-only). A list is a strict
+              allowlist over built-in AND extension tools — name extension
+              tools explicitly (their provider must also be in a bundle's
+              extensions). Bundle `tools` are unioned into this list.
+            '';
+          };
           prompt = lib.mkOption {
             type = lib.types.lines;
             default = "";
