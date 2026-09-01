@@ -17,6 +17,12 @@ Both flakes are under your control. This guide describes the agreed "special
 sauce" protocol between them — a deliberately tight coupling that avoids the
 boilerplate of a fully generic cross-flake API.
 
+> **Subagents:** this file covers flake wiring only. For the subagent system —
+> model tiers (including how to point them at `github-copilot` models),
+> capability bundles, and adding agents — read **`SUBAGENTS.md`** alongside
+> this file. Do that before touching `my.pi.*`; it documents a merge-semantics
+> trap and an isolation rule that both fail in non-obvious ways.
+
 ---
 
 ## What the private flake exposes
