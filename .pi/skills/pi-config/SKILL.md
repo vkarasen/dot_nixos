@@ -146,6 +146,61 @@ programs.pi-coding-agent = {
 
 ---
 
+## Adding or modifying an agent, tier, or bundle
+
+The subagent roster lives in `modules/home/pi/agents.nix` (the
+`my.pi.modelTiers`, `my.pi.capabilityBundles`, `my.pi.agents` options, declared
+in `modules/options.nix`). `_agents.nix` renders each agent to
+`~/.pi/agent/agents/<name>.md`. Base defaults are applied per FIELD, so a plain
+definition wins per field — never wrap an override in `mkForce`.
+
+```nix
+# A new tier (a whole model/thinking band):
+my.pi.modelTiers.corp-cheap = {
+  model = "gpt-4o-mini"; provider = "github-copilot"; thinking = "low";
+};
+
+# A new bundle (skills + extensions + tools + mcp + policy, together):
+my.pi.capabilityBundles.jira = {
+  skills = ["jira-workflows"];           # logical keys, resolved via skillPath
+  extensions = ["npm:pi-mcp-adapter"];   # npm: prefix REQUIRED
+  tools = ["bash"];                       # unioned into consuming agents
+  mcpTools = ["jira"];
+  policy = ''...scope the shell...'';
+};
+
+# A new agent (tier × bundles + role):
+my.pi.agents.ticket-scout = {
+  description = "One-line role";
+  tier = "corp-cheap";
+  bundles = ["jira"];
+  tools = ["read" "grep"];                # strict allowlist; null = inherit ambient
+  toolBudget = {hard = 40;};              # read-only agents ONLY
+  permission = {write = "allow"; edit = "allow";};  # writers only
+  timeoutMs = 3600000;                    # writers bound by this, not toolBudget
+  toolTimeoutMs = 600000;                 # optional per-tool cap
+  memory = {scope = "user"; path = "...";};  # optional persistent memory
+  prompt = ''...role prompt...'';
+};
+```
+
+Rules that bite (full detail in `skills/corporate-pi-wiring/SUBAGENTS.md`):
+
+- Unknown tier or bundle key throws at build time (`_agents.nix`).
+- `tools` is a strict allowlist over builtin AND extension tools; an extension
+  tool needs its provider in a bundle's `extensions`, else the launch fails.
+- `permission` overrides the global write/edit deny — writers need it.
+- `bash` is never gated; the only way to deny it is to leave it out of `tools`.
+- The `orchestrator` tier also sets the session's default model/thinking.
+- List fields (skills, extensions, tools, bundles) REPLACE rather than append —
+  restate the full list to extend one.
+
+Verify: `git add -NA && nix flake check`, then
+`nix build .#homeConfigurations.vkarasen.activationPackage --no-link` and
+inspect the rendered file at `~/.pi/agent/agents/<name>.md`.
+
+---
+
 ## Adding a skill
 
 ### Inline (simple — just markdown)

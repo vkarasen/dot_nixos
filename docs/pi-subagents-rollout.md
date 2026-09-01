@@ -11,78 +11,68 @@ Delete this file when the rollout lands.
 
 ## 0. Where to pick up
 
-**Status:** phases 0, 0.5, 1 and the install are committed on branch
-`pi-subagents`. `pi-subagents@0.62.0` and `pi-death-loop-guard@0.1.2` are
-installed but **never exercised** — nothing here has been run even once.
+**Status:** the system is live and exercised — 9 agents (3 writers), the
+`05-delegation` orchestrator policy, per-field tier/bundle overrides, and an
+hour-long escalation window. This is a working harness, not a rollout plan.
 `main` is untouched; merge with `wt merge` when satisfied.
 
 ### Bring it online
 
 ```bash
 nh home switch . -c vkarasen     # from this worktree
-exec $SHELL -l                   # PI_SUBAGENT_FS_RETRY_MAX_TOTAL_MS comes from
-                                 # home.sessionVariables — an existing shell
-                                 # will not have it
-pi                               # new packages only load at startup
+exec $SHELL -l                   # sessionVariables: PI_SUBAGENT_FS_RETRY_MAX_TOTAL_MS
+                                 # and PI_INTERCOM_ASK_TIMEOUT_MS — a shell that
+                                 # predates the switch will not have them
+pi                               # new packages load only at startup
 ```
 
-### Verify before trusting anything
+### You are already the orchestrator
 
-```text
-/subagents-doctor        installation health
-/subagents-models        confirm deepseek/deepseek-v4-flash actually resolves
-/subagents               list discovered agents
-/subagents-watchdog check
-```
+There is no orchestrator mode to enter: the `subagent` tool is registered in
+the main session at startup. Delegation is model-initiated, and the
+`05-delegation` policy in your always-on context now tells the model when to do
+it. If it still doesn't delegate spontaneously, the fix is a more concrete
+trigger, not more prose. You can always ask explicitly ("three parallel scouts
+for A, B, C").
 
-If `deepseek-v4-flash` does not resolve, the watchdog silently has no model.
-Fall back to `anthropic/claude-haiku-4-5` in
-`modules/home/pi/default.nix` → `subagents.watchdog.main.model`.
+### The current shape
 
-### You are already the orchestrator — but nothing delegates on its own
+Agent = tier × bundles × role. Tiers are `my.pi.modelTiers`; the `orchestrator`
+tier *is* the interactive session's default model/thinking, so "the model I
+talk to" and "the tier that routes delegation" are one knob. Bundles are
+`my.pi.capabilityBundles` (skills + extensions + tools + mcp + policy prose,
+together). Agents are `my.pi.agents`, rendered to `~/.pi/agent/agents/*.md` by
+`_agents.nix`. Base values live in `modules/home/pi/agents.nix`. Defaults are
+applied per FIELD (§3), so a consumer override of one key or field leaves the
+rest intact — never wrap a whole attrset in `mkDefault`.
 
-There is no orchestrator mode to enter. `pi-subagents` registers a `subagent`
-tool in the main session at startup, so the capability is present from the first
-turn.
+### Where each thing is documented
 
-**But delegation is model-initiated, and no policy tells the model when to
-delegate.** A frontier model holding full context will almost always just do the
-work itself, because that is easier. So expect approximately zero spontaneous
-delegation until the orchestrator policy lands (phase 1.5 + §4).
-
-Until then, **ask explicitly**: *"use a scout to find where X is defined"*,
-*"run three parallel scouts for A, B, C"*. That is the intended bootstrap mode —
-manual delegation to learn what the agents are actually good at, before writing
-policy that automates it.
-
-### What will look different, and what will look broken but isn't
-
-| | expect |
+| need | go here |
 | --- | --- |
-| Watchdog | a cheap review roughly every 10 tool results **in your own session**, arriving as a transcript-visible steer, plus an edit review at turn end. `/subagents-watchdog off` if noisy |
-| Death-loop guard | silent unless a call repeats identically (warn 3 / block 5 / abort 3) |
-| Builtin writers | **`worker`, `reviewer` and `delegate` will fail their edits** — global `write`/`edit` deny. Intended: bootstrap is retrieval-only. Not a bug |
-| Read-only builtins | `scout`/`researcher`/`oracle` have no bash, so no `rg`, `git log` or `nix-search-tv` |
-| Worktrees | `$XDG_CACHE_HOME/pi-subagents/worktrees`, unused until something requests `worktree: true` |
+| option semantics (the reference) | `modules/options.nix` — descriptions are current |
+| wire tiers / add agents (mechanics) | `skills/corporate-pi-wiring/SUBAGENTS.md` |
+| local recipes (skills, packages, policies, agents) | `.pi/skills/pi-config/SKILL.md` |
+| why these decisions (principles) | §3 below |
+| repo gotchas | §8 below |
 
-### First tasks, in order
+### Verified working — do not re-test
 
-1. **Scout sufficiency test.** Run a `scout` against a bounded question in this
-   repo (e.g. *"which files wire the pi aspect into the home configuration, and
-   what is the fold order?"*). The question being answered is whether
-   `read,grep,find,ls` is enough for recon without bash. If it is not, that is
-   evidence to add the `investigator` tier sooner — **not** to loosen the scout.
-2. **Resolve §7 items 1–4 empirically.** Item 1 (does a `skill:` deny prune the
-   catalog?) is the highest-value unknown; it decides whether children can be
-   narrowed in repos we do not own.
-3. **Re-measure the always-on payload.** The `subagent` tool description is now
-   in every prompt; `toolDescriptionMode: "compact"` is available and unset.
-   Method is in §2 — a probe extension capturing at `before_agent_start`.
-4. **Then** phase 5, leading with `investigator` (§9).
+Interrupt/resume (context survives the pause, revived under a new run id), the
+escalation loop (`contact_supervisor` blocks → supervisor decides → child
+resumes), per-agent model routing, npm:-prefixed extension bundles under a
+strict tools allowlist, and per-launch re-read of agent definitions (edit
+`agents.nix`, no pi restart needed).
 
-Read §1 before optimising anything, §5b before adding a guardrail, and §8
-before running `nix build` or `git stash`.
+### Still unverified — test before designing on them
 
+- **Steer mid-turn** — the control plane exists; a live steer of a running
+  child has never been exercised here.
+- **The fleet inspector `H` → herdr pane** — only opens on an *active* async
+  child, so it needs a live target; unconfirmed.
+- **The `/subagents-fleet` hotkey (`Ctrl+Alt+F`)** — registered in code but not
+  confirmed firing in your terminal; `/subagents-fleet` works.
+- **`pi-herdr-fanout`** — the N-peer-session fan-out, unbuilt (§9.6).
 ---
 
 ## 1. Why this exists — and the metric that was wrong
@@ -203,6 +193,17 @@ prevents misfires. Trimming attacks the routing signal. The only real lever is
 *which skills are present per agent* — a phase 4/5 concern.
 
 ---
+
+## 2b. Current mechanisms (added after §2 was written)
+
+| mechanism | where | one line |
+| --- | --- | --- |
+| per-field defaults | `agents.nix` `perField` | consumer overrides one key/field; whole-attrset `mkDefault` silently wipes siblings — for `agents` it was SILENT |
+| session = orchestrator | `default.nix` | `defaultModel/Provider/ThinkingLevel` derive from `modelTiers.orchestrator` |
+| escalation window | `default.nix` `PI_INTERCOM_ASK_TIMEOUT_MS=3600000` | effective wait = min(ask, agent `timeoutMs`); bounded agents raised to match |
+| stop-on-expiry | `policies.nix` invariant `30-supervisor-expiry` | child stops and reports "no decision" instead of guessing on an expired ask |
+| per-tool timeout | `my.pi.agents.<n>.toolTimeoutMs` | bounds one hung tool (bash) without shrinking the run window |
+| persistent memory | `my.pi.agents.<n>.memory {scope,path}` | pi-subagents `memory` frontmatter; first 200 lines of MEMORY.md injected; twin is the intended first user (still disabled) |
 
 ## 3. Locked decisions
 
@@ -617,6 +618,13 @@ a wiring detail.
 
 ## 9. Remaining phases
 
+> **Status (2026-09-01):** phases 1.5, 2, 3, 4 and 5 are DONE. Open: 6
+> (`pi-herdr-fanout`, unbuilt) and 7 (re-measure cost/task — §1 has partial
+> numbers). The `label` item under 3 is obsolete: `label` is workflow lane
+> metadata, not a launch param, and a single-child launch cannot be named.
+> `pi-intercom` was never installed — `contact_supervisor` turned out to be
+> native to pi-subagents.
+
 ### Why the numbering is not the running order
 
 These are dependency phases, not an execution order — **§0 is the running
@@ -683,11 +691,11 @@ to be retired by a gate that no longer exists; retiring it now would remove the
 only thing covering the orchestrator, which is the one agent with no capability
 restrictions at all. Revisit once drift monitoring has a track record.
 
-**3 — install.** `pi-subagents` **done**. Still outstanding: `pi-intercom` for
-`contact_supervisor` escalation; making `label` mandatory in the spawn
-convention (the orchestrator names a child's herdr pane — the child must never
-name its own, and cannot: see `ee22ced`); `toolDescriptionMode: compact`.
-**Resolve §7 items 1–4 here**, empirically.
+**3 — install.** `pi-subagents` **done**. `pi-intercom` was NOT needed —
+`contact_supervisor` is native to pi-subagents. The `label` convention is
+obsolete (`label` is workflow lane metadata, not a launch param — a
+single-child launch cannot be named). `toolDescriptionMode: compact` remains
+tabled pending a re-measure of the orchestrator prompt.
 
 **4 — read-mostly agents:** `scout` (cheap/code), `nix-scout` (cheap/nix),
 `researcher` (worker/web), `reviewer` (executive/code, read-only — note this
@@ -701,11 +709,12 @@ context — do not guess the narrowing up front.
 tools inside it, `permission:` frontmatter re-allowing write/edit, bounded by
 `timeoutMs` not `toolBudget` — see §5b; this is the highest-value one and should
 probably come first), `executor` (executive/code+vcs, cannot commit),
-`workspace` (worker/workspace), `twin` (worker/vault). `twin` needs
-`enable = mkDefault false` — the corporate vault has no digital twin yet, so it
-must be optional rather than a stub. Per-agent memory: frontmatter
-`memory: { scope: project|user, path }`, first 200 lines of `MEMORY.md` injected;
-agents without write tools get a read-only memory block.
+`workspace` (worker/workspace), `twin` (worker/vault). `twin` ships
+`enable = false` (perField supplies the mkDefault, so a consumer flips it with
+a plain `my.pi.agents.twin.enable = true`). Per-agent memory is wired as
+`my.pi.agents.<n>.memory = { scope, path }`, rendered to the `memory:`
+frontmatter (first 200 lines of MEMORY.md injected; write-less agents get a
+read-only block).
 
 **6 — `pi-herdr-fanout`** (bespoke, ~150 lines over the herdr CLI): budding off N
 independent *head* sessions in their own panes from one query ("run reviews on
@@ -719,9 +728,8 @@ completed task** and orchestrator context growth per task.
 
 ### Open questions for the user
 
-- Is the always-open default acceptable in repos he *does* own, pending the
-  phase-4 measurement?
-- Corporate flake will need its own `jira` bundle (MCP + skills). Base flake
-  should not know about it — confirm the additive-keys approach is enough.
-- Once §7 item 1 resolves, decide whether to narrow this repo's 13.8KB
-  `AGENTS.md` for children, or leave it inherited whole.
+Resolved since this was written: the always-open default in owned repos (§3),
+the additive corporate `jira` bundle (verified via a simulated corporate
+flake), and narrowing this repo's `AGENTS.md` for children (not needed yet —
+`toolDescriptionMode` and context narrowing stay tabled until the orchestrator
+prompt is measured again).

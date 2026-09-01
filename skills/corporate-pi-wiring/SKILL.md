@@ -40,7 +40,10 @@ After the refactor these outputs are available on `inputs.private`:
 behaviour in ssh, bash, and sops is still gated behind
 `lib.mkIf config.my.is_private`. The pi aspect is **not** gated — its
 settings are unconditional defaults that corporate can override with
-`lib.mkForce` or extend via list merging.
+`lib.mkForce` or extend via list merging. (This `mkForce` advice applies to
+`settings` keys; the subagent options `my.pi.modelTiers` / `capabilityBundles`
+/ `agents` use per-field defaults instead, where a plain definition wins — see
+`SUBAGENTS.md` §3.)
 
 ---
 
@@ -243,7 +246,7 @@ Reference when deciding which private aspects to import:
 | `neovim` | none | clean; needs nixvim HM module → include `external` | — |
 | `sops` | none | clean; needs sops-nix HM module → include `external`; for corporate secrets setup see `modules/home/sops/README-corporate.md` in the private repo | ✓ (secrets file, secret decls) |
 | `external` | none | all inputs pre-closed at flake-parts level | — |
-| `pi` | none | inputs pre-closed; settings are unconditional `mkDefault` — override with `mkForce` or extend lists | — |
+| `pi` | none | inputs pre-closed; settings are unconditional `mkDefault` — override with `mkForce` or extend lists. Subagent options (`my.pi.*`) use per-field defaults; see SUBAGENTS.md §3 | — |
 
 ---
 

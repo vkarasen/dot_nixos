@@ -201,7 +201,10 @@ my.pi.agents.jira-scout = {
   bundles = ["jira"];                       # must exist in my.pi.capabilityBundles
   tools = ["read" "grep" "find" "ls"];      # see the warning below
   toolBudget = {hard = 40;};                # READ-ONLY agents only
-  timeoutMs = 600000;
+  timeoutMs = 3600000;                      # >= PI_INTERCOM_ASK_TIMEOUT_MS so a
+                                            #   blocked ask is not cut short
+  toolTimeoutMs = 600000;                   # optional per-tool cap (hung bash)
+  memory = {scope = "user"; path = "...";};  # optional persistent memory
   prompt = ''
     You are a ticket scout. Answer with file/ticket citations and stop.
   '';
@@ -244,12 +247,22 @@ grep -A2 '^permission:' ~/.pi/agent/agents/*.md
 rules do not cover it. The only way to deny a shell is to leave `bash` out of
 `tools`.
 
-### `toolBudget` vs `timeoutMs`
+### `toolBudget` vs `timeoutMs` vs `toolTimeoutMs`
 
 - `toolBudget.hard` → **read-only agents only.** After the cap, blocking tools
   include `read`/`grep`, so a mutation-capable agent can be stranded with a
   half-applied edit.
 - Writers → bound with `timeoutMs` instead.
+- `timeoutMs` is the **whole-run wall-clock kill**, and it also caps how long a
+  child can wait on a `contact_supervisor` ask: the effective wait is
+  `min(ask timeout, timeoutMs)`. Keep it >= `PI_INTERCOM_ASK_TIMEOUT_MS`
+  (1 hour in the base flake) for any agent that may block on a decision.
+- `toolTimeoutMs` → a hard per-tool deadline, distinct from `timeoutMs`, so one
+  hung tool (a `bash` call waiting on input) is cut short without shrinking the
+  run window. `contact_supervisor` is exempt from this, not from `timeoutMs`.
+- `memory` → opt-in persistent memory: `{scope = "project"|"user"; path = "...";}`
+  renders the `memory:` frontmatter; the first 200 lines of MEMORY.md are
+  injected each run. The twin agent is the intended first user (still disabled).
 
 ---
 
@@ -306,6 +319,10 @@ an unknown bundle key throws.
 - **Escalation is advisory.** `contact_supervisor` works end to end, but a
   child that judges your stop condition unwarranted will answer anyway. Never
   rely on a child choosing to ask.
+- **A blocked ask expires.** The ask timeout is `PI_INTERCOM_ASK_TIMEOUT_MS`
+  (1 hour in the base flake), and on expiry the child is released to continue —
+  so an agentInvariants line tells it to stop and report "no decision" rather
+  than guess. The effective wait is `min(ask timeout, agent timeoutMs)`.
 
 ---
 
