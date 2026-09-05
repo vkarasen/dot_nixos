@@ -72,6 +72,16 @@
     console.useXkbConfig = true;
     services.xserver.xkb.options = "caps:escape";
 
+    # Catppuccin mocha 16-colour palette for the TTY virtual console. The VT
+    # only supports 16 ANSI colours (not the 24-bit scheme), so this remaps
+    # them to catppuccin mocha. Full truecolor needs a terminal emulator.
+    console.colors = [
+      "45475a" "f38ba8" "a6e3a1" "f9e2af"
+      "89b4fa" "f5c2e7" "94e2d5" "bac2de"
+      "585b70" "f38ba8" "a6e3a1" "f9e2af"
+      "89b4fa" "f5c2e7" "94e2d5" "a6adc8"
+    ];
+
     services.openssh = {
       enable = true;
       # Host keys live directly under /persist — NOT via a whole-/etc/ssh bind
