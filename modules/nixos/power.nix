@@ -4,8 +4,9 @@
 # units no-op gracefully.
 {...}: {
   flake.modules.nixos.power = {...}: {
-    # The lid is handled by the acpid handler below (delayed suspend), so
-    # logind must not act on it directly.
+    # The lid is handled by the lid-grace-watch timer below (delayed suspend),
+    # so logind must not act on it. NOTE: logind.conf changes need a
+    # `systemctl reload systemd-logind` (the switch activation does not do it).
     services.logind.lidSwitch = "ignore";
     services.logind.lidSwitchExternalPower = "ignore";
     services.logind.lidSwitchDocked = "ignore";
@@ -13,25 +14,36 @@
     # How long to stay suspended before hibernating.
     systemd.sleep.settings.Sleep.HibernateDelaySec = "15min";
 
-    # Clamshell + grace period: closing the lid on battery schedules
-    # suspend-then-hibernate in 5 minutes (time to relocate without killing
-    # jobs/SSH); reopening cancels it. On AC the lid does nothing (clamshell
-    # mode for an external monitor).
-    services.acpid = {
-      enable = true;
-      lidEventCommands = ''
-        case "$3" in
-          close)
-            /run/current-system/sw/bin/systemctl stop lid-grace-suspend.timer 2>/dev/null || true
-            ac=1
-            read ac < /sys/class/power_supply/AC/online 2>/dev/null || true
-            if [ "$ac" = "0" ]; then
+    # Grace period: poll the lid state (via /proc/acpi/button/lid, which logind
+    # does NOT grab — acpid is unusable here because logind holds the lid input
+    # device) every 30s. On battery + lid closed, schedule suspend-then-
+    # hibernate in 5 minutes (time to relocate without killing jobs/SSH); on
+    # lid open, cancel it. On AC the lid does nothing (clamshell mode).
+    systemd.timers.lid-grace-watch = {
+      wantedBy = ["timers.target"];
+      timerConfig = {
+        OnBootSec = "1min";
+        OnUnitActiveSec = "30s";
+        AccuracySec = "5s";
+      };
+    };
+    systemd.services.lid-grace-watch = {
+      description = "Schedule a delayed suspend when the lid closes on battery";
+      serviceConfig.Type = "oneshot";
+      script = ''
+        lid=""
+        read lid < /proc/acpi/button/lid/LID/state 2>/dev/null || true
+        ac=""
+        read ac < /sys/class/power_supply/AC/online 2>/dev/null || true
+        case "$lid" in
+          *closed*)
+            if [ "$ac" = "0" ] && ! /run/current-system/sw/bin/systemctl is-active -q lid-grace-suspend.timer 2>/dev/null; then
               /run/current-system/sw/bin/systemd-run --on-active=5min \
                 --unit=lid-grace-suspend --quiet \
                 /run/current-system/sw/bin/systemctl suspend-then-hibernate
             fi
             ;;
-          open)
+          *open*)
             /run/current-system/sw/bin/systemctl stop lid-grace-suspend.timer 2>/dev/null || true
             ;;
         esac
