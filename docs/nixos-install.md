@@ -103,9 +103,15 @@ nh os switch .#troy
    sudo ssh-to-age -private-key -i /persist/etc/ssh/ssh_host_ed25519_key > /tmp/keys.txt
    install -m 600 /tmp/keys.txt ~/.config/sops/age/keys.txt && sudo rm /tmp/keys.txt
    ```
-3. **hibernate** — `sudo btrfs inspect-internal map-swapfile -r /swap/swapfile`,
-   set `resume_offset` in `modules/nixos/boot.nix`.
-4. **Secure Boot** (lanzaboote) — later.
+3. **hibernate** — `resume_offset=533760` is already hardcoded in
+   `modules/nixos/boot.nix`; if the swapfile is ever recreated (e.g. size
+   change), recompute it with `sudo btrfs inspect-internal map-swapfile -r
+   /swap/swapfile` and update the value.
+4. **Secure Boot** (lanzaboote) — configured (`autoGenerateKeys` +
+   `autoEnrollKeys`); keys auto-generate on first boot and systemd-boot enrolls
+   them. The one manual step is entering BIOS **Setup Mode** (Security → Secure
+   Boot → enable → "Reset to Setup Mode") before the enrollment boot — see
+   `docs/nixos-architecture.md`.
 5. **desktop.nix** — Hyprland + terminal + Firefox.
 
 ## 7. Remote builder (zqnr.de)
