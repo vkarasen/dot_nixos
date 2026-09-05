@@ -11,7 +11,7 @@ keys:
   - &user_key age1f948vk9ek354n4k4kfgwx2fdd2my5m5l5gkdqc9nct970u7q9g5savtl7w
 
   # Machine keys (add as needed)
-  # - &machine1 age0987654321fedcba... # Replace with machine's age key
+  - &troy age1rvvnm79598hhtepm3lm3y2rvfkpp4v33mzlzzkky3urajqc925vs56zruh # Troy (derived from /persist/etc/ssh/ssh_host_ed25519_key)
 
 creation_rules:
   # Rules for secrets in the modules/home/sops/secrets/ directory
@@ -19,13 +19,14 @@ creation_rules:
     key_groups:
       - age:
           - *user_key
-        # - *machine1  # Uncomment and add machine keys as needed
+          - *troy
 
   # Rules for private pi skills and policies (sops-encrypted markdown)
   - path_regex: modules/home/pi/skills-private/[^/]+\.md$
     key_groups:
       - age:
           - *user_key
+          - *troy
 
 # To get started:
 # 1. Generate an age key: age-keygen -o ~/.config/sops/age/keys.txt
