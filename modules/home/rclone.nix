@@ -28,7 +28,9 @@
     rcloneConfigDir = "${config.home.homeDirectory}/.config/rclone";
     rcloneConfigFile = "${rcloneConfigDir}/rclone.conf";
     cacheDir = "${config.home.homeDirectory}/.cache/rclone";
-    rcloneBin = "${config.home.homeDirectory}/.nix-profile/bin/rclone";
+    # Resolve rclone by store path (works on both standalone home-manager and
+    # nested NixOS) — ~/.nix-profile/bin/rclone only exists on standalone.
+    rcloneBin = lib.getExe pkgs.rclone;
     # Resolved via the service PATH (see Environment below) so it works on
     # NixOS (/run/wrappers/bin) and non-NixOS (/bin or /usr/bin) alike.
     fusermountBin = "fusermount3";
