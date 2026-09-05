@@ -78,9 +78,11 @@
 
     # Catppuccin mocha 16-colour palette for the TTY virtual console. The VT
     # only supports 16 ANSI colours (not the 24-bit scheme), so this remaps
-    # them to catppuccin mocha. Full truecolor needs a terminal emulator.
+    # them to catppuccin mocha. Colour 0 is the *background* on the VT, so it
+    # is base (#1e1e2e), not the light surface used for "black" text in a real
+    # terminal. Full truecolor needs a terminal emulator.
     console.colors = [
-      "45475a" "f38ba8" "a6e3a1" "f9e2af"
+      "1e1e2e" "f38ba8" "a6e3a1" "f9e2af"
       "89b4fa" "f5c2e7" "94e2d5" "bac2de"
       "585b70" "f38ba8" "a6e3a1" "f9e2af"
       "89b4fa" "f5c2e7" "94e2d5" "a6adc8"
