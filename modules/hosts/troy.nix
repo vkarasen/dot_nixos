@@ -12,6 +12,7 @@
     config.flake.modules.nixos.impermanence
     config.flake.modules.nixos.sops
     config.flake.modules.nixos.remote-builder
+    config.flake.modules.nixos.wifi
   ];
 
   flake.modules.nixos.troy = {pkgs, ...}: {

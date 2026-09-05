@@ -11,6 +11,11 @@
     # on my.is_private.
     my.is_private = true;
 
+    # Intel wifi + misc firmware. Redistributable firmware is opt-in in this
+    # nixpkgs (enableRedistributableFirmware defaults to enableAllFirmware =
+    # false); without it the AX201 has no iwlwifi-QuZ ucode and no wifi device.
+    hardware.enableRedistributableFirmware = true;
+
     nix.settings.experimental-features = ["nix-command" "flakes"];
     # Home setup: accept unsigned paths copied from the workstation / build
     # host over SSH (local builds and zqnr.de aren't signed by a key this
