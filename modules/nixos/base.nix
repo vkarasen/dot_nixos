@@ -109,7 +109,7 @@
     users.users.vkarasen = {
       isNormalUser = true;
       description = "Vlad Karasen";
-      extraGroups = ["wheel" "networkmanager"];
+      extraGroups = ["wheel" "networkmanager" "video" "input"];
       # Keep the user systemd session alive from boot so home-manager's
       # user-level sops-nix.service can decrypt secrets before the system-level
       # home-manager activation needs them (rclone/workspace creds).

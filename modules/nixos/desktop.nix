@@ -3,7 +3,7 @@
 # tools) and their config live in the home-manager aspect
 # modules/home/desktop.nix.
 {...}: {
-  flake.modules.nixos.desktop = {...}: {
+  flake.modules.nixos.desktop = {pkgs, ...}: {
     # Hyprland, the dynamic tiling Wayland compositor. Enabling it also wires
     # up xdg-desktop-portal-hyprland (portalPackage default) for screen
     # sharing. Launch it from a TTY with `start-hyprland` (the module's
@@ -13,5 +13,10 @@
 
     # OpenGL/Mesa infrastructure Hyprland needs for EGL rendering on the iGPU.
     hardware.graphics.enable = true;
+
+    # brightnessctl's udev rules grant the `video` (backlight) and `input`
+    # (keyboard LEDs) groups write access, so the Fn brightness keys work
+    # without root. The user is in both groups (modules/nixos/base.nix).
+    services.udev.packages = [pkgs.brightnessctl];
   };
 }

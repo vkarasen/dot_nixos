@@ -22,6 +22,7 @@
       home.packages = with pkgs; [
         grim # screenshots
         slurp # region selection
+        brightnessctl # screen/keyboard backlight for the Fn keys
       ];
 
       # Auto-start Hyprland on the first TTY login (minimal, no display
@@ -183,8 +184,9 @@
 
       wayland.windowManager.hyprland = {
         enable = true;
-        # stateVersion 26.05 defaults configType to "lua"; pin "hyprlang" so
-        # the settings below (written in .conf syntax) render to hyprland.conf.
+        # stateVersion 26.05 defaults configType to "lua"; pin "hyprlang" for
+        # now. NOTE: Hyprland warns that .conf is being deprecated in favour of
+        # Lua — migrate these settings to configType "lua" before it's removed.
         configType = "hyprlang";
         # NOTE: monitor layout is intentionally left to auto-detection for the
         # first slice. Clamshell handling (disable eDP when the lid is closed
@@ -230,8 +232,13 @@
           };
 
           dwindle = {
-            pseudotile = true;
             preserve_split = true;
+          };
+
+          # Suppress the "Hyprland was updated" popup + the donation nag.
+          ecosystem = {
+            no_update_news = true;
+            no_donation_nag = true;
           };
 
           bind = [
@@ -246,6 +253,14 @@
             "$mainMod, 3, workspace, 3"
             "$mainMod, 4, workspace, 4"
             "$mainMod, 5, workspace, 5"
+
+            # Fn / media keys (volume + screen brightness).
+            ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+            ", XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
+            ", XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"
+            ", XF86AudioMicMute, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
+            ", XF86MonBrightnessDown, exec, brightnessctl set 5%-"
+            ", XF86MonBrightnessUp, exec, brightnessctl set 5%+"
           ];
 
           bindm = [
