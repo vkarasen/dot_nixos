@@ -1,12 +1,30 @@
 # Dendritic aspect: bootloader, swap, and the impermanence erase-on-boot
 # rollback service.
-{lib, ...}: {
+{inputs, lib, ...}: {
   flake.modules.nixos.boot = {
     config,
     pkgs,
     ...
   }: {
-    boot.loader.systemd-boot.enable = true;
+    imports = [inputs.lanzaboote.nixosModules.lanzaboote];
+
+    # Lanzaboote (Secure Boot): signs the boot chain and replaces the
+    # systemd-boot install. Keys live in /persist so they survive the
+    # erase-on-boot rollback.
+    boot.lanzaboote = {
+      enable = true;
+      pkiBundle = "/persist/etc/secureboot";
+      autoGenerateKeys.enable = true;
+      autoEnrollKeys = {
+        enable = true;
+        # No surprise reboot: the user enters BIOS Setup Mode manually before
+        # the enrollment boot.
+        autoReboot = false;
+        includeMicrosoftKeys = true;
+      };
+    };
+
+    boot.loader.systemd-boot.enable = false;
     boot.loader.efi.canTouchEfiVariables = true;
 
     # systemd in stage-1: required for the rollback service (and the future

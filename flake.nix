@@ -61,6 +61,11 @@
     impermanence = {
       url = "github:nix-community/impermanence";
     };
+
+    lanzaboote = {
+      url = "github:nix-community/lanzaboote/v1.1.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   # Dendritic pattern: every file under ./modules is a flake-parts module,
