@@ -56,6 +56,24 @@ only if you **regenerate them** (manually, or by deleting
 "Reset to Setup Mode" / "Restore Factory Keys" in the BIOS (which wipes the
 enrolled keys and requires re-enrollment).
 
+## Desktop (Hyprland)
+
+- Stack: **Hyprland** (dwindle tiling) + **ghostty** (terminal) + **waybar**
+  (bar) + **mako** (notifications) + **fuzzel** (launcher); wl-clipboard,
+  grim/slurp for clipboard/screenshots. `modules/nixos/desktop.nix` enables the
+  compositor (and the screen-share portal); `modules/home/desktop.nix` holds the
+  apps + their config.
+- Launch: log in on **tty1** → `~/.bash_profile` runs `exec start-hyprland` (no
+  display manager). Quitting Hyprland returns to the login prompt.
+- Keybinds: `SUPER+Return` ghostty, `SUPER+Space` fuzzel, `SUPER+Q` close,
+  `SUPER+V` float, `SUPER+F` fullscreen, `SUPER+M` exit, `SUPER+1..5` workspaces.
+- `configType = "hyprlang"` is pinned — stateVersion 26.05 would default to the
+  newer Lua configType, and catppuccin's Lua-only hyprland theming is disabled
+  in favour of explicit rgba colours in the hyprland.conf.
+- Gotcha: ghostty and ncurses both ship `share/terminfo/g/ghostty`, which
+  collides in the shared home-manager buildEnv; the desktop aspect overrides
+  ghostty to drop the duplicate entry and keep `x/xterm-ghostty`.
+
 ## TPM2 unlock
 
 - LUKS **key slot 2** is bound to **PCR 7** (Secure Boot state).
