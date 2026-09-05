@@ -59,6 +59,10 @@
       isNormalUser = true;
       description = "Vlad Karasen";
       extraGroups = ["wheel" "networkmanager"];
+      # Keep the user systemd session alive from boot so home-manager's
+      # user-level sops-nix.service can decrypt secrets before the system-level
+      # home-manager activation needs them (rclone/workspace creds).
+      linger = true;
       # Password login hash comes from sops (secrets.yaml) so no hash is
       # committed in plaintext. Don't use `passwd` to change it — that only
       # edits the ephemeral /etc/shadow and is lost on reboot.
