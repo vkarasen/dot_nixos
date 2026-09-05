@@ -48,21 +48,23 @@
       "tpm_tis"
     ];
 
-    # zram for day-to-day swap (fast, RAM-backed). The on-disk swapfile (see
-    # modules/nixos/disks.nix) is the hibernation target via resume= +
-    # resume_offset — hibernation ignores swap priority entirely; priority only
-    # orders regular paging (zram first).
-    zramSwap = {
-      enable = true;
-      memoryPercent = 100;
-    };
-
     # Hibernate: resume from the LUKS-encrypted btrfs swapfile. resume_offset
     # is the physical location of /swap/swapfile on the btrfs device —
     # recompute with `btrfs inspect-internal map-swapfile -r /swap/swapfile`
     # if the swapfile is ever recreated (e.g. size change).
     boot.resumeDevice = "/dev/mapper/cryptroot";
-    boot.kernelParams = ["resume_offset=533760"];
+    boot.kernelParams = [
+      "resume_offset=533760"
+      # zswap: compressed RAM cache in front of the swapfile. Chosen over zram
+      # because zram + disk swap causes LRU inversion (cold pages calcify in
+      # zram while the active set spills to disk — Chris Down, "zswap vs zram",
+      # 2026). zstd + zsmalloc maximise compression (capacity over speed, for a
+      # browser-tab-heavy light workload); 25% RAM pool before tiering to disk.
+      "zswap.enabled=1"
+      "zswap.compressor=zstd"
+      "zswap.zpool=zsmalloc"
+      "zswap.max_pool_percent=25"
+    ];
 
     # Erase-on-boot: roll the ephemeral root subvolume back to its blank
     # snapshot before sysroot mounts. First boot captures the pristine install
