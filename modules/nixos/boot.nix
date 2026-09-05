@@ -23,6 +23,9 @@
       "usb_storage"
       "sd_mod"
       "thunderbolt"
+      # TPM2 (STM TPM over LPC/SPI on this ThinkPad) — needed in the initrd so
+      # systemd-cryptsetup can auto-unlock the LUKS root via the TPM2 token.
+      "tpm_tis"
     ];
 
     # zram for day-to-day swap (RAM-constrained laptop). The on-disk swapfile
