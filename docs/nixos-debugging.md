@@ -160,14 +160,29 @@ bisection isolates `PrivateTmp=yes` → manual `mount -t tmpfs` works but
 `/tmp`/`/var/tmp` fresh fixes it. If a wipe-then-restore rollback breaks
 *sandboxed* services on btrfs, check COW-sharing with the source snapshot first.
 
-## 8. Deterministic vs. generation-specific failures
+## 8. Wifi — two declarative-wifi gotchas
+
+- **No wifi device at all** (card shows in `lspci`, but no `wlp*` interface):
+  `sudo dmesg | grep iwlwifi` for "no suitable firmware". On this nixpkgs
+  `hardware.enableRedistributableFirmware` is **opt-in** (defaults to
+  `enableAllFirmware = false`), so Intel cards ship without `iwlwifi-*` ucode.
+  Fix: `hardware.enableRedistributableFirmware = true`, then reload the module
+  (`modprobe -r iwlwifi && modprobe iwlwifi`) or reboot.
+- **`networkmanager.ensureProfiles.secrets.entries`**: `key` is the **bare
+  property name** (e.g. `psk`), not a dotted path — the secret agent prefixes
+  the setting name itself (`802-11-wireless-security.psk`). `matchId` is the
+  connection id. (The agent serves auto-activations; a manual `nmcli
+  connection up` may not get the secret — that's a CLI quirk, boot auto-connect
+  is what matters.)
+
+## 9. Deterministic vs. generation-specific failures
 
 To tell whether a failure is a config change or an environmental/boot issue,
 reboot and pick the **previous generation** from the systemd-boot menu. If
 *both* generations fail identically, it is not a config regression — look at
 what the two boots share (the wipe/rollback, a kernel issue, hardware).
 
-## 9. LUKS passphrase
+## 10. LUKS passphrase
 
 Everything above assumes you're past LUKS. Keep the passphrase in pasteable
 form; the human types it at the prompt before any of this is possible. TPM
