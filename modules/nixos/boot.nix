@@ -30,9 +30,8 @@
     boot.loader.systemd-boot.enable = false;
     boot.loader.efi.canTouchEfiVariables = true;
 
-    # systemd in stage-1: required for the rollback service (and the future
-    # TPM2 systemd-cryptenroll unlock path). Default on nixos-unstable; kept
-    # explicit for clarity.
+    # systemd in stage-1: required for the rollback service and the TPM2
+    # systemd-cryptenroll unlock. Default on nixos-unstable; kept explicit.
     boot.initrd.systemd.enable = true;
 
     # Minimal modules to reach the LUKS+btrfs root on first boot. The full
@@ -50,10 +49,13 @@
     ];
 
     # zram for day-to-day swap (RAM-constrained laptop). The on-disk swapfile
-    # (see modules/nixos/disks.nix) is reserved for hibernation.
+    # (see modules/nixos/disks.nix) is reserved for hibernation. zram is kept
+    # at a LOWER priority than the swapfile (which defaults to -2) so the
+    # kernel hibernates to the persistent swapfile, never volatile zram.
     zramSwap = {
       enable = true;
       memoryPercent = 100;
+      priority = -5;
     };
 
     # Hibernate: resume from the LUKS-encrypted btrfs swapfile. resume_offset
