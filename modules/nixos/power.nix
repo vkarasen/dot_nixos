@@ -37,13 +37,20 @@
         read ac < /sys/class/power_supply/AC/online 2>/dev/null || true
         case "$lid" in
           *closed*)
-            if [ "$ac" = "0" ] && ! /run/current-system/sw/bin/systemctl is-active -q lid-grace-suspend.timer 2>/dev/null; then
-              /run/current-system/sw/bin/systemd-run --on-active=5min \
-                --unit=lid-grace-suspend --quiet \
-                /run/current-system/sw/bin/systemctl suspend-then-hibernate
+            if [ "$ac" = "0" ]; then
+              # on battery + lid closed: ensure the grace timer is scheduled
+              if ! /run/current-system/sw/bin/systemctl is-active -q lid-grace-suspend.timer 2>/dev/null; then
+                /run/current-system/sw/bin/systemd-run --on-active=5min \
+                  --unit=lid-grace-suspend --quiet \
+                  /run/current-system/sw/bin/systemctl suspend-then-hibernate
+              fi
+            else
+              # plugged back in (clamshell): cancel any pending grace
+              /run/current-system/sw/bin/systemctl stop lid-grace-suspend.timer 2>/dev/null || true
             fi
             ;;
-          *open*)
+          *)
+            # lid open: cancel any pending grace
             /run/current-system/sw/bin/systemctl stop lid-grace-suspend.timer 2>/dev/null || true
             ;;
         esac
