@@ -35,6 +35,13 @@
       memoryPercent = 100;
     };
 
+    # Hibernate: resume from the LUKS-encrypted btrfs swapfile. resume_offset
+    # is the physical location of /swap/swapfile on the btrfs device —
+    # recompute with `btrfs inspect-internal map-swapfile -r /swap/swapfile`
+    # if the swapfile is ever recreated (e.g. size change).
+    boot.resumeDevice = "/dev/mapper/cryptroot";
+    boot.kernelParams = ["resume_offset=533760"];
+
     # Erase-on-boot: roll the ephemeral root subvolume back to its blank
     # snapshot before sysroot mounts. First boot captures the pristine install
     # as the blank snapshot; subsequent boots wipe and restore.
@@ -43,9 +50,9 @@
       wantedBy = ["initrd.target"];
       after = [
         "systemd-cryptsetup@cryptroot.service"
-        # When hibernation is enabled, additionally order after
-        # "systemd-hibernate-resume@dev-mapper-cryptroot.service" so a resume
-        # boot never runs the rollback (it would wipe the resumed root).
+        # A resume boot must NOT run the rollback (it would wipe the resumed
+        # root) — order after hibernate-resume so a resume skips the wipe.
+        "systemd-hibernate-resume@dev-mapper-cryptroot.service"
       ];
       before = ["sysroot.mount"];
       unitConfig.DefaultDependencies = "no";
@@ -79,12 +86,5 @@
       '';
     };
 
-    # Hibernation (deferred until after first install):
-    #   btrfs inspect-internal map-swapfile -r /swap/swapfile   # -> offset
-    # then set:
-    #   boot.resumeDevice = "/dev/mapper/cryptroot";
-    #   boot.kernelParams = [ "resume_offset=<n>" ];
-    # and enable suspend-then-hibernate via systemd.sleep.extraConfig
-    # (HibernateDelaySec) + add the hibernate-resume unit to `after` above.
   };
 }
