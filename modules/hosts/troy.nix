@@ -14,6 +14,7 @@
     config.flake.modules.nixos.remote-builder
     config.flake.modules.nixos.wifi
     config.flake.modules.nixos.power
+    config.flake.modules.nixos.desktop
   ];
 
   flake.modules.nixos.troy = {pkgs, ...}: {
