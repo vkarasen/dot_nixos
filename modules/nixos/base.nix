@@ -44,6 +44,10 @@
       enable = true;
       powerOnBoot = true;
     };
+    # Thunderbolt authorization (bolt daemon) — required for Thunderbolt docks
+    # and devices to be authorized (PCIe tunneling: dock USB hub, ethernet,
+    # etc.). DisplayPort alt-mode video itself doesn't need it.
+    services.hardware.bolt.enable = true;
     services.fwupd.enable = true; # firmware updates
     # thermald is deliberately NOT enabled: the ThinkPad EC + thinkpad_acpi
     # DYTC handle thermal management, and thermald's own platform check
@@ -121,6 +125,7 @@
     environment.systemPackages = with pkgs; [
       vim
       git
+      bolt # boltctl, for managing Thunderbolt device authorization
     ];
   };
 }
