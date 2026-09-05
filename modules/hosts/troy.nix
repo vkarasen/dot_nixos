@@ -15,6 +15,8 @@
     config.flake.modules.nixos.wifi
     config.flake.modules.nixos.power
     config.flake.modules.nixos.desktop
+    config.flake.modules.nixos.stylix
+    config.flake.modules.nixos.lock
   ];
 
   flake.modules.nixos.troy = {pkgs, ...}: {

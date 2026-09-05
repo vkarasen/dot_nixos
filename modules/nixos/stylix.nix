@@ -1,0 +1,31 @@
+# Dendritic aspect: stylix (NixOS class) — holistic base16 theming for the
+# desktop surface (GTK, console, greeter, ...). The terminal/CLI layer stays
+# with catppuccin-nix (see modules/home/external.nix and the desktop aspect),
+# so Stylix targets the DE surface only.
+{...}: {
+  flake.modules.nixos.stylix = {pkgs, ...}: {
+    stylix = {
+      enable = true;
+      # Opt-in per-target: Stylix themes only what we enable here; everything
+      # else (terminals, CLI tools) stays catppuccin's.
+      autoEnable = false;
+      polarity = "dark";
+      base16Scheme = "${pkgs.base16-schemes}/share/themes/catppuccin-mocha.yaml";
+
+      fonts = {
+        monospace = {
+          package = pkgs.nerd-fonts.noto;
+          name = "NotoMono Nerd Font Mono";
+        };
+      };
+
+      # System-level (DE surface) targets. The per-user targets (hyprland,
+      # waybar, mako, hyprlock, fuzzel) are enabled in modules/home/desktop.nix.
+      targets = {
+        gtk.enable = true;
+        console.enable = true; # TTY palette (replaces the manual console.colors)
+        regreet.enable = true; # login screen
+      };
+    };
+  };
+}

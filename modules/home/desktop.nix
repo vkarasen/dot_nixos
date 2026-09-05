@@ -19,6 +19,62 @@
         brightnessctl # screen/keyboard backlight for the Fn keys
       ];
 
+      # Stylix owns the per-user DE chrome; enable its targets for these. The
+      # terminal/CLI layer (ghostty, bat, nvim, …) is left to catppuccin-nix.
+      stylix.targets = {
+        hyprland.enable = true;
+        waybar.enable = true;
+        mako.enable = true;
+        hyprlock.enable = true;
+        fuzzel.enable = true;
+      };
+
+      # Idle daemon: lock right before suspend/hibernate, never on idle.
+      # (No `listener` blocks => no idle auto-lock.)
+      services.hypridle = {
+        enable = true;
+        settings = {
+          general = {
+            lock_cmd = "hyprlock";
+            before_sleep_cmd = "hyprlock";
+          };
+        };
+      };
+
+      # Lock screen structure (Stylix's hyprlock target supplies the
+      # background image + input-field colours).
+      programs.hyprlock = {
+        enable = true;
+        settings = {
+          general = {
+            hide_cursor = true;
+            grace = 5;
+          };
+          input-field = {
+            monitor = "";
+            size = "250, 50";
+            outline_thickness = 2;
+            dots_size = 0.2;
+            dots_spacing = 0.15;
+            dots_center = true;
+            placeholder_text = "Password";
+            position = "0, -40";
+            halign = "center";
+            valign = "center";
+          };
+          label = [
+            {
+              monitor = "";
+              text = "cmd[update:1000] echo $(date +%H:%M)";
+              font_size = 64;
+              position = "0, 60";
+              halign = "center";
+              valign = "center";
+            }
+          ];
+        };
+      };
+
       # Auto-start Hyprland on the first TTY login (minimal, no display
       # manager). `start-hyprland` is the NixOS module wrapper that sets up the
       # Wayland environment; quitting Hyprland returns to the login prompt.
@@ -49,20 +105,11 @@
           settings = {
             main = {
               terminal = "${ghostty}/bin/ghostty";
-              font = "NotoMono Nerd Font Mono:size=11";
               layer = "overlay";
               width = 50;
               lines = 12;
               prompt = "❯ ";
-            };
-            colors = {
-              background = "1e1e2edd";
-              text = "cdd6f4ff";
-              match = "89b4faff";
-              selection = "585b70ff";
-              selection-match = "89b4faff";
-              selection-text = "1e1e2eff";
-              border = "89b4faff";
+              # Colours + font are injected by Stylix's fuzzel target.
             };
           };
         };
@@ -166,13 +213,10 @@
           anchor = "top-right";
           default-timeout = 5000;
           border-radius = 8;
-          border-color = "#89b4fa";
-          background-color = "#1e1e2e";
-          text-color = "#cdd6f4";
           width = 400;
           margin = 10;
           padding = 10;
-          font = "NotoMono Nerd Font Mono 10";
+          # Colours + font are injected by Stylix's mako target.
         };
       };
 
@@ -284,6 +328,12 @@
               _args = [
                 (lib.generators.mkLuaInline ''mod .. " + M"'')
                 (lib.generators.mkLuaInline "hl.dsp.exit()")
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + L"'')
+                (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("hyprlock")'')
               ];
             }
             {

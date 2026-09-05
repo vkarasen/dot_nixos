@@ -40,6 +40,7 @@
               # class-agnostic options (my.*) in the NixOS module system
               ++ (builtins.attrValues (config.flake.modules.generic or {}))
               ++ [
+                inputs.stylix.nixosModules.stylix
                 inputs.home-manager.nixosModules.home-manager
                 {
                   home-manager = {

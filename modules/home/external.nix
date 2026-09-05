@@ -20,6 +20,15 @@
     catppuccin = {
       autoEnable = true;
       enable = true;
+      # The DE surface is themed by Stylix; disable catppuccin's copy so the
+      # two don't fight over the same config files. (gtk stays: catppuccin only
+      # sets the Papirus *icon* theme there, which Stylix doesn't touch.)
+      # Everything else (terminals, CLI/TUI tools) stays catppuccin's.
+      hyprland.enable = false;
+      waybar.enable = false;
+      mako.enable = false;
+      fuzzel.enable = false;
+      hyprlock.enable = false;
     };
 
     nix.registry.nixpkgs.flake = inputs.nixpkgs;
