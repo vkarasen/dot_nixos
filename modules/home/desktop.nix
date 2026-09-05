@@ -13,12 +13,6 @@
     });
   in {
     config = {
-      # catppuccin's hyprland theming targets the Lua configType (it injects a
-      # Lua-inline `colors` block + themes/*.lua); with configType "hyprlang"
-      # that block is invalid, and our explicit rgba borders below already
-      # carry the mocha palette, so disable the catppuccin injection.
-      catppuccin.hyprland.enable = lib.mkForce false;
-
       home.packages = with pkgs; [
         grim # screenshots
         slurp # region selection
@@ -184,88 +178,200 @@
 
       wayland.windowManager.hyprland = {
         enable = true;
-        # stateVersion 26.05 defaults configType to "lua"; pin "hyprlang" for
-        # now. NOTE: Hyprland warns that .conf is being deprecated in favour of
-        # Lua — migrate these settings to configType "lua" before it's removed.
-        configType = "hyprlang";
+        # stateVersion 26.05 defaults configType to "lua"; the settings below
+        # are written against the Lua (hl.*) API.
         # NOTE: monitor layout is intentionally left to auto-detection for the
         # first slice. Clamshell handling (disable eDP when the lid is closed
         # and only the Thunderbolt LG is connected) is a follow-up.
         settings = {
-          "$mainMod" = "SUPER";
+          # Lua locals — rendered as `local name = value`, referenced below.
+          mod = {_var = "SUPER";};
+          terminal = {_var = "ghostty";};
+          launcher = {_var = "fuzzel";};
 
-          exec-once = [
-            "waybar"
-            "mako"
-          ];
-
-          env = [
-            "XCURSOR_SIZE,24"
-            "XDG_CURRENT_DESKTOP,Hyprland"
-            "XDG_SESSION_TYPE,wayland"
-            "XDG_SESSION_DESKTOP,Hyprland"
-          ];
-
-          general = {
-            gaps_in = 5;
-            gaps_out = 10;
-            border_size = 2;
-            "col.active_border" = "rgba(89b4faee) rgba(f5c2e7ee) 45deg";
-            "col.inactive_border" = "rgba(313244ee)";
-            layout = "dwindle";
-          };
-
-          decoration = {
-            rounding = 8;
-            blur = {
-              enabled = true;
-              size = 3;
-              passes = 1;
+          # Options — rendered as hl.config({ ... }). The border colours are
+          # explicit rgba (catppuccin also injects a `colors` table via its
+          # themes/*.lua, available here as `colors.*` if we switch later).
+          config = {
+            general = {
+              gaps_in = 5;
+              gaps_out = 10;
+              border_size = 2;
+              col = {
+                active_border = "rgba(89b4faee)";
+                inactive_border = "rgba(313244ee)";
+              };
+              layout = "dwindle";
+            };
+            decoration = {
+              rounding = 8;
+              blur = {
+                enabled = true;
+                size = 3;
+                passes = 1;
+              };
+            };
+            input = {
+              kb_layout = "us";
+              kb_options = "caps:escape";
+              follow_mouse = 1;
+              touchpad.natural_scroll = true;
+            };
+            dwindle = {
+              preserve_split = true;
+            };
+            # Suppress the "Hyprland was updated" popup + the donation nag.
+            ecosystem = {
+              no_update_news = true;
+              no_donation_nag = true;
             };
           };
 
-          input = {
-            kb_layout = "us";
-            kb_options = "caps:escape";
-            follow_mouse = 1;
-            touchpad.natural_scroll = true;
-          };
-
-          dwindle = {
-            preserve_split = true;
-          };
-
-          # Suppress the "Hyprland was updated" popup + the donation nag.
-          ecosystem = {
-            no_update_news = true;
-            no_donation_nag = true;
-          };
-
-          bind = [
-            "$mainMod, Return, exec, ghostty"
-            "$mainMod, Space, exec, fuzzel"
-            "$mainMod, Q, killactive,"
-            "$mainMod, V, togglefloating,"
-            "$mainMod, F, fullscreen,"
-            "$mainMod, M, exit,"
-            "$mainMod, 1, workspace, 1"
-            "$mainMod, 2, workspace, 2"
-            "$mainMod, 3, workspace, 3"
-            "$mainMod, 4, workspace, 4"
-            "$mainMod, 5, workspace, 5"
-
-            # Fn / media keys (volume + screen brightness).
-            ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
-            ", XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
-            ", XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"
-            ", XF86AudioMicMute, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
-            ", XF86MonBrightnessDown, exec, brightnessctl set 5%-"
-            ", XF86MonBrightnessUp, exec, brightnessctl set 5%+"
+          # Environment variables — rendered as hl.env("VAR", "value").
+          env = [
+            {_args = ["XCURSOR_SIZE" "24"];}
+            {_args = ["XDG_CURRENT_DESKTOP" "Hyprland"];}
+            {_args = ["XDG_SESSION_TYPE" "wayland"];}
+            {_args = ["XDG_SESSION_DESKTOP" "Hyprland"];}
           ];
 
-          bindm = [
-            "$mainMod, mouse:272, movewindow"
-            "$mainMod, mouse:273, resizewindow"
+          # Run once Hyprland is up — rendered as hl.on("hyprland.start", …).
+          on = {
+            _args = [
+              "hyprland.start"
+              (lib.generators.mkLuaInline ''
+                function()
+                  hl.exec_cmd("waybar")
+                  hl.exec_cmd("mako")
+                end
+              '')
+            ];
+          };
+
+          # Keybinds — rendered as hl.bind(...).
+          bind = [
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + RETURN"'')
+                (lib.generators.mkLuaInline "hl.dsp.exec_cmd(terminal)")
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + SPACE"'')
+                (lib.generators.mkLuaInline "hl.dsp.exec_cmd(launcher)")
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + Q"'')
+                (lib.generators.mkLuaInline "hl.dsp.window.close()")
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + V"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.float({ action = "toggle" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + F"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.fullscreen({ action = "toggle" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + M"'')
+                (lib.generators.mkLuaInline "hl.dsp.exit()")
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + 1"'')
+                (lib.generators.mkLuaInline ''hl.dsp.focus({ workspace = "1" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + 2"'')
+                (lib.generators.mkLuaInline ''hl.dsp.focus({ workspace = "2" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + 3"'')
+                (lib.generators.mkLuaInline ''hl.dsp.focus({ workspace = "3" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + 4"'')
+                (lib.generators.mkLuaInline ''hl.dsp.focus({ workspace = "4" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + 5"'')
+                (lib.generators.mkLuaInline ''hl.dsp.focus({ workspace = "5" })'')
+              ];
+            }
+
+            # Fn / media keys (volume + screen brightness).
+            {
+              _args = [
+                "XF86AudioMute"
+                (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle")'')
+              ];
+            }
+            {
+              _args = [
+                "XF86AudioLowerVolume"
+                (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-")'')
+                {repeating = true;}
+              ];
+            }
+            {
+              _args = [
+                "XF86AudioRaiseVolume"
+                (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+")'')
+                {repeating = true;}
+              ];
+            }
+            {
+              _args = [
+                "XF86AudioMicMute"
+                (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle")'')
+              ];
+            }
+            {
+              _args = [
+                "XF86MonBrightnessDown"
+                (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("brightnessctl set 5%-")'')
+              ];
+            }
+            {
+              _args = [
+                "XF86MonBrightnessUp"
+                (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("brightnessctl set 5%+")'')
+              ];
+            }
+
+            # Mouse binds (move + resize the active window).
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + mouse:272"'')
+                (lib.generators.mkLuaInline "hl.dsp.window.drag()")
+                {mouse = true;}
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + mouse:273"'')
+                (lib.generators.mkLuaInline "hl.dsp.window.resize()")
+                {mouse = true;}
+              ];
+            }
           ];
         };
       };
