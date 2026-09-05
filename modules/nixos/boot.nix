@@ -48,14 +48,13 @@
       "tpm_tis"
     ];
 
-    # zram for day-to-day swap (RAM-constrained laptop). The on-disk swapfile
-    # (see modules/nixos/disks.nix) is reserved for hibernation. zram is kept
-    # at a LOWER priority than the swapfile (which defaults to -2) so the
-    # kernel hibernates to the persistent swapfile, never volatile zram.
+    # zram for day-to-day swap (fast, RAM-backed). The on-disk swapfile (see
+    # modules/nixos/disks.nix) is the hibernation target via resume= +
+    # resume_offset — hibernation ignores swap priority entirely; priority only
+    # orders regular paging (zram first).
     zramSwap = {
       enable = true;
       memoryPercent = 100;
-      priority = -5;
     };
 
     # Hibernate: resume from the LUKS-encrypted btrfs swapfile. resume_offset
