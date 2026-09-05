@@ -16,6 +16,16 @@
     # false); without it the AX201 has no iwlwifi-QuZ ucode and no wifi device.
     hardware.enableRedistributableFirmware = true;
 
+    # Setuid fusermount3 so userspace FUSE mounts (the rclone gdrive mount)
+    # work rootless. The home-manager rclone aspect resolves it via
+    # /run/wrappers/bin (see modules/home/rclone.nix).
+    security.wrappers.fusermount3 = {
+      source = "${pkgs.fuse3}/bin/fusermount3";
+      owner = "root";
+      group = "root";
+      setuid = true;
+    };
+
     nix.settings.experimental-features = ["nix-command" "flakes"];
     # Home setup: accept unsigned paths copied from the workstation / build
     # host over SSH (local builds and zqnr.de aren't signed by a key this
