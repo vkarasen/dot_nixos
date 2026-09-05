@@ -13,6 +13,9 @@
     # erase-on-boot rollback.
     boot.lanzaboote = {
       enable = true;
+      # Keep at most 10 generations on the ESP (each is a signed UKI + kernel
+      # + initrd); older ones are pruned from the boot menu and the ESP.
+      configurationLimit = 10;
       pkiBundle = "/persist/etc/secureboot";
       autoGenerateKeys.enable = true;
       autoEnrollKeys = {

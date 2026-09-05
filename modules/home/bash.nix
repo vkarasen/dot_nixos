@@ -95,6 +95,17 @@
           settings = {
             add_newline = false;
 
+            # Catppuccin mocha (applied to the base prompt modules).
+            directory.style = "bold #89b4fa";
+            directory.truncation_length = 3;
+            git_branch.style = "bold #a6e3a1";
+            git_status.style = "#f38ba8";
+            character = {
+              success_symbol = "[❯](bold #a6e3a1)";
+              error_symbol = "[❯](bold #f38ba8)";
+            };
+            time.style = "bold #a6adc8";
+
             # Custom herdr module — shows a green icon in shells outside herdr
             # whenever the herdr server is running.  Detection is socket-based
             # (the socket only exists while the server is up) so no herdr

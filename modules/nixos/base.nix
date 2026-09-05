@@ -39,6 +39,31 @@
 
     networking.networkmanager.enable = true;
 
+    # Baseline hardware services (independent of any desktop environment).
+    hardware.bluetooth = {
+      enable = true;
+      powerOnBoot = true;
+    };
+    services.fwupd.enable = true; # firmware updates
+    # thermald is deliberately NOT enabled: the ThinkPad EC + thinkpad_acpi
+    # DYTC handle thermal management, and thermald's own platform check
+    # declines to run here.
+    services.upower.enable = true; # battery/power status
+
+    # Sound: PipeWire + WirePlumber (headless-capable; the desktop consumes it
+    # too).
+    security.rtkit.enable = true;
+    services.pipewire = {
+      enable = true;
+      wireplumber.enable = true;
+      alsa.enable = true;
+      pulse.enable = true;
+      jack.enable = true;
+    };
+
+    # Nerd font for terminal nerd-symbol rendering.
+    fonts.packages = [pkgs.nerd-fonts.noto];
+
     time.timeZone = "Europe/Dublin";
     i18n.defaultLocale = "en_US.UTF-8";
 
