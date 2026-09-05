@@ -108,7 +108,7 @@
 
     users.users.vkarasen = {
       isNormalUser = true;
-      description = "Vlad Karasen";
+      description = "vkarasen"; # greeters show the username, not a full name
       extraGroups = ["wheel" "networkmanager" "video" "input"];
       # Keep the user systemd session alive from boot so home-manager's
       # user-level sops-nix.service can decrypt secrets before the system-level

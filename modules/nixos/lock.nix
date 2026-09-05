@@ -12,6 +12,10 @@
     programs.hyprlock.enable = true;
 
     # Login screen: greetd + ReGreet (GTK). Replaces the TTY auto-start.
-    services.displayManager.regreet.enable = true;
+    services.displayManager.regreet = {
+      enable = true;
+      # Single user + single session: skip the user/session selection UI.
+      settings.skip_selection = true;
+    };
   };
 }
