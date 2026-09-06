@@ -11,12 +11,44 @@
         rm -f $out/share/terminfo/g/ghostty
       '';
     });
+
+    # Grouped, searchable keybinding cheatsheet (shown in fuzzel). Reads the
+    # live binds (so it can't drift), decodes the modmask, groups by the
+    # "Area: …" prefix in each bind's description, and pipes it into fuzzel.
+    hypr-cheatsheet = pkgs.writeShellScriptBin "hypr-cheatsheet" ''
+      # Hand-curated keybinding cheatsheet, grouped into areas. Keep in sync
+      # with the binds in this file (modules/home/desktop.nix).
+      printf '%s\n' \
+        'Launch: Terminal — SUPER+Return' \
+        'Launch: App launcher — SUPER+Space' \
+        'Window: Close window — SUPER+Q' \
+        'Window: Toggle floating — SUPER+V' \
+        'Window: Toggle fullscreen — SUPER+F' \
+        'Window: Move window (drag) — SUPER+Left click' \
+        'Window: Resize window (drag) — SUPER+Right click' \
+        'Workspace: Go to workspace 1 — SUPER+1' \
+        'Workspace: Go to workspace 2 — SUPER+2' \
+        'Workspace: Go to workspace 3 — SUPER+3' \
+        'Workspace: Go to workspace 4 — SUPER+4' \
+        'Workspace: Go to workspace 5 — SUPER+5' \
+        'Media: Mute audio — Mute key' \
+        'Media: Volume down — Volume down key' \
+        'Media: Volume up — Volume up key' \
+        'Media: Mute microphone — Mic mute key' \
+        'Media: Brightness down — Brightness down key' \
+        'Media: Brightness up — Brightness up key' \
+        'System: Lock screen — SUPER+L' \
+        'System: Exit Hyprland — SUPER+M' \
+        'Help: Show keybindings — SUPER+/' \
+      | fuzzel --dmenu --prompt 'Keys ' --width 70 --lines 22
+    '';
   in {
     config = {
       home.packages = with pkgs; [
         grim # screenshots
         slurp # region selection
         brightnessctl # screen/keyboard backlight for the Fn keys
+        hypr-cheatsheet # SUPER+/ keybinding cheatsheet
       ];
 
       # Stylix owns the per-user DE chrome; enable its targets for these. The
@@ -334,6 +366,12 @@
               _args = [
                 (lib.generators.mkLuaInline ''mod .. " + L"'')
                 (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("hyprlock")'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + slash"'')
+                (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("hypr-cheatsheet")'')
               ];
             }
             {
