@@ -32,7 +32,6 @@
         compactionEngine = "blackhole";
         tailBehavior = "minimal";
         midRunCompaction = "off";
-        compactAfterTokens = 650000;
         memory = true;
         sessionFallback = true;
         observeAfterTokens = 30000;
