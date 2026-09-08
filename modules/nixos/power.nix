@@ -7,9 +7,9 @@
     # The lid is handled by the lid-grace-watch timer below (delayed suspend),
     # so logind must not act on it. NOTE: logind.conf changes need a
     # `systemctl reload systemd-logind` (the switch activation does not do it).
-    services.logind.lidSwitch = "ignore";
-    services.logind.lidSwitchExternalPower = "ignore";
-    services.logind.lidSwitchDocked = "ignore";
+    services.logind.settings.Login.HandleLidSwitch = "ignore";
+    services.logind.settings.Login.HandleLidSwitchExternalPower = "ignore";
+    services.logind.settings.Login.HandleLidSwitchDocked = "ignore";
 
     # How long to stay suspended before hibernating.
     systemd.sleep.settings.Sleep.HibernateDelaySec = "15min";
