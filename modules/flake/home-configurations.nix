@@ -24,6 +24,11 @@
         builtins.attrValues config.flake.modules.homeManager
         ++ builtins.attrValues (config.flake.modules.generic or {})
         ++ [
+          # The standalone home config has no NixOS side, so the Stylix home
+          # module (whose options modules/home/desktop.nix sets) is imported
+          # here explicitly. In the NixOS config it arrives via
+          # stylix.nixosModules.stylix + homeManagerIntegration.autoImport.
+          inputs.stylix.homeModules.stylix
           # vkarasen's personal machine is always the private variant.
           {my.is_private = lib.mkForce true;}
         ];
