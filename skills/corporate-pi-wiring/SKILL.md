@@ -17,6 +17,12 @@ Both flakes are under your control. This guide describes the agreed "special
 sauce" protocol between them — a deliberately tight coupling that avoids the
 boilerplate of a fully generic cross-flake API.
 
+> **Subagents:** this file covers flake wiring only. For the subagent system —
+> model tiers (including how to point them at `github-copilot` models),
+> capability bundles, and adding agents — read **`SUBAGENTS.md`** alongside
+> this file. Do that before touching `my.pi.*`; it documents a merge-semantics
+> trap and an isolation rule that both fail in non-obvious ways.
+
 ---
 
 ## What the private flake exposes
@@ -25,7 +31,7 @@ After the refactor these outputs are available on `inputs.private`:
 
 | Output | Type | What it is |
 |---|---|---|
-| `flake.homeModules.pi-module` | HM module (path) | Declares `programs.pi-coding-agent.{skills, promptTemplates}` options and wires them into `settings.skills` / `settings.prompts`. Import this to use the structured option API instead of writing to `settings` directly. |
+| `flake.homeModules.pi-module` | HM module (path) | Declares the `programs.pi-coding-agent.skills` option and wires it into `settings.skills`. Import this to use the structured option API instead of writing to `settings` directly. |
 | `flake.lib.pi.mkSkills` | Function `{ pkgs, ast-bro } → attrset` | Returns `{ mkAstBroSkill, mkSourceSkill }` — the same derivation builders used by the private config. |
 | `flake.modules.homeManager.*` | Attrset of HM modules | Full dendritic aspect store. Individual aspects can be cherry-picked or the whole set folded in. |
 | `flake.modules.generic.*` | Attrset of HM modules | Class-agnostic modules, notably `my-options` which declares `my.is_private`, `my.git.email`, `my.portable.*`, `my.homeConfigurationName`. |
@@ -34,7 +40,10 @@ After the refactor these outputs are available on `inputs.private`:
 behaviour in ssh, bash, and sops is still gated behind
 `lib.mkIf config.my.is_private`. The pi aspect is **not** gated — its
 settings are unconditional defaults that corporate can override with
-`lib.mkForce` or extend via list merging.
+`lib.mkForce` or extend via list merging. (This `mkForce` advice applies to
+`settings` keys; the subagent options `my.pi.modelTiers` / `capabilityBundles`
+/ `agents` use per-field defaults instead, where a plain definition wins — see
+`SUBAGENTS.md` §3.)
 
 ---
 
@@ -91,7 +100,7 @@ modules =
   # Your own corporate aspects:
   builtins.attrValues config.flake.modules.homeManager
 
-  # The pi option machinery from private (gives you the skills/promptTemplates options):
+  # The pi option machinery from private (gives you the skills option):
   ++ [ inputs.private.flake.homeModules.pi-module ]
 
   # The generic option declarations from private (my.is_private etc.):
@@ -158,8 +167,18 @@ corporate flake. This is the aspect that owns your corporate pi settings:
           # Match the private theme for consistency, or override:
           theme = "catppuccin-mocha";
           quietStartup = true;
-          defaultProvider = "github-copilot";
-          defaultModel = "claude-haiku-4.5";
+
+          # Do NOT set defaultProvider / defaultModel / defaultThinkingLevel
+          # here. They are derived from the `orchestrator` model tier, because
+          # you always drop into an orchestrator and delegate from there.
+          # Setting them here would win on priority and silently decouple the
+          # session you type into from the tier that routes delegation.
+          # Repoint the tier instead — see SUBAGENTS.md in this skill:
+          #   my.pi.modelTiers.orchestrator = {
+          #     model = "claude-sonnet-5";
+          #     provider = "github-copilot";
+          #     thinking = "medium";
+          #   };
 
           packages = [
             # Start with the private baseline and prune / extend:
@@ -227,7 +246,7 @@ Reference when deciding which private aspects to import:
 | `neovim` | none | clean; needs nixvim HM module → include `external` | — |
 | `sops` | none | clean; needs sops-nix HM module → include `external`; for corporate secrets setup see `modules/home/sops/README-corporate.md` in the private repo | ✓ (secrets file, secret decls) |
 | `external` | none | all inputs pre-closed at flake-parts level | — |
-| `pi` | none | inputs pre-closed; settings are unconditional `mkDefault` — override with `mkForce` or extend lists | — |
+| `pi` | none | inputs pre-closed; settings are unconditional `mkDefault` — override with `mkForce` or extend lists. Subagent options (`my.pi.*`) use per-field defaults; see SUBAGENTS.md §3 | — |
 
 ---
 

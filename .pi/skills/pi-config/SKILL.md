@@ -15,11 +15,16 @@ frozen inventory. The stable landmarks are:
 - `skills-private/` — sops-encrypted `.md` files for private skill content
   and private AGENTS.md policy sections
 - `_module.nix` — helper that defines
-  `options.programs.pi-coding-agent.{skills,promptTemplates}` and wires them
+  `options.programs.pi-coding-agent.skills` and wires it
   into `programs.pi-coding-agent.settings`
 - `_skills.nix` — builders for complex skills that need a Nix derivation at build time
 - `policies.nix` — the source of truth for public always-on AGENTS.md policy sections
   (private policies are declared here too but materialized by `private.nix`)
+- `agents.nix` — declares the `flake.modules.homeManager.pi-agents` aspect:
+  the subagent roster (`my.pi.modelTiers`, `my.pi.capabilityBundles`,
+  `my.pi.agents`)
+- `_agents.nix` — helper consumed by `agents.nix`; renders each agent to
+  `~/.pi/agent/agents/<name>.md` and builds the logical-name skill tree
 - `prompts/` — role prompt templates / slash commands
 - server-specific adjunct aspects such as
   `google-workspace.nix`
@@ -53,12 +58,24 @@ are mixed: `default.nix` is the aspect entry point, while `_module.nix` and
 layout ever changes, trust the current module tree and the generated policy file
 more than this text.
 
+**Never put a `my.*` DEFINITION in `default.nix`.** That aspect is evaluated in
+isolation by the standalone `packages.pi` build
+(`modules/flake/wrapped-packages.nix`), without the generic my-options module,
+so a definition there fails with ``The option `my' does not exist``. This is
+why `policies.nix` and `agents.nix` are separate aspects rather than sections
+of `default.nix`. Reads guarded with `or` are fine; definitions are not. See
+repo AGENTS.md pitfall #6.
+
 After any edit, verify with (new files must be `git add`ed first — Nix's git
 flake fetcher ignores untracked files):
 
 ```bash
 git add -A && nix flake check --no-build
 ```
+
+`nix flake check` is not optional here: `nix build
+.#homeConfigurations.vkarasen.activationPackage` does **not** exercise
+`packages.pi`, so it stays green against exactly the mistake above.
 
 ---
 
@@ -126,6 +143,61 @@ programs.pi-coding-agent = {
   ];
 };
 ```
+
+---
+
+## Adding or modifying an agent, tier, or bundle
+
+The subagent roster lives in `modules/home/pi/agents.nix` (the
+`my.pi.modelTiers`, `my.pi.capabilityBundles`, `my.pi.agents` options, declared
+in `modules/options.nix`). `_agents.nix` renders each agent to
+`~/.pi/agent/agents/<name>.md`. Base defaults are applied per FIELD, so a plain
+definition wins per field — never wrap an override in `mkForce`.
+
+```nix
+# A new tier (a whole model/thinking band):
+my.pi.modelTiers.corp-cheap = {
+  model = "gpt-4o-mini"; provider = "github-copilot"; thinking = "low";
+};
+
+# A new bundle (skills + extensions + tools + mcp + policy, together):
+my.pi.capabilityBundles.jira = {
+  skills = ["jira-workflows"];           # logical keys, resolved via skillPath
+  extensions = ["npm:pi-mcp-adapter"];   # npm: prefix REQUIRED
+  tools = ["bash"];                       # unioned into consuming agents
+  mcpTools = ["jira"];
+  policy = ''...scope the shell...'';
+};
+
+# A new agent (tier × bundles + role):
+my.pi.agents.ticket-scout = {
+  description = "One-line role";
+  tier = "corp-cheap";
+  bundles = ["jira"];
+  tools = ["read" "grep"];                # strict allowlist; null = inherit ambient
+  toolBudget = {hard = 40;};              # read-only agents ONLY
+  permission = {write = "allow"; edit = "allow";};  # writers only
+  timeoutMs = 3600000;                    # writers bound by this, not toolBudget
+  toolTimeoutMs = 600000;                 # optional per-tool cap
+  memory = {scope = "user"; path = "...";};  # optional persistent memory
+  prompt = ''...role prompt...'';
+};
+```
+
+Rules that bite (full detail in `skills/corporate-pi-wiring/SUBAGENTS.md`):
+
+- Unknown tier or bundle key throws at build time (`_agents.nix`).
+- `tools` is a strict allowlist over builtin AND extension tools; an extension
+  tool needs its provider in a bundle's `extensions`, else the launch fails.
+- `permission` overrides the global write/edit deny — writers need it.
+- `bash` is never gated; the only way to deny it is to leave it out of `tools`.
+- The `orchestrator` tier also sets the session's default model/thinking.
+- List fields (skills, extensions, tools, bundles) REPLACE rather than append —
+  restate the full list to extend one.
+
+Verify: `git add -NA && nix flake check`, then
+`nix build .#homeConfigurations.vkarasen.activationPackage --no-link` and
+inspect the rendered file at `~/.pi/agent/agents/<name>.md`.
 
 ---
 
@@ -213,28 +285,6 @@ The derivation must produce a directory with `SKILL.md` at its root.
 
 ---
 
-## Adding a prompt template (slash-command)
-
-Prompt templates become `/name` slash-commands inside pi. Add to
-`programs.pi-coding-agent.promptTemplates` in `modules/home/pi/default.nix`:
-
-```nix
-programs.pi-coding-agent = {
-  promptTemplates = {
-    review = ''
-      ---
-      description: Review staged changes for bugs and security issues
-      ---
-      Review `git diff --cached`. Focus on bugs, security, and error handling.
-    '';
-  };
-};
-```
-
-The key becomes the command name — the above registers `/review`.
-
----
-
 ## Adding a private skill
 
 Private skills are sops-encrypted files whose content must not appear in
@@ -293,11 +343,39 @@ For the full sops encrypt/edit workflow suitable for an agent, see the
 ## Adding a global always-on instruction (AGENTS.md policy)
 
 Skills are opt-in (description-triggered). For **always-on** behavioral
-directives that apply in every session — e.g. "never search /nix/store",
-"prefer Node.js for scripting" — use the `my.pi.globalAgentPolicies` option
-instead. Pi loads `~/.pi/agent/AGENTS.md` at startup unconditionally.
+directives, `~/.pi/agent/AGENTS.md` is generated from **two** options, and
+picking the right one matters:
 
-The option is declared in `modules/options.nix` (generic class, so it is
+| | `my.pi.agentInvariants` | `my.pi.globalAgentPolicies` |
+| --- | --- | --- |
+| Renders as | one `# Invariants` block, first | policy sections, after it |
+| Audience | every agent, **including delegated subagents** | the interactive session only |
+| Content | terse prohibitions | procedures, judgment, full sections |
+| Values | strings only | strings **or** sops paths |
+
+Delegated subagents do not inherit the operator's global context file
+(pi-subagents defaults `inheritGlobalContext` to false), so a child sees the
+invariants block and nothing else from this file. That is what makes the split
+necessary rather than cosmetic.
+
+**Decision rule — three questions, in order:**
+
+1. *Can a guardrail enforce it?* A permission gate or a withheld tool beats
+   prose that competes for attention. Enforce it there and write no policy at
+   all. ("Never commit without approval" is destined for this.)
+2. *Is it a procedure or a prohibition?* "How to do X well" is useless until X
+   is happening, and stage-irrelevant guidance actively degrades smaller models.
+   Procedures → `globalAgentPolicies`, a capability bundle, or a skill.
+   Prohibitions → continue.
+3. *Must a subagent obey it too?* Yes → `agentInvariants`, kept to a few lines.
+   No → `globalAgentPolicies`.
+
+So "never brute-force /nix/store" is an invariant, while "prefer Node.js for
+scripting" — a procedure, and only once you are already writing a script — is a
+policy section. Both currently live in `modules/home/pi/policies.nix`; see
+`docs/pi-subagents-rollout.md` for the full reasoning.
+
+Both options are declared in `modules/options.nix` (generic class, so they are
 available to home-manager, NixOS, and darwin configs alike). Values are merged
 by the module system — multiple flakes can each add their own sections without
 conflicting.
@@ -327,6 +405,9 @@ Rules:
 - The base always-on policy sections live in `modules/home/pi/policies.nix`.
   Treat the generated `~/.pi/agent/AGENTS.md` or the policy source as the live
   inventory if you need the exact current set; avoid copying it here.
+- `my.pi.agentInvariants` follows the same key-ordering and additive-merge
+  rules, but takes strings only — a sops path is decrypted at activation time
+  and so is not available for injection into a subagent prompt.
 
 ---
 
@@ -339,13 +420,11 @@ That array is serialised into `settings.json` inside `configDir` (default:
 listed paths. The store paths are absolute, so the setup is unaffected by
 changes to `configDir`.
 
-Prompt templates follow the same pattern via `settings.prompts`.
-
 `my.pi.globalAgentPolicies` is wired in two stages:
 
 - **Public** (string) sections are collected by the `pi-policies` aspect,
   sorted by key, and written to `home.file.".pi/agent/AGENTS.md"` as a
-  Nix-store file.
+  Nix-store file — preceded by the rendered `my.pi.agentInvariants` block.
 - **Private** (path) sections are handled by the `pi-private` aspect: at
   activation time, it reads the public base, appends the decrypted private
   sections in key order, and writes the final `AGENTS.md` (overwriting the

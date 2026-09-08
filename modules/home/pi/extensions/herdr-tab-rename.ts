@@ -8,12 +8,47 @@
  *
  * Requires: HERDR_ENV=1 (injected automatically by herdr).
  * Uses:     HERDR_TAB_ID env var — no runtime pane discovery needed.
+ *
+ * NOT for subagents. A delegated child pi process is spawned by its parent and
+ * therefore *inherits* HERDR_ENV and HERDR_TAB_ID even though it does not own
+ * that tab. Without a guard every child would register this tool — and be told
+ * to call it as its first action — renaming the orchestrator's tab to whatever
+ * the child happens to be doing. isDelegatedChild() keeps the tool and its
+ * system-prompt note out of child sessions entirely, so children also pay no
+ * context cost for it.
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
+/**
+ * Best-effort detection of a delegated (non-interactive) pi session.
+ *
+ * Two independent signals, either of which disqualifies:
+ *
+ *   1. PI_SUBAGENT_* env markers, set by subagent extensions when spawning a
+ *      child (run id, agent name, child index, orchestrator target). Matched by
+ *      prefix rather than by exact name so the check does not depend on which
+ *      subset of those variables a given version happens to export.
+ *   2. A headless mode flag in argv. An interactive pi occupying a herdr pane
+ *      always runs in TUI mode; json/rpc/print sessions never own a pane.
+ *
+ * A delegated runner that sets neither signal still hits the ctx.mode check in
+ * execute(), so a miss here degrades to a refused call rather than a stolen tab.
+ */
+function isDelegatedChild(): boolean {
+  if (Object.keys(process.env).some((k) => k.startsWith("PI_SUBAGENT_"))) {
+    return true;
+  }
+  const argv = process.argv.slice(2);
+  if (argv.includes("-p") || argv.includes("--print")) return true;
+  const modeIndex = argv.indexOf("--mode");
+  if (modeIndex !== -1 && argv[modeIndex + 1] !== "tui") return true;
+  return false;
+}
+
 export default function (pi: ExtensionAPI) {
   if (process.env.HERDR_ENV !== "1") return;
+  if (isDelegatedChild()) return;
 
   const tabId = process.env.HERDR_TAB_ID;
   if (!tabId) return;
@@ -57,7 +92,16 @@ export default function (pi: ExtensionAPI) {
           ' Avoid generics like "chat", "session", "work", or the bare repo name.',
       }),
     }),
-    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      // Defence in depth: isDelegatedChild() runs at factory time on env and
+      // argv heuristics, while ctx.mode is pi's own authoritative answer. Only
+      // a TUI session can be the interactive agent occupying a herdr pane.
+      if (ctx.mode !== "tui") {
+        throw new Error(
+          "rename_herdr_tab is only available to the interactive session that" +
+            " owns the herdr tab, not to a delegated subagent.",
+        );
+      }
       await pi.exec("herdr", ["tab", "rename", tabId, params.label]);
       return {
         content: [{ type: "text", text: `Tab renamed to "${params.label}".` }],

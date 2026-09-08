@@ -79,13 +79,58 @@
       default = false;
       description = "Enable GitHub Copilot integration (neovim, CLI, pi provider).";
     };
+    options.my.pi.agentInvariants = lib.mkOption {
+      type = lib.types.attrsOf lib.types.lines;
+      default = {};
+      description = ''
+        Non-negotiable rules that apply in every context and at every stage,
+        rendered as a single "# Invariants" block at the top of
+        ~/.pi/agent/AGENTS.md.
+
+        This is deliberately separate from globalAgentPolicies. Delegated
+        subagents do not inherit the operator's global context file
+        (pi-subagents defaults inheritGlobalContext to false), so anything a
+        child must never get wrong has to be injected into the child's own
+        prompt. Keeping invariants in their own option makes that block
+        reusable instead of requiring the whole policy file to be re-read.
+
+        Admission is strict, because everything here competes for attention in
+        every session:
+
+        - It must be a PROHIBITION, not a procedure. "How to do X well" is
+          stage-specific and belongs in globalAgentPolicies, a capability
+          bundle, or a skill, where it is loaded only when X is happening.
+        - It must not be enforceable structurally. A rule a guardrail can
+          enforce (a permission gate, a withheld tool) should be enforced
+          there and deleted from prose entirely.
+        - It must be terse. Full sections belong in globalAgentPolicies.
+
+        Values are string-only: unlike globalAgentPolicies these are also
+        destined for subagent prompts, where a sops path decrypted at
+        activation time is not available. Keys are sorted alphabetically;
+        use numeric prefixes.
+      '';
+      example = lib.literalExpression ''
+        {
+          "00-nix-store" = "**Never brute-force the Nix store.** ...";
+        }
+      '';
+    };
+
     options.my.pi.globalAgentPolicies = lib.mkOption {
       type = lib.types.attrsOf (lib.types.either lib.types.lines lib.types.path);
       default = {};
       description = ''
         Named policy sections merged into ~/.pi/agent/AGENTS.md, which pi
         loads as global always-on instructions at startup (not opt-in like
-        a skill). Keys are sorted alphabetically before concatenation, so
+        a skill).
+
+        These sections are for the interactive/orchestrating session. They may
+        be long and may exercise judgment. Rules that must reach a delegated
+        subagent as well belong in my.pi.agentInvariants instead, which is
+        rendered ahead of these and is separately reusable.
+
+        Keys are sorted alphabetically before concatenation, so
         use numeric prefixes to control order:
           "00-nix-workspace"       – base Nix exploration policy (defined here)
           "10-scripting"           – scripting runtime preference (defined here)
@@ -126,6 +171,255 @@
         pi-mcp-adapter mcpServers shape (type, command, args, env, ...).
         Multiple modules merge additively by server name; a single
         aggregation aspect folds the result into the mcp.json file.
+      '';
+    };
+    options.my.pi.modelTiers = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule {
+        options = {
+          model = lib.mkOption {
+            type = lib.types.nonEmptyStr;
+            description = "Model id for this tier (bare, or provider-qualified).";
+          };
+          provider = lib.mkOption {
+            type = lib.types.nullOr lib.types.nonEmptyStr;
+            default = null;
+            description = "Provider id. When set, mkAgent emits provider/model.";
+          };
+          thinking = lib.mkOption {
+            type = lib.types.nullOr (lib.types.enum ["off" "minimal" "low" "medium" "high" "xhigh" "max"]);
+            default = null;
+            description = "Thinking level for agents on this tier (null = omit).";
+          };
+        };
+      });
+      default = {};
+      description = ''
+        Model tiers referenced by my.pi.agents.*.tier. Each tier bundles a
+        model, optional provider, and optional thinking level so an agent
+        selects a whole capability/price band at once instead of a raw model.
+
+        The `orchestrator` tier additionally drives the interactive session's
+        defaultModel / defaultProvider / defaultThinkingLevel, because you
+        always drop into an orchestrator and delegate from there. Repointing
+        that one tier moves both the session and the delegation routing.
+
+        Defaults live in modules/home/pi/agents.nix and are the private
+        deepseek ladder (§3 of docs/pi-subagents-rollout.md). They are NOT
+        auto-derived from the hasCopilot/hasDeepseek/hasAnthropic ladder in
+        default.nix — that ladder is only the fallback for when no tier is
+        available. A consumer flake repoints tiers explicitly.
+
+        Defaults are applied per FIELD, so a consumer flake can override one
+        field, replace a whole tier, or add new tiers with a plain definition
+        and inherit everything it did not mention. Do not wrap an override in
+        mkForce; it is not needed. List-valued fields are replaced, not
+        appended — restate the full list to extend one.
+      '';
+    };
+
+    options.my.pi.capabilityBundles = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule {
+        options = {
+          skills = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [];
+            description = "Skill names (logical keys, resolved via skillPath).";
+          };
+          extensions = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [];
+            description = "Extension/package names to load for the child.";
+          };
+          tools = lib.mkOption {
+            type = lib.types.nullOr (lib.types.listOf lib.types.str);
+            default = null;
+            description = "Tool allowlist; null = omit (inherit ambient tools).";
+          };
+          mcpTools = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [];
+            description = "MCP tools to select, rendered as mcp:-prefixed tools.";
+          };
+          policy = lib.mkOption {
+            type = lib.types.lines;
+            default = "";
+            description = "Bundle policy prose injected into the agent prompt.";
+          };
+        };
+      });
+      default = {};
+      description = ''
+        Capability bundles: repo-independent units that declare skills,
+        extensions, tools, and MCP selections together with the policy prose
+        that goes with them. Agents compose bundles via my.pi.agents.*.bundles.
+
+        Each axis maps onto a pi-subagents frontmatter field; mkAgent in
+        modules/home/pi/_agents.nix renders them. See
+        docs/pi-subagents-rollout.md §7 for the skill-naming caveat that makes
+        the skillPath tree necessary.
+
+        Defaults are applied per FIELD (see agents.nix), so a consumer flake
+        overrides one field or adds a bundle with a plain definition and
+        inherits the rest. List fields are replaced, not appended. Referencing
+        a bundle key that does not exist is a hard error from mkAgent, which
+        is the intended fast failure.
+      '';
+    };
+
+    options.my.pi.agents = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule {
+        options = {
+          description = lib.mkOption {
+            type = lib.types.nonEmptyStr;
+            description = "One-line agent description (frontmatter description).";
+          };
+          tier = lib.mkOption {
+            type = lib.types.str;
+            description = "Key into my.pi.modelTiers for model/thinking.";
+          };
+          bundles = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [];
+            description = "Keys into my.pi.capabilityBundles to compose.";
+          };
+          tools = lib.mkOption {
+            type = lib.types.nullOr (lib.types.listOf lib.types.str);
+            default = null;
+            description = ''
+              Baseline tool allowlist for this agent. null = omit the field and
+              inherit ambient tools (NOT read-only). A list is a strict
+              allowlist over built-in AND extension tools — name extension
+              tools explicitly (their provider must also be in a bundle's
+              extensions). Bundle `tools` are unioned into this list.
+            '';
+          };
+          toolBudget = lib.mkOption {
+            type = lib.types.nullOr (lib.types.submodule {
+              options = {
+                hard = lib.mkOption {
+                  type = lib.types.int;
+                  description = "Hard tool-call cap; after this, tools are blocked.";
+                };
+                soft = lib.mkOption {
+                  type = lib.types.nullOr lib.types.int;
+                  default = null;
+                  description = "Optional soft cap that nudges before hard.";
+                };
+              };
+            });
+            default = null;
+            description = ''
+              Per-agent tool-call budget (read-only agents only — hard caps can
+              strand half-applied edits). null = no budget.
+            '';
+          };
+          permission = lib.mkOption {
+            type = lib.types.attrsOf (lib.types.enum ["allow" "ask" "deny"]);
+            default = {};
+            description = ''
+              Per-agent tool permission overrides. These override the global
+              write/edit deny (subagentConfig.permissions.rules), which is how
+              the investigator/executor re-allow write/edit inside their
+              boundary. Bash is never gated (pi-subagents passes it through).
+            '';
+          };
+          timeoutMs = lib.mkOption {
+            type = lib.types.nullOr lib.types.int;
+            default = null;
+            description = ''
+              Runtime deadline for this agent in milliseconds. Writers are
+              bounded by this, not toolBudget (§5). This is also the hard
+              wall-clock kill, so it caps how long a child can wait on a
+              contact_supervisor ask: the effective wait is min(ask timeout,
+              this). Keep >= the supervisor ask timeout for agents that may
+              need to block on a decision.
+            '';
+          };
+          toolTimeoutMs = lib.mkOption {
+            type = lib.types.nullOr lib.types.int;
+            default = null;
+            description = ''
+              Hard per-tool-call deadline, distinct from timeoutMs so a
+              single hung tool (e.g. a bash call waiting on input) can be cut
+              short without shrinking the whole-run window for a supervisor
+              decision. contact_supervisor / intercom / bg_wait are exempt
+              from this; they are NOT exempt from timeoutMs.
+            '';
+          };
+          memory = lib.mkOption {
+            type = lib.types.nullOr (lib.types.submodule {
+              options = {
+                scope = lib.mkOption {
+                  type = lib.types.enum ["project" "user"];
+                  description = ''
+                    Memory namespace. project resolves under
+                    <repo>/.pi/agent-memory/<path> and travels with the repo;
+                    user resolves under ~/.pi/agent/agent-memory/<path> and is
+                    shared across projects.
+                  '';
+                };
+                path = lib.mkOption {
+                  type = lib.types.nullOr lib.types.str;
+                  default = null;
+                  description = ''
+                    Optional sub-path within the scope's agent-memory dir;
+                    null = the scope root.
+                  '';
+                };
+              };
+            });
+            default = null;
+            description = ''
+              Opt-in role-specific persistent memory (pi-subagents `memory`
+              frontmatter). When set, the first 200 lines of the resolved
+              MEMORY.md are injected into the child prompt each run, and a
+              write-capable agent may append dated entries. null = none. The
+              twin agent is the intended first user once its design settles.
+            '';
+          };
+          prompt = lib.mkOption {
+            type = lib.types.lines;
+            default = "";
+            description = "Role prompt body, after frontmatter and invariants.";
+          };
+          inheritProjectContext = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = "Keep inherited repo AGENTS.md/CLAUDE.md.";
+          };
+          inheritGlobalContext = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Also keep the operator's global AGENTS.md.";
+          };
+          inheritSkills = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Let the child see pi's full discovered skills catalog.";
+          };
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = "When false, the agent file is not emitted.";
+          };
+        };
+      });
+      default = {};
+      description = ''
+        Subagents to generate into ~/.pi/agent/agents/<name>.md. Each is a
+        tier × bundle composition plus a role prompt. mkAgent injects
+        my.pi.agentInvariants verbatim and sets inherit* explicitly.
+
+        Built by phases 4/5 of docs/pi-subagents-rollout.md; this option is
+        declared here so a consumer flake can add agents additively.
+
+        Additive really means additive, but only because agents.nix applies
+        its defaults per FIELD. A whole-attrset mkDefault would make a
+        consumer's single new agent discard the entire base roster, and
+        because a missing agent throws no error — it just stops being written
+        to ~/.pi/agent/agents/ — that failure would be silent. If you ever
+        touch how these defaults are declared, re-check that adding one agent
+        downstream still leaves the base roster rendered.
       '';
     };
     options.my.homeConfigurationName = lib.mkOption {
