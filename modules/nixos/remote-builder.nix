@@ -17,8 +17,11 @@
           # authenticate non-interactively.
           sshKey = "/home/vkarasen/.ssh/id_ed25519";
           # Pinned host key: avoids TOFU and the daemon needing root's
-          # known_hosts populated.
-          publicHostKey = "AAAAC3NzaC1lZDI1NTE5AAAAINTF1LvQhChE3umF5ZO6VLwBm94NBkAnvvlac9OiR7mt";
+          # known_hosts populated. Must be base64 of the whole .pub line
+          # (`base64 -w0 /etc/ssh/ssh_host_ed25519_key.pub`), NOT the raw
+          # known_hosts blob — Nix base64-decodes this field and writes
+          # `<host> <decoded>` to a temp known_hosts file.
+          publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSU5URjFMdlFoQ2hFM3VtRjVaTzZWTHdCbTk0TkJrQW52dmxhYzlPaVI3bXQ=";
           system = "x86_64-linux";
           maxJobs = 8; # 8 cores (nproc on gentian)
           supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"]; # gentian's system-features
