@@ -39,6 +39,11 @@
 
                 eval "$(wt config shell init bash)"
               ''
+              # Atuin history capture. Loaded via atuin's own bundled
+              # bash-preexec (see the enableBashIntegration note above).
+              ''
+                eval "$(atuin init bash)"
+              ''
             ];
 
           shellAliases = {
@@ -72,7 +77,13 @@
 
         atuin = {
           enable = true;
-          enableBashIntegration = true;
+          # Disabled: HM's bash integration sources nixpkgs' bash-preexec
+          # 0.6.0, whose __bp_install fails to strip its install string from
+          # an array PROMPT_COMMAND (Bash >= 5.1), leaving `trap - DEBUG` to
+          # run at every prompt and silently disabling history capture.
+          # We eval `atuin init bash` manually in initExtra instead, which
+          # uses atuin's own (fixed) bundled bash-preexec.
+          enableBashIntegration = false;
           daemon.enable = true;
           settings = {
             auto_sync = false;
