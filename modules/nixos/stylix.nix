@@ -19,13 +19,26 @@
         };
       };
 
-      # System-level (DE surface) targets. The per-user targets (hyprland,
-      # waybar, mako, hyprlock, fuzzel) are enabled in modules/home/desktop.nix.
+      # System-level (DE surface) targets.
       targets = {
         gtk.enable = true;
         console.enable = true; # TTY palette (replaces the manual console.colors)
         regreet.enable = true; # login screen
       };
+    };
+
+    # Per-user DE targets (hyprland, waybar, mako, hyprlock, fuzzel). Kept
+    # here — not in modules/home/desktop.nix — so the shared home aspect never
+    # references `stylix`, which lets the standalone TUI-only home config drop
+    # the Stylix home module entirely. The home-manager `stylix` option is
+    # declared by the Stylix home module that homeManagerIntegration.autoImport
+    # injects into users.vkarasen.
+    home-manager.users.vkarasen.stylix.targets = {
+      hyprland.enable = true;
+      waybar.enable = true;
+      mako.enable = true;
+      hyprlock.enable = true;
+      fuzzel.enable = true;
     };
   };
 }

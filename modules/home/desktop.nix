@@ -56,15 +56,11 @@
         hypr-cheatsheet # SUPER+/ keybinding cheatsheet
       ];
 
-      # Stylix owns the per-user DE chrome; enable its targets for these. The
+      # Stylix owns the per-user DE chrome; its targets for these apps are
+      # enabled on the NixOS side (modules/nixos/stylix.nix), not here — this
+      # shared home aspect must never reference `stylix`, so the standalone
+      # TUI-only config stays free of the Stylix home module. The
       # terminal/CLI layer (ghostty, bat, nvim, …) is left to catppuccin-nix.
-      stylix.targets = {
-        hyprland.enable = true;
-        waybar.enable = true;
-        mako.enable = true;
-        hyprlock.enable = true;
-        fuzzel.enable = true;
-      };
 
       # Idle daemon: lock right before suspend/hibernate, never on idle.
       # (No `listener` blocks => no idle auto-lock.)

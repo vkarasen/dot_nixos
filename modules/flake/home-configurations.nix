@@ -26,18 +26,11 @@
         ++ [
           # The standalone home config is the TUI-only variant: no display
           # surface, so the GUI aspects (desktop, kanshi) gate themselves off
-          # via config.my.gui.enable.
+          # via config.my.gui.enable. It also has no Stylix — the per-user
+          # stylix.targets live on the NixOS side (modules/nixos/stylix.nix),
+          # so no home aspect references `stylix` and no Stylix home module
+          # needs importing here.
           {my.gui.enable = false;}
-
-          # Stylix home module. modules/home/desktop.nix sets stylix.targets.*
-          # behind a mkIf, and the NixOS module system requires an option to
-          # be *declared* wherever it is *defined* — mkIf only defers the
-          # value, it does not remove the definition. So the module must be
-          # imported here too, not just on the NixOS side (where it arrives via
-          # stylix.nixosModules.stylix + homeManagerIntegration.autoImport).
-          # With gui.enable=false and stylix.enable=false (its default) this is
-          # inert: a declaration stub, not an active dependency.
-          inputs.stylix.homeModules.stylix
 
           # vkarasen's personal machine is always the private variant.
           {my.is_private = lib.mkForce true;}
