@@ -595,6 +595,42 @@
           - Materialized at activation into `~/.pi/agent/skills-private/`
           - Workflow skill: **`edit-private-skill`**
         '';
+      }
+      // lib.optionalAttrs config.my.is_nixos {
+        "22-nixos-host" = ''
+          # NixOS host context
+
+          This session is running on a NixOS host (`${config.my.host}`). The
+          live system is inspectable and rebuildable: apply changes with
+          `nixos-rebuild switch --flake .#<host>`; services are systemd units
+          (`systemctl` / `journalctl`).
+
+          To change, add, or understand anything about this config — including
+          what is active on this host (impermanence, Secure Boot, disk layout,
+          sleep/power semantics) — load the **`config-change` skill** first. It
+          is the operational authority for NixOS-host and machine-specific
+          facts; do not re-derive those from memory.
+        '';
+      }
+      // {
+        "23-display-context" =
+          if config.my.gui.enable
+          then ''
+            # GUI context
+
+            This machine has a graphical environment. Hyprland is the Wayland
+            compositor, ghostty the terminal, with waybar / mako / fuzzel.
+            GUI apps can be launched and screenshots taken (grim/slurp). The
+            desktop configuration lives in `modules/home/desktop.nix`.
+          ''
+          else ''
+            # Headless context
+
+            This machine has no display and is reached over SSH. Prefer TUI/CLI
+            tooling (tmux, lf, neovim); do not launch GUI apps, take
+            screenshots, or rely on `xdg-open`. The desktop/kanshi aspects are
+            disabled on this host.
+          '';
       };
 
     # -----------------------------------------------------------------------

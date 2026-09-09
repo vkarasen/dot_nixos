@@ -3,6 +3,12 @@
 NixOS / home-manager configuration using the **dendritic pattern**. Read this
 before editing anything under `modules/`.
 
+> **Operational entry point:** for the decision tree to *find / change / add*
+> anything in this config — and the host- and class-specific facts (impermanence,
+> Secure Boot, sleep/power semantics, disk layout) — load the **`config-change`
+> skill** (`.pi/skills/config-change/SKILL.md`). This file is the reference
+> spec; the skill is the funnel on top of it.
+
 ## What this repo is
 
 A flake-parts flake where **every `.nix` file under `modules/` is a flake-parts

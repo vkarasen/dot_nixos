@@ -6,9 +6,10 @@
   flake.modules.homeManager.kanshi = {
     pkgs,
     lib,
+    config,
     ...
   }: {
-    config = {
+    config = lib.mkIf config.my.gui.enable {
       home.packages = [
         pkgs.nwg-displays # the arandr-style GUI (live tweaks, export profiles)
       ];

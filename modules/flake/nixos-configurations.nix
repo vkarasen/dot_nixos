@@ -43,6 +43,10 @@
                 inputs.stylix.nixosModules.stylix
                 inputs.home-manager.nixosModules.home-manager
                 {
+                  # Machine identity + OS class, exposed to both the NixOS
+                  # module system (my.*) and the nested home-manager config.
+                  my.is_nixos = true;
+                  my.host = name;
                   home-manager = {
                     useGlobalPkgs = true;
                     useUserPackages = true;
@@ -52,6 +56,8 @@
                         ++ (builtins.attrValues (config.flake.modules.generic or {}));
                       # the personal machine is always the private variant
                       my.is_private = lib.mkForce true;
+                      my.is_nixos = true;
+                      my.host = name;
                     };
                   };
                 }

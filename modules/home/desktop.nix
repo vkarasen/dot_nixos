@@ -2,7 +2,12 @@
 # Wayland desktop apps (ghostty, waybar, mako, fuzzel) + clipboard/screenshot
 # tools. The compositor itself is enabled in modules/nixos/desktop.nix.
 {...}: {
-  flake.modules.homeManager.desktop = {pkgs, lib, ...}: let
+  flake.modules.homeManager.desktop = {
+    pkgs,
+    lib,
+    config,
+    ...
+  }: let
     # ghostty bundles share/terminfo/g/ghostty, which ncurses 6.6 also ships;
     # both land in the shared home-manager buildEnv and collide. Drop ghostty's
     # duplicate g/ghostty entry and keep x/xterm-ghostty, which ncurses lacks.
@@ -43,7 +48,7 @@
       | fuzzel --dmenu --prompt 'Keys ' --width 70 --lines 22
     '';
   in {
-    config = {
+    config = lib.mkIf config.my.gui.enable {
       home.packages = with pkgs; [
         grim # screenshots
         slurp # region selection

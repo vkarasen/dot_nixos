@@ -6,6 +6,37 @@
       type = lib.types.bool;
       default = false;
     };
+    options.my.is_nixos = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Whether this configuration is evaluated inside a NixOS system, as
+        opposed to a standalone home-manager configuration on an unknown or
+        foreign host (nix-portable). Set true by the NixOS assembly
+        (modules/flake/nixos-configurations.nix); the standalone
+        homeConfigurations.vkarasen leaves it false. Gates NixOS-only context
+        (systemd units, nixos-rebuild, /etc/NIXOS, disko/impermanence).
+      '';
+    };
+    options.my.gui.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Whether this environment has a graphical display (window manager,
+        terminal emulator, notifications). True on GUI machines; a headless
+        SSH server sets it false. Gates the desktop/kanshi aspects and the
+        GUI-vs-TUI global-context split.
+      '';
+    };
+    options.my.host = lib.mkOption {
+      type = lib.types.str;
+      default = "unknown";
+      description = ''
+        Machine identity for this configuration. Set from the host name by the
+        NixOS assembly; "unknown" for the standalone home configuration.
+        Gates machine-specific global context (e.g. laptop model).
+      '';
+    };
     options.my.git.email = lib.mkOption {
       type = lib.types.nonEmptyStr;
       default = "vkarasen@gmail.com";
