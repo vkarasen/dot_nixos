@@ -24,7 +24,7 @@
           {
             profile = {
               name = "mobile";
-              outputs = [{criteria = "eDP-1"; status = "enable";}];
+              outputs = [{criteria = "eDP-1"; status = "enable"; scale = 1.0;}];
             };
           }
 
