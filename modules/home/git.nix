@@ -5,10 +5,25 @@
     config,
     lib,
     ...
-  }: {
+  }: let
+    # Editor wrapper: under pi (detected via the process markers every pi child
+    # inherits) the editor is a no-op, so git never blocks on an interactive
+    # editor (commit / rebase --continue / reword messages). Outside pi it
+    # falls through to the normal editor ($VISUAL -> $EDITOR -> vi).
+    pi-aware-editor = pkgs.writeShellScriptBin "pi-aware-editor" ''
+      if [ -n "$PI_CODING_AGENT" ] || [ "$AI_AGENT" = "pi" ]; then
+        exit 0
+      fi
+      ed="$VISUAL"
+      [ -z "$ed" ] && ed="$EDITOR"
+      [ -z "$ed" ] && ed="vi"
+      exec "$ed" "$@"
+    '';
+  in {
     config = {
       home.packages = with pkgs; [
         delta
+        pi-aware-editor
       ];
 
       programs = {
@@ -45,11 +60,15 @@
             };
             core = {
               pager = "delta";
+              editor = "${pi-aware-editor}/bin/pi-aware-editor";
               fsmonitor = true;
               untrackedCache = true;
               compression = 9;
               whitespace = "error";
               preloadindex = true;
+            };
+            sequence = {
+              editor = "${pi-aware-editor}/bin/pi-aware-editor";
             };
             interactive = {
               diffFilter = "delta --color-only";

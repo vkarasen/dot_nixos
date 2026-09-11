@@ -354,6 +354,24 @@
           Use `wt merge` for a local merge only when the repo or task context
           explicitly says PRs are not needed (e.g. a personal config repo).
 
+          ## Non-interactive git
+          Git never runs interactively under pi: `core.editor` and
+          `sequence.editor` point at a wrapper that is a no-op whenever
+          `PI_CODING_AGENT` is set. So `git commit` without `-m` aborts (empty
+          message), `git commit --amend` keeps the old message, and
+          `rebase --continue` / `reword` keep the original — nothing blocks,
+          nothing prompts.
+
+          To change a commit message, pass it explicitly — `-m` / `-F` never
+          touch the editor:
+
+            git commit --amend -m "new message"
+
+          `git commit --amend` with no message is a **silent no-op** (the old
+          message is kept); never rely on the editor to supply or edit a
+          message. For a non-HEAD reword, override per invocation:
+          `GIT_EDITOR='cp /path/to/msg' git rebase --continue`.
+
           Load the **`worktrunk` skill** at the start of any task that involves
           branch creation, worktree management, PR workflows, parallel agents, or
           merge/cleanup.  The skill contains the full command reference and

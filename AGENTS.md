@@ -331,14 +331,23 @@ up. Keep that mount strictly post-bootstrap:
 
 This is a **personal, solo config repo** — no collaborators, no review process.
 
-- Work directly on `main` for routine changes (adding an aspect, tweaking
-  options, bumping an input).  No feature branch needed.
-- Create a worktree (`wt switch --create <name>`) only when a change is
-  genuinely experimental — e.g. a large refactor you might want to discard,
-  or two independent lines of work you want to keep separate.
-- **Do not open GitHub PRs.**  When a worktree task is done and you're
-  satisfied, merge locally with `wt merge` and push directly to `main`.
-- Plain `git commit` + `git push` is fine for incremental work on `main`.
+- Use a worktree by default: `wt switch --create <name>` for any non-trivial
+  change. Worktrees are cheap and keep independent lines of work separate and
+  `main` clean.
+- **Do not open GitHub PRs.** A worktree stands in for the PR: when the work
+  is done, show the final diff/summary and wait for explicit approval, then
+  merge locally with `wt merge` and push to `main`. The local merge replaces
+  the PR — not the approval: commit, merge, and push each wait for your
+  explicit go-ahead.
+- **Multiple checkouts, one `main`.** Machines advance `origin/main`
+  independently, so a push can be rejected as non-fast-forward. Treat that as
+  routine: fetch, rebase onto `origin/main`, resolve any conflict, push again —
+  and **never force-push to `main`**.
+- Rebase onto `origin/main`, never onto stale local `main`: sync first
+  (`git fetch`), then `git rebase origin/main <branch>` and fast-forward
+  `main` to it. Every commit is yours, so integration is always trusted.
+- Skip the worktree only for genuinely trivial fixes (typos, one-liner config
+  tweaks) where a plain `git commit` + `git push` on `main` is fine.
 
 ## Testing
 
