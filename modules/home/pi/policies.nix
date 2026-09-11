@@ -668,6 +668,12 @@
     # See the file header; drop once pi-worktrunk can defer it natively.
     home.file.".pi/agent/extensions/worktrunk-deferred.ts".source =
       ./extensions/worktrunk-deferred.ts;
+    # Nudges the interactive orchestrator to delegate once it has made too many
+    # recon-type tool calls in a single turn. Ephemeral context-hook append,
+    # gated to ctx.mode === "tui" so subagent children (mode "print") never
+    # fire it. See the file header for the RECON_TOOLS drift note.
+    home.file.".pi/agent/extensions/recon-nudge.ts".source =
+      ./extensions/recon-nudge.ts;
     home.file.".pi/agent/extensions/tsconfig.json".text = builtins.toJSON {
       compilerOptions = {
         target = "ES2022";

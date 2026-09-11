@@ -411,6 +411,27 @@ Rules:
 
 ---
 
+## Extensions
+
+Pi extensions are TypeScript files under `modules/home/pi/extensions/`, wired
+into `~/.pi/agent/extensions/` by `home.file` entries in
+`modules/home/pi/policies.nix` (next to the `herdr-tab-rename.ts`,
+`last-activity.ts`, and `worktrunk-deferred.ts` entries, which share one
+`tsconfig.json`). Follow that pattern for new extensions: add the `.ts` under
+`modules/home/pi/extensions/` and a matching `home.file` source line in
+`policies.nix`.
+
+### Recon-nudge drift risk
+
+`modules/home/pi/extensions/recon-nudge.ts` keeps a hand-maintained
+`RECON_TOOLS` list of read-only / gathering tools that count toward its
+delegation deadline. There is **no automated check** that this list matches the
+orchestrator's actual tool surface. When you add a new tool to the
+orchestrator — a built-in, a pi-lens or pi-docparser tool, an MCP tool, or
+anything another extension registers — check whether it is recon-shaped
+(read-only/gathering) and add it to `RECON_TOOLS` if so. Missing entries
+silently undercount; this is a known drift risk.
+
 ## How the wiring works
 
 `_module.nix` converts every `programs.pi-coding-agent.skills` entry into an
