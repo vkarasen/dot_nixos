@@ -47,6 +47,19 @@
         'Help: Show keybindings — SUPER+/' \
       | fuzzel --dmenu --prompt 'Keys ' --width 70 --lines 22
     '';
+
+    # Idle-suspend hook for hypridle's on-timeout: suspend-then-hibernate, but
+    # only on battery (mirrors the lid-close grace in modules/nixos/power.nix).
+    # `read` is a shell builtin, so the script needs nothing but bash plus the
+    # full-path systemctl below. On a machine with no AC power-supply node the
+    # read fails and `ac` stays empty -> no suspend (safe default).
+    idle-suspend = pkgs.writeShellScriptBin "idle-suspend" ''
+      ac=""
+      read -r ac < /sys/class/power_supply/AC/online 2>/dev/null || true
+      if [ "$ac" = "0" ]; then
+        /run/current-system/sw/bin/systemctl suspend-then-hibernate
+      fi
+    '';
   in {
     config = lib.mkIf config.my.gui.enable {
       home.packages = with pkgs; [
@@ -62,8 +75,12 @@
       # TUI-only config stays free of the Stylix home module. The
       # terminal/CLI layer (ghostty, bat, nvim, …) is left to catppuccin-nix.
 
-      # Idle daemon: lock right before suspend/hibernate, never on idle.
-      # (No `listener` blocks => no idle auto-lock.)
+      # Idle daemon: lock right before suspend/hibernate. On idle it suspends
+      # (battery only) via suspend-then-hibernate, mirroring the lid-close
+      # grace in modules/nixos/power.nix. hypridle honours the Wayland
+      # idle-inhibit lock by default, so browsers/players that hold it during
+      # playback pause the timer — no suspend mid-media. There is still no
+      # idle *auto-lock*: suspend locks via before_sleep_cmd, not a listener.
       services.hypridle = {
         enable = true;
         settings = {
@@ -71,6 +88,12 @@
             lock_cmd = "hyprlock";
             before_sleep_cmd = "hyprlock";
           };
+          listener = [
+            {
+              timeout = 300; # 5 min idle
+              "on-timeout" = "${idle-suspend}/bin/idle-suspend";
+            }
+          ];
         };
       };
 

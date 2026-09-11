@@ -2,7 +2,8 @@
 # (hypridle), and the login greeter (greetd + ReGreet).
 #
 # Lock policy (see modules/home/desktop.nix for the user-level config):
-#   - never auto-lock on idle (hypridle has no idle listeners)
+#   - never auto-lock on idle (hypridle's only idle listener suspends; locking
+#     happens via before_sleep_cmd, not on idle)
 #   - lock right before suspend/hibernate (before_sleep_cmd = hyprlock), so the
 #     machine always wakes to the lock screen
 #   - manual lock via SUPER+L

@@ -82,6 +82,11 @@ trust this summary.
   on **battery + lid closed, after a 5-minute grace** (and then hibernates
   after a further 15 min suspended). On AC, closing the lid is clamshell mode —
   nothing happens. The default "lid → sleep" assumption is wrong here.
+- **Idle suspend** (`modules/home/desktop.nix`): `hypridle` suspends on
+  **5 min idle on battery** via `suspend-then-hibernate` (same 15-min hibernate
+  delay). It honours the Wayland idle-inhibit lock, so browsers/players pause
+  the idle timer during playback; on AC, idle does nothing. Never auto-locks on
+  idle — it locks via `before_sleep_cmd` right before suspending.
 - **Battery is capped at 80%** (charge to 80%, resume recharging at 75%) — a
   battery that "stops at 80%" is by design, not a fault.
 - ThinkPad T14s Gen 1, Intel Comet Lake — Intel-only GPU, no NVIDIA
