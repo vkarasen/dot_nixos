@@ -9,7 +9,7 @@
       programs.television = {
         enable = true;
 
-        enableBashIntegration = true;
+        enableBashIntegration = false; # ctrl-R is owned by atuin
         channels = {
           files = {
             metadata = {
