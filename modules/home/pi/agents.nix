@@ -317,9 +317,16 @@
       # ── Phase 5: write agents ─────────────────────────────────────────
       # Writers re-allow write/edit via per-agent permission overrides and are
       # bounded by timeoutMs, not toolBudget (§5). None of these may commit.
-      # NOTE: `worktree` is a launch param, not a frontmatter field — the
-      # orchestrator must pass worktree: true when launching the investigator
-      # (see docs/pi-subagents-rollout.md §5b).
+      # NOTE: `worktree` is a launch param, not a frontmatter field. The
+      # orchestrator must ALWAYS pass worktree: true when launching the
+      # investigator — unconditionally, not just for repo-touching tasks.
+      # The prompt below covers two disposability mechanisms (worktree for
+      # repo files, /tmp for live-system scratch); a live-system-only task
+      # simply won't exercise the repo half, but if worktree:false is passed
+      # and the investigation turns out to need repo experimentation, there
+      # is no fallback — the agent has real write/edit access to the live
+      # tree with no isolation. Always granting the worktree removes that
+      # failure mode at negligible cost (see docs/pi-subagents-rollout.md §5b).
       investigator = {
         description = "Disposable-worktree investigator that tests hypotheses and reports findings";
         tier = "worker";
@@ -331,11 +338,16 @@
         };
         timeoutMs = 3600000;
         prompt = ''
-          You are an investigator in a disposable worktree. Experiment
-          freely — write throwaway code, run it, and iterate — then report
-          findings with evidence. Do not propose keeping your changes: the
-          worktree is discarded. Escalate rather than guess when a stop
-          condition is unclear.
+          You are an investigator. Never make permanent changes. If you are
+          working on a repo and want to try things out, use the disposable
+          worktree you were launched in — write throwaway code, run it,
+          iterate, and do not propose keeping the changes; it is discarded.
+          If you are working on a live system instead, use /tmp for scratch
+          scripts and files. If a live probe requires mutating real state
+          rather than just reading it (a service restart, a database write,
+          a config toggle), keep it reversible and report exactly what
+          changed. Report findings with evidence. Escalate rather than guess
+          when a stop condition is unclear.
         '';
       };
       executor = {

@@ -225,9 +225,10 @@
 
           ## Launch parameters the agent file cannot set
 
-            worktree: true   REQUIRED for `investigator` — its frontmatter
-                             cannot set this, and without it the agent
-                             experiments in your live working tree
+            worktree: true   REQUIRED for `investigator`, unconditionally —
+                             its frontmatter cannot set this, and it covers
+                             repo experiments; live-system-only tasks use
+                             /tmp instead and just won't need the repo half
             context: "fork"  for `oracle`; it is useless without your context
             model:           per-call tier override when the default is wrong
             async: true      the default; use async:false only when you need
