@@ -24,29 +24,79 @@
       googleWorkspaceSkill = ./skills/google-workspace;
 
       # pi-blackhole: algorithmic compaction (zero LLM) + observational memory.
-      # Scaled for 1M context windows. Worker models are unset — workers fall
-      # back to the session model. Set PI_BLACKHOLE_PASSIVE=1 to disable OM
-      # workers in standalone/non-HM environments.
-      blackholeConfig = {
-        compaction = "auto";
-        compactionEngine = "blackhole";
-        tailBehavior = "minimal";
-        midRunCompaction = "off";
-        memory = true;
-        sessionFallback = true;
-        observeAfterTokens = 30000;
-        reflectAfterTokens = 60000;
-        observationsPoolMaxTokens = 40000;
-        observationsPoolTargetTokens = 10000;
-        reflectorInputMaxTokens = 200000;
-        dropperInputMaxTokens = 200000;
-        observerChunkMaxTokens = 120000;
-        observerPreambleMaxTokens = 0;
-        dropperPressureThreshold = 0.70;
-        agentMaxTurns = 16;
-        debug = false;
-        debugLog = false;
-      };
+      # Scaled for 1M context windows.
+      #
+      # The permanent OM-worker model is picked from the first available
+      # provider (copilot haiku → deepseek v4-flash → anthropic haiku), with
+      # the reflector overridden to the strongest available model (deepseek
+      # pro → anthropic sonnet). When none is available no `model` is set, so
+      # workers fall back to the session model via sessionFallback. Set
+      # PI_BLACKHOLE_PASSIVE=1 to disable OM workers in standalone/non-HM
+      # environments.
+      sopsSecrets = config.sops.secrets or {};
+      hasCopilot = config.my.copilot.enable or false;
+      hasDeepseek = sopsSecrets ? deepseek_api_key;
+      hasAnthropic = sopsSecrets ? anthropic_api_key;
+      blackholeModel =
+        if hasCopilot
+        then {
+          provider = "github-copilot";
+          id = "claude-haiku-4.5";
+          thinking = "off";
+        }
+        else if hasDeepseek
+        then {
+          provider = "deepseek";
+          id = "deepseek-v4-flash";
+          thinking = "low";
+        }
+        else if hasAnthropic
+        then {
+          provider = "anthropic";
+          id = "claude-haiku-4-5";
+          thinking = "off";
+        }
+        else null;
+      # Reflector is the one synthesis-heavy stage; give it the strongest
+      # available model (deepseek pro → anthropic sonnet). It runs least often
+      # so the cost is bounded. Falls back to `model` when neither is set.
+      reflectorModel =
+        if hasDeepseek
+        then {
+          provider = "deepseek";
+          id = "deepseek-v4-pro";
+          thinking = "high";
+        }
+        else if hasAnthropic
+        then {
+          provider = "anthropic";
+          id = "claude-sonnet-5";
+          thinking = "high";
+        }
+        else null;
+      blackholeConfig =
+        {
+          compaction = "auto";
+          compactionEngine = "blackhole";
+          tailBehavior = "minimal";
+          midRunCompaction = "off";
+          memory = true;
+          sessionFallback = true;
+          observeAfterTokens = 30000;
+          reflectAfterTokens = 60000;
+          observationsPoolMaxTokens = 40000;
+          observationsPoolTargetTokens = 10000;
+          reflectorInputMaxTokens = 200000;
+          dropperInputMaxTokens = 200000;
+          observerChunkMaxTokens = 120000;
+          observerPreambleMaxTokens = 0;
+          dropperPressureThreshold = 0.70;
+          agentMaxTurns = 16;
+          debug = false;
+          debugLog = false;
+        }
+        // (lib.optionalAttrs (blackholeModel != null) {model = blackholeModel;})
+        // (lib.optionalAttrs (reflectorModel != null) {reflectorModel = reflectorModel;});
 
       # pi-subagents extension config (distinct from the settings.json keys
       # below — upstream splits them: runtime/config knobs live here, while
