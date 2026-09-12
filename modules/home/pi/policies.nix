@@ -639,7 +639,7 @@
 
             This machine has a graphical environment. Hyprland is the Wayland
             compositor, ghostty the terminal, with waybar / mako / fuzzel.
-            GUI apps can be launched and screenshots taken (grim/slurp). The
+            GUI apps can be launched and screenshots taken (flameshot, grim). The
             desktop configuration lives in `modules/home/desktop.nix`.
           ''
           else ''

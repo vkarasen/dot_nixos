@@ -42,6 +42,9 @@
         'Media: Mute microphone — Mic mute key' \
         'Media: Brightness down — Brightness down key' \
         'Media: Brightness up — Brightness up key' \
+        'Screenshot: Region — PrtSc' \
+        'Screenshot: Fullscreen — Shift+PrtSc' \
+        'Screenshot: Active window — Alt+PrtSc' \
         'System: Lock screen — SUPER+L' \
         'System: Exit Hyprland — SUPER+M' \
         'Help: Show keybindings — SUPER+/' \
@@ -60,13 +63,42 @@
         /run/current-system/sw/bin/systemctl suspend-then-hibernate
       fi
     '';
+
+    # Screenshot helper: captures the fullscreen or the active window,
+    # saves a timestamped PNG to ~/Pictures/screenshots, and copies it to the
+    # clipboard. Every tool it calls is pinned via runtimeInputs, so the
+    # script is self-contained regardless of the ambient PATH.
+    screenshot = pkgs.writeShellApplication {
+      name = "screenshot";
+      runtimeInputs = with pkgs; [
+        grim # capture
+        jq # parse `hyprctl -j activewindow`
+        hyprland # hyprctl
+        wl-clipboard # wl-copy
+        libnotify # notify-send
+        coreutils # date, mkdir
+      ];
+      text = ''
+        dir="$HOME/Pictures/screenshots"
+        mkdir -p "$dir"
+        out="$dir/$(date +%Y%m%d-%H%M%S).png"
+        case "''${1:-}" in
+          screen) grim "$out" ;;
+          window) grim -g "$(hyprctl -j activewindow | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')" "$out" ;;
+          *) echo "usage: screenshot {screen|window}" >&2; exit 1 ;;
+        esac
+        wl-copy "$out"
+        notify-send -a screenshot -i "$out" "Screenshot" "Copied to clipboard"
+      '';
+    };
   in {
     config = lib.mkIf config.my.gui.enable {
       home.packages = with pkgs; [
         grim # screenshots
-        slurp # region selection
         brightnessctl # screen/keyboard backlight for the Fn keys
         hypr-cheatsheet # SUPER+/ keybinding cheatsheet
+        screenshot # Shift+PrtSc = fullscreen, Alt+PrtSc = window (region is Flameshot)
+        flameshot # PrtSc = interactive region (drag + adjust + Enter)
       ];
 
       # Stylix owns the per-user DE chrome; its targets for these apps are
@@ -276,6 +308,26 @@
         };
       };
 
+      # Screenshot retention watchdog: a daily timer deletes screenshots older
+      # than 30 days, so ~/Pictures/screenshots can't grow unbounded. The
+      # leading `-` on ExecStart ignores find's exit code (e.g. before the
+      # first screenshot has created the directory).
+      systemd.user.services.screenshot-cleanup = {
+        Unit.Description = "Remove screenshots older than 30 days";
+        Service = {
+          Type = "oneshot";
+          ExecStart = "-${pkgs.findutils}/bin/find ${config.home.homeDirectory}/Pictures/screenshots -type f -mtime +30 -delete";
+        };
+      };
+      systemd.user.timers.screenshot-cleanup = {
+        Unit.Description = "Run screenshot cleanup daily";
+        Timer = {
+          OnCalendar = "daily";
+          Persistent = true;
+        };
+        Install.WantedBy = ["timers.target"];
+      };
+
       wayland.windowManager.hyprland = {
         enable = true;
         # stateVersion 26.05 defaults configType to "lua"; the settings below
@@ -426,6 +478,27 @@
               _args = [
                 (lib.generators.mkLuaInline ''mod .. " + 5"'')
                 (lib.generators.mkLuaInline ''hl.dsp.focus({ workspace = "5" })'')
+              ];
+            }
+
+            # Screenshots: PrtSc = region (Flameshot: drag, adjust, Enter to capture),
+            # Shift+PrtSc = fullscreen, Alt+PrtSc = active window.
+            {
+              _args = [
+                "Print"
+                (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("flameshot gui --clipboard --path $HOME/Pictures/screenshots")'')
+              ];
+            }
+            {
+              _args = [
+                "SHIFT + Print"
+                (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("screenshot screen")'')
+              ];
+            }
+            {
+              _args = [
+                "ALT + Print"
+                (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("screenshot window")'')
               ];
             }
 
