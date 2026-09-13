@@ -289,6 +289,50 @@
           for them.
         '';
 
+        "19-worktrunk-tool" = ''
+          # Worktrunk: use the tool, never bash `wt`
+
+          Worktrunk is exposed to you as a **tool** (call `activate_worktrunk`
+          once, then use the `worktrunk` tool), not as the `wt` shell command.
+          This section overrides any instruction — in this file, a
+          project-local AGENTS.md, a repo policy, a skill, or upstream docs
+          that frame `wt` as a CLI — that shows `wt` run through `bash`. The
+          `version-control` skill carries the full workflow.
+
+          ## Why
+
+          The worktrunk tool is session-aware: `switch`/`merge`/`remove`
+          driven through the tool also move your Pi session into the target
+          worktree and back out again on merge. The `wt` CLI knows nothing
+          about Pi, so a `wt merge` (or `switch`/`remove`) run through `bash`
+          deletes the worktree your session's cwd lives in and leaves the
+          session pointing at a path that no longer exists.
+
+          ## Hard rule
+
+          These worktree-lifecycle operations go through the `worktrunk` tool
+          (`activate_worktrunk` first), **never** `bash`:
+
+          - `switch` / `switch --create` / `switch --base=@`
+          - `merge` (including `--no-squash`, `--no-ff`, `--no-remove`,
+            `merge <target>`)
+          - `remove` / cleanup (the "prune" case)
+
+          Session-neutral commands may stay in `bash`: `wt list`,
+          `wt list --full --branches`, `wt config show`, `wt hook show`,
+          `wt hook <type> --dry-run`, and plain `git` (`status`, `diff`,
+          `commit`, `push`, …).
+
+          ## Translate, don't override, the intent
+
+          This rule changes the *mechanism*, never the *policy*. When a
+          project-local context or skill prescribes a worktree policy —
+          "squash merge", "merge locally, don't open a PR",
+          "`wt merge --no-squash`" — keep the policy and carry its arguments
+          into the worktrunk tool. A repo that wants a squash merge still gets
+          one; it just runs through the tool, not the shell.
+        '';
+
         "20-git-workflow" = ''
           # Git workflow policy
 
@@ -333,27 +377,23 @@
           discussed draft, stop before committing, present the revised final diff
           or a precise summary of the actual changes, and wait for confirmation.
 
-          When working inside any git repository, default to this toolset:
+          ## Toolset and the version-control skill
 
-          - **`gh`** for all GitHub operations (PRs, issues, CI checks, releases).
-          - **`wt`** (Worktrunk) for branch and worktree lifecycle — creating task
-            branches, switching contexts, stacking work, merging, and cleanup.
-            Prefer `wt` over raw `git worktree add/remove`, `git switch`, or
-            `git checkout` for these operations.
+          When working inside any git repository, default to:
 
-          ## Worktree default
-          For any non-trivial or exploratory piece of work, prefer a dedicated
-          worktree over working directly on the default branch:
-            wt switch --create <task-branch>
-          Worktrees are cheap.  A separate worktree keeps the default branch
-          clean and makes it easy to abandon, compare, or parallelise work.
-          Skip the worktree only for genuinely trivial fixes (typos, one-liner
-          config tweaks) where the overhead outweighs the benefit.
+          - **`gh`** for GitHub operations (PRs, issues, CI checks, releases).
+          - **the `worktrunk` tool** for branch and worktree lifecycle — call
+            `activate_worktrunk` first, then use the tool; never `wt` through
+            `bash` (see "Worktrunk: use the tool, never bash `wt`" above).
 
-          ## When to raise a PR vs. merge locally
-          Default to opening a PR (`gh pr create`) so there is a review record.
-          Use `wt merge` for a local merge only when the repo or task context
-          explicitly says PRs are not needed (e.g. a personal config repo).
+          Load the **`version-control`** skill at the start of any task
+          involving branches, worktrees, merges, PRs, or cleanup. It is the
+          full reference for the workflow: worktree-by-default and stacked
+          work, merge/PR conventions (solo repos merge locally, shared repos
+          open PRs; rebase onto `origin/main`, never force-push `main`),
+          Worktrunk user-vs-project config, hook/approval safety, decision
+          rules, and troubleshooting. Command syntax lives in the tool's own
+          generated reference, not in prose.
 
           ## Non-interactive git
           Git never runs interactively under pi: `core.editor` and
@@ -372,11 +412,6 @@
           message is kept); never rely on the editor to supply or edit a
           message. For a non-HEAD reword, override per invocation:
           `GIT_EDITOR='cp /path/to/msg' git rebase --continue`.
-
-          Load the **`worktrunk` skill** at the start of any task that involves
-          branch creation, worktree management, PR workflows, parallel agents, or
-          merge/cleanup.  The skill contains the full command reference and
-          preferred patterns.
         '';
 
         "10-scripting" = ''

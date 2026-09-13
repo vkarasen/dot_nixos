@@ -206,7 +206,7 @@
         mcpTools = ["video-analyzer"];
       };
       vcs = {
-        skills = ["worktrunk"];
+        skills = ["version-control"];
         extensions = ["npm:pi-worktrunk"];
       };
     };

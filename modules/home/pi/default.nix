@@ -187,6 +187,7 @@
           "oss-contrib" = ./skills/oss-contrib;
           "userspace-mounts" = ./skills/userspace-mounts;
           "video-analyzer" = ./skills/video-analyzer;
+          "version-control" = ./skills/version-control;
         };
         settings = let
           # The `orchestrator` model tier IS the interactive session default.
@@ -249,7 +250,6 @@
             "npm:pi-vim"
             "npm:pi-fzfp"
             "npm:pi-worktrunk"
-            "npm:@barlevalon/worktrunk-skill"
             "npm:@zaganjade/pi-usage"
             "npm:@juicesharp/rpiv-web-tools"
             "npm:pi-lens"

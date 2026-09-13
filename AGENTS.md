@@ -350,21 +350,17 @@ up. Keep that mount strictly post-bootstrap:
 
 This is a **personal, solo config repo** — no collaborators, no review process.
 
-- Use a worktree by default: `wt switch --create <name>` for any non-trivial
-  change. Worktrees are cheap and keep independent lines of work separate and
-  `main` clean.
-- **Do not open GitHub PRs.** A worktree stands in for the PR: when the work
-  is done, show the final diff/summary and wait for explicit approval, then
-  merge locally with `wt merge` and push to `main`. The local merge replaces
-  the PR — not the approval: commit, merge, and push each wait for your
-  explicit go-ahead.
-- **Multiple checkouts, one `main`.** Machines advance `origin/main`
-  independently, so a push can be rejected as non-fast-forward. Treat that as
-  routine: fetch, rebase onto `origin/main`, resolve any conflict, push again —
-  and **never force-push to `main`**.
-- Rebase onto `origin/main`, never onto stale local `main`: sync first
-  (`git fetch`), then `git rebase origin/main <branch>` and fast-forward
-  `main` to it. Every commit is yours, so integration is always trusted.
+Load the **`version-control` skill** for the full workflow (worktree tool
+usage, Worktrunk config, hooks, merge/PR conventions). Repo-specific rules:
+
+- Worktree by default for any non-trivial change; worktree lifecycle
+  (`switch`/`merge`/`remove`) runs through the `worktrunk` tool, never `wt`
+  through `bash`.
+- **No GitHub PRs** — merge locally with the `worktrunk` tool and push to
+  `main`. Commit, merge, and push each wait for explicit go-ahead.
+- **Never force-push to `main`.** Multiple checkouts advance `origin/main`
+  independently, so a rejected push is routine: fetch, rebase onto
+  `origin/main`, resolve, push again.
 - Skip the worktree only for genuinely trivial fixes (typos, one-liner config
   tweaks) where a plain `git commit` + `git push` on `main` is fine.
 
