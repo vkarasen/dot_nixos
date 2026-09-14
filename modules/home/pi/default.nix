@@ -243,7 +243,7 @@
             lib.mkIf (resolved != null && resolved.thinking != null)
             (lib.mkDefault resolved.thinking);
           packages = [
-            "npm:pi-mcp-adapter"
+            "npm:pi-mcp-adapter@<2.33.0 || >2.33.0"
             "npm:rpiv-todo"
             "npm:pi-docparser"
             "npm:@sherif-fanous/pi-catppuccin"
