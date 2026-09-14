@@ -1,9 +1,11 @@
-# Dendritic aspect: power management — lid/clamshell behaviour (with a grace
-# period before sleeping), suspend-then-hibernate, and conservative battery
-# charging. Laptop-relevant; on a machine without the battery/lid hardware the
-# units no-op gracefully.
+# Dendritic aspect: laptop power management (NixOS class) — the system side of
+# suspend/hibernate: lid/clamshell behaviour (with a grace period before
+# sleeping), suspend-then-hibernate, and conservative battery charging. The
+# user-space idle listeners live in modules/home/laptop.nix. Imported only by
+# the laptop host (modules/hosts/troy.nix); without the battery/lid hardware
+# the units no-op gracefully.
 {...}: {
-  flake.modules.nixos.power = {...}: {
+  flake.modules.nixos.laptop = {...}: {
     # The lid is handled by the lid-grace-watch timer below (delayed suspend),
     # so logind must not act on it. NOTE: logind.conf changes need a
     # `systemctl reload systemd-logind` (the switch activation does not do it).

@@ -13,10 +13,20 @@
     config.flake.modules.nixos.sops
     config.flake.modules.nixos.remote-builder
     config.flake.modules.nixos.wifi
-    config.flake.modules.nixos.power
+    config.flake.modules.nixos.laptop
     config.flake.modules.nixos.desktop
     config.flake.modules.nixos.stylix
     config.flake.modules.nixos.lock
+  ];
+
+  # Home-manager aspects this host opts into. `core` is the universal tooling;
+  # desktop/kanshi are the GUI (a laptop or a desktop PC alike); laptop is the
+  # suspend/idle/battery behaviour specific to a laptop.
+  flake.nixosHosts.troy.homeModules = [
+    config.flake.modules.homeManager.core
+    config.flake.modules.homeManager.desktop
+    config.flake.modules.homeManager.kanshi
+    config.flake.modules.homeManager.laptop
   ];
 
   flake.modules.nixos.troy = {pkgs, ...}: {

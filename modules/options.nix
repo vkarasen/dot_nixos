@@ -20,12 +20,31 @@
     };
     options.my.gui.enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = ''
-        Whether this environment has a graphical display (window manager,
-        terminal emulator, notifications). True on GUI machines; a headless
-        SSH server sets it false. Gates the desktop/kanshi aspects and the
-        GUI-vs-TUI global-context split.
+        Derived capability flag: whether this configuration has a graphical
+        desktop. Set true by the desktop aspect (modules/home/desktop.nix)
+        when it is imported — importing the aspect IS the GUI statement, so no
+        host hand-sets this. Read by consumers that react to display presence
+        (e.g. the pi GUI-vs-TUI global-context split). A headless host simply
+        does not import the desktop aspect.
+
+        Home-manager namespace only: the setter is a home aspect, so the NixOS
+        module system's copy stays false (nothing on the NixOS side reads it).
+      '';
+    };
+    options.my.laptop.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Derived capability flag: whether this configuration is a laptop
+        (battery + lid + suspend/resume power management). Set true by the
+        laptop aspect (modules/home/laptop.nix) when it is imported. Read by
+        aspects that need fine-grained laptop conditionals (e.g. the waybar
+        battery module in modules/home/desktop.nix).
+
+        Home-manager namespace only: the setter is a home aspect, so the NixOS
+        module system's copy stays false.
       '';
     };
     options.my.host = lib.mkOption {

@@ -18,6 +18,11 @@
           default = [];
           description = "Shared system aspects this host opts into.";
         };
+        options.homeModules = lib.mkOption {
+          type = lib.types.listOf lib.types.raw;
+          default = [];
+          description = "Home-manager aspects this host opts into.";
+        };
       }
     );
     default = {};
@@ -52,7 +57,7 @@
                     useUserPackages = true;
                     users.vkarasen = {
                       imports =
-                        (builtins.attrValues config.flake.modules.homeManager)
+                        host.homeModules
                         ++ (builtins.attrValues (config.flake.modules.generic or {}));
                       # the personal machine is always the private variant
                       my.is_private = lib.mkForce true;

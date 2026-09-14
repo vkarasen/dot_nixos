@@ -9,7 +9,7 @@
     config,
     ...
   }: {
-    config = lib.mkIf config.my.gui.enable {
+    config = {
       home.packages = [
         pkgs.nwg-displays # the arandr-style GUI (live tweaks, export profiles)
       ];
@@ -24,7 +24,13 @@
           {
             profile = {
               name = "mobile";
-              outputs = [{criteria = "eDP-1"; status = "enable"; scale = 1.0;}];
+              outputs = [
+                {
+                  criteria = "eDP-1";
+                  status = "enable";
+                  scale = 1.0;
+                }
+              ];
             };
           }
 
@@ -41,7 +47,10 @@
                   position = "0,0";
                   scale = 1.0;
                 }
-                {criteria = "eDP-1"; status = "disable";}
+                {
+                  criteria = "eDP-1";
+                  status = "disable";
+                }
               ];
             };
           }

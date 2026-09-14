@@ -20,11 +20,16 @@ alone.
   module (an "aspect"), auto-imported by `import-tree`. Add a file and it
   works — there is no central import list to edit.
 - **Classes**: each aspect declares `flake.modules.<class>.<name>` where
-  `<class>` is `homeManager` | `nixos` | `darwin` | `generic`. Hosts are
-  `modules/hosts/<name>.nix`; the assembly folds `nixos.*` + `generic.*` per
-  host and `homeManager.*` + `generic.*` into every host.
-- **Discriminators** (declared in `modules/options.nix`) select which class
-  rules apply to this machine: `my.is_nixos`, `my.gui.enable`, `my.host`.
+  `<class>` is `homeManager` | `nixos` | `darwin` | `generic`. `import-tree`
+  auto-*registers* every aspect; *selection* is explicit per host
+  (`modules/hosts/<name>.nix` lists `nixos.*` in `modules` and `homeManager.*`
+  in `homeModules`), and the standalone portable config opts into the universal
+  `homeManager.core` bundle.
+- **Discriminators** (declared in `modules/options.nix`) describe the
+  deployment context many aspects react to: `my.is_nixos`, `my.host`,
+  `my.is_private`. Two more — `my.gui.enable` and `my.laptop.enable` — are
+  *derived*: set true by the `desktop` / `laptop` aspect when it is imported,
+  not hand-set at the top level.
 
 ## The live map (never a frozen inventory)
 
@@ -34,8 +39,10 @@ alone.
   which `nixos.*` aspects this host imports. "Is impermanence / Secure Boot /
   disko active on this host?" is answered by reading that file, never from
   memory.
-- GUI aspects (`modules/home/desktop.nix`, `modules/home/kanshi.nix`) self-gate
-  on `config.my.gui.enable`, so a headless host genuinely omits them.
+- Machine-specific home aspects (`desktop`, `kanshi`, `laptop`) are selected
+  per host in `modules/hosts/<name>.nix`'s `homeModules` list — a headless or
+  foreign host simply does not list them. The universal `modules/home/core.nix`
+  bundle imports everything else.
 
 ## Discovery funnel
 
@@ -47,8 +54,9 @@ alone.
 3. **Read** the aspect (`module_report` / `read_symbol` / plain read).
 4. **Verify** every option and package name with the `nix-search` skill — never
    guess (the repo `AGENTS.md` "Looking up options & packages" mandates this).
-5. **Check the discriminator** — is the setting gated by `my.gui.enable` /
-   `my.is_nixos`, or specific to one host?
+5. **Check the discriminator / selection** — is the setting in a
+   machine-specific aspect (`desktop`, `kanshi`, `laptop`, selected per host),
+   or gated by an environment discriminator (`my.is_private`, `my.is_nixos`)?
 6. **Change**, then `git add -A && nix flake check` — never just `nix build`
    (pitfall #6: the two commands do not test the same thing).
 
@@ -77,16 +85,17 @@ trust this summary.
 
 ### Host `troy` (`my.host == "troy"`)
 
-- **The lid does not suspend** (`modules/nixos/power.nix`): logind ignores the
+- **The lid does not suspend** (`modules/nixos/laptop.nix`): logind ignores the
   lid switch; a `lid-grace-watch` timer schedules `suspend-then-hibernate` only
   on **battery + lid closed, after a 5-minute grace** (and then hibernates
   after a further 15 min suspended). On AC, closing the lid is clamshell mode —
   nothing happens. The default "lid → sleep" assumption is wrong here.
-- **Idle suspend** (`modules/home/desktop.nix`): `hypridle` suspends on
-  **5 min idle on battery** via `suspend-then-hibernate` (same 15-min hibernate
-  delay). It honours the Wayland idle-inhibit lock, so browsers/players pause
-  the idle timer during playback; on AC, idle does nothing. Never auto-locks on
-  idle — it locks via `before_sleep_cmd` right before suspending.
+- **Idle suspend** (`modules/home/laptop.nix`): `hypridle` (a laptop-only
+  aspect) suspends on **5 min idle on battery** via `suspend-then-hibernate`
+  (same 15-min hibernate delay). It honours the Wayland idle-inhibit lock, so
+  browsers/players pause the timer during playback. On AC, idle does nothing.
+  Never auto-locks on idle — it locks via `before_sleep_cmd` right before
+  suspending.
 - **Battery is capped at 80%** (charge to 80%, resume recharging at 75%) — a
   battery that "stops at 80%" is by design, not a fault.
 - ThinkPad T14s Gen 1, Intel Comet Lake — Intel-only GPU, no NVIDIA

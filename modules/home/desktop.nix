@@ -12,9 +12,11 @@
     # both land in the shared home-manager buildEnv and collide. Drop ghostty's
     # duplicate g/ghostty entry and keep x/xterm-ghostty, which ncurses lacks.
     ghostty = pkgs.ghostty.overrideAttrs (old: {
-      postFixup = old.postFixup + ''
-        rm -f $out/share/terminfo/g/ghostty
-      '';
+      postFixup =
+        old.postFixup
+        + ''
+          rm -f $out/share/terminfo/g/ghostty
+        '';
     });
 
     # Grouped, searchable keybinding cheatsheet (shown in fuzzel). Reads the
@@ -51,19 +53,6 @@
       | fuzzel --dmenu --prompt 'Keys ' --width 70 --lines 22
     '';
 
-    # Idle-suspend hook for hypridle's on-timeout: suspend-then-hibernate, but
-    # only on battery (mirrors the lid-close grace in modules/nixos/power.nix).
-    # `read` is a shell builtin, so the script needs nothing but bash plus the
-    # full-path systemctl below. On a machine with no AC power-supply node the
-    # read fails and `ac` stays empty -> no suspend (safe default).
-    idle-suspend = pkgs.writeShellScriptBin "idle-suspend" ''
-      ac=""
-      read -r ac < /sys/class/power_supply/AC/online 2>/dev/null || true
-      if [ "$ac" = "0" ]; then
-        /run/current-system/sw/bin/systemctl suspend-then-hibernate
-      fi
-    '';
-
     # Screenshot helper: captures the fullscreen or the active window,
     # saves a timestamped PNG to ~/Pictures/screenshots, and copies it to the
     # clipboard. Every tool it calls is pinned via runtimeInputs, so the
@@ -92,7 +81,12 @@
       '';
     };
   in {
-    config = lib.mkIf config.my.gui.enable {
+    # Importing this aspect IS the GUI statement: derive the flag that
+    # consumers (e.g. the pi GUI-vs-TUI context) read. NOTE: an aspect that
+    # defines a my.* option must never be consumed by a standalone wrapped
+    # package (repo AGENTS.md pitfall #6) — this one isn't.
+    config = {
+      my.gui.enable = true;
       home.packages = with pkgs; [
         grim # screenshots
         brightnessctl # screen/keyboard backlight for the Fn keys
@@ -106,28 +100,6 @@
       # shared home aspect must never reference `stylix`, so the standalone
       # TUI-only config stays free of the Stylix home module. The
       # terminal/CLI layer (ghostty, bat, nvim, …) is left to catppuccin-nix.
-
-      # Idle daemon: lock right before suspend/hibernate. On idle it suspends
-      # (battery only) via suspend-then-hibernate, mirroring the lid-close
-      # grace in modules/nixos/power.nix. hypridle honours the Wayland
-      # idle-inhibit lock by default, so browsers/players that hold it during
-      # playback pause the timer — no suspend mid-media. There is still no
-      # idle *auto-lock*: suspend locks via before_sleep_cmd, not a listener.
-      services.hypridle = {
-        enable = true;
-        settings = {
-          general = {
-            lock_cmd = "hyprlock";
-            before_sleep_cmd = "hyprlock";
-          };
-          listener = [
-            {
-              timeout = 300; # 5 min idle
-              "on-timeout" = "${idle-suspend}/bin/idle-suspend";
-            }
-          ];
-        };
-      };
 
       # Lock screen structure (Stylix's hyprlock target supplies the
       # background image + input-field colours).
@@ -212,7 +184,12 @@
               spacing = 4;
               modules-left = ["hyprland/workspaces"];
               modules-center = ["clock"];
-              modules-right = ["network" "pulseaudio" "battery" "tray"];
+              # `battery` is laptop-only: in modules-right only when
+              # my.laptop.enable is true (set by modules/home/laptop.nix).
+              modules-right =
+                ["network" "pulseaudio"]
+                ++ lib.optional config.my.laptop.enable "battery"
+                ++ ["tray"];
 
               "hyprland/workspaces" = {
                 format = "{name}";

@@ -23,8 +23,10 @@ outputs = inputs:
 Functionality is grouped into **aspects**: each file declares modules into the
 flake-parts module store under `flake.modules.<class>.<name>`, where `<class>`
 is `homeManager`, `nixos`, `darwin`, or `generic` (class-agnostic, reusable
-anywhere). Configurations are then assembled by folding the store — adding a
-file adds functionality, with no central import list to edit.
+anywhere). `import-tree` auto-**registers** every aspect; **selection** is
+explicit: a host (`modules/hosts/<name>.nix`) lists the `nixos.*` aspects it
+wants in `modules` and the `homeManager.*` aspects in `homeModules`, while the
+standalone portable config opts into the universal `homeManager.core` bundle.
 
 ## Layout
 
@@ -33,13 +35,23 @@ flake.nix                         # thin: inputs + mkFlake (import-tree ./module
 modules/
   flake/                          # flake-level wiring (NOT aspects)
     parts.nix                     # opt into flake.modules.<class>; systems; shared allowUnfree pkgs + `stable` overlay; formatter
-    home-configurations.nix       # folds flake.modules.homeManager.* + generic.* -> homeConfigurations.vkarasen
+    home-configurations.nix       # portable config = homeManager.core + generic.* (TUI-only)
+    nixos-configurations.nix      # per host: modules (nixos.*) + homeModules (homeManager.*) + generic.*
     home-modules.nix              # flake.homeModules.* — standalone HM modules for cross-flake import
     lib.nix                       # flake.lib.pi — skill derivation builders exposed as a library
     packages.nix                  # perSystem packages.nvim (built from modules/_nixvim)
     templates.nix                 # flake.templates
   options.nix                     # custom my.* options, class `generic` (reusable by home/nixos/darwin)
+  nixos/                          # one aspect per file: flake.modules.nixos.<name>
+    laptop.nix                    # system-side suspend/hibernate: lid, HibernateDelaySec, battery thresholds
+    desktop.nix lock.nix ...      # compositor / lock greeter / boot / disks / etc.
+  hosts/
+    troy.nix                      # host manifest: `modules` (nixos.*) + `homeModules` (homeManager.*)
   home/                           # one aspect per file/dir: flake.modules.homeManager.<name>
+    core.nix                      # universal baseline: imports every always-on aspect below
+    desktop.nix                   # GUI (laptop or not): apps, waybar, hyprlock — sets my.gui.enable
+    kanshi.nix                    # GUI: monitor profiles
+    laptop.nix                    # laptop idle/suspend: hypridle listeners — sets my.laptop.enable
     base.nix                      # identity, stateVersion, xdg, catppuccin
     external.nix                  # external input modules (nix-index, catppuccin, nixvim, sops) + ast-bro + registry
     git.nix bash.nix ssh.nix ...
@@ -140,7 +152,9 @@ Then create `modules/home/<name>.nix`:
 }
 ```
 
-It is picked up automatically and folded into `homeConfigurations.vkarasen`.
+Then **select** it: add it to `modules/home/core.nix` (always-on tooling) or to
+a host's `homeModules` list in `modules/hosts/<name>.nix` (machine-specific
+capability). A home aspect that is selected nowhere is evaluated nowhere.
 Need a value from a flake input (e.g. `nix-std.lib`, `ast-bro`)? Close over
 it at flake-parts level — change the outer function from `{...}:` to
 `{ inputs, ... }:` and bind the value in a `let` before the HM module
@@ -171,6 +185,11 @@ Declare the variants **in the same file**, grouped together:
   flake.modules.generic.foo     = { ... };   # class-agnostic (e.g. shared options)
 }
 ```
+
+In practice the repo splits a nixos+home concern into two files —
+`modules/nixos/<name>.nix` + `modules/home/<name>.nix` (see `desktop` and
+`laptop`) — because a host selects the two classes independently in its
+`modules` / `homeModules` lists.
 
 ### A custom option
 
@@ -261,11 +280,11 @@ See `modules/home/pi/private.nix` for the full implementation.
 
 ### A future NixOS or nix-darwin host
 
-The home assembly in `modules/flake/home-configurations.nix` is the template:
-add `modules/flake/nixos-configurations.nix` that folds
-`config.flake.modules.nixos.*` (and `generic.*`) the same way. Per-host files go
-in a new `modules/hosts/<name>.nix`. Keep shared logic in `generic` aspects to
-avoid repetition across classes.
+`modules/hosts/troy.nix` is the template: a host declares `modules` (the
+`nixos.*` aspects it wants) and `homeModules` (the `homeManager.*` aspects it
+wants); `modules/flake/nixos-configurations.nix` folds them into a NixOS system
+with the home aspects nested under `users.vkarasen`. Keep shared logic in
+`generic` aspects to avoid repetition across classes.
 
 ## Pitfalls (these will bite you)
 

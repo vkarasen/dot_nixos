@@ -1,7 +1,7 @@
-# Assemble homeConfigurations from the dendritic aspect store. Every
-# flake.modules.homeManager.* (and the class-agnostic generic.*) aspect is
-# folded into the single vkarasen configuration. New aspect file => new
-# functionality, no edits here.
+# Assemble homeConfigurations from the dendritic aspect store. The standalone
+# portable config opts into the universal `core` bundle (plus the class-
+# agnostic generic.* aspects) — the TUI-only variant, no desktop/kanshi/laptop.
+# Adding a new always-on home aspect: add it to modules/home/core.nix.
 {
   inputs,
   config,
@@ -21,17 +21,18 @@
       };
 
       modules =
-        builtins.attrValues config.flake.modules.homeManager
-        ++ builtins.attrValues (config.flake.modules.generic or {})
-        ++ [
-          # The standalone home config is the TUI-only variant: no display
-          # surface, so the GUI aspects (desktop, kanshi) gate themselves off
-          # via config.my.gui.enable. It also has no Stylix — the per-user
+        [
+          # The standalone portable config is the TUI-only variant: it opts
+          # into the universal `core` bundle and omits the machine-specific
+          # desktop/kanshi/laptop aspects, so my.gui.enable and my.laptop.enable
+          # stay false (their defaults). No Stylix either — the per-user
           # stylix.targets live on the NixOS side (modules/nixos/stylix.nix),
           # so no home aspect references `stylix` and no Stylix home module
           # needs importing here.
-          {my.gui.enable = false;}
-
+          config.flake.modules.homeManager.core
+        ]
+        ++ builtins.attrValues (config.flake.modules.generic or {})
+        ++ [
           # vkarasen's personal machine is always the private variant.
           {my.is_private = lib.mkForce true;}
         ];
