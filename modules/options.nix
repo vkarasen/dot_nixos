@@ -79,6 +79,64 @@
         machines without going through the Google Workspace MCP server.
       '';
     };
+    options.my.worktrunk = {
+      worktreeRoot = lib.mkOption {
+        type = lib.types.nonEmptyStr;
+        default = "~/code";
+        description = ''
+          Centralized root under which Worktrunk checks out every worktree,
+          via the worktree-path template in modules/home/worktrunk.nix
+          ("''${worktreeRoot}/.worktrees/{{ repo }}/{{ branch | sanitize }}").
+          Keeping worktrees out of each repo's own directory tree avoids
+          dirwalks/searches picking them up. Herdr's own worktree root
+          (programs.herdr.settings.worktrees.directory, modules/home/herdr)
+          is a deliberate SIBLING of this path, not the same directory, so
+          the two creation mechanisms can never collide.
+
+          A single repo can opt out of centralization by adding a
+          [projects."host/owner/repo"] table with its own worktree-path key
+          to the user's own ~/.config/worktrunk/config.toml (worktree-path is
+          user-config only; it cannot be set from a repo's committed project
+          config). An opted-out repo's worktrees are invisible to the
+          autoPrune scan below, which only walks this root.
+        '';
+      };
+      autoPrune = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Run a periodic backstop that discovers every repo with worktrees
+            under worktreeRoot (and under herdr's sibling worktree root) and
+            prunes the ones Worktrunk considers safe: identical to or already
+            merged into the repo's default branch. It is structurally unable
+            to remove a worktree with uncommitted changes (wt step prune has
+            no --force), and it skips any worktree herdr currently shows as
+            open in a workspace. This is a backstop, not the primary cleanup
+            path — the primary path is the herdr plugin that prunes on
+            workspace close (see modules/home/herdr).
+          '';
+        };
+        minAge = lib.mkOption {
+          type = lib.types.str;
+          default = "7d";
+          description = ''
+            Passed to `wt step prune --min-age`. A worktree younger than this
+            is never a candidate, regardless of merge status — guards against
+            a worktree that merely hasn't diverged yet, and against pulling a
+            worktree out from under a paused-but-live session that hasn't
+            committed. This is unrelated to the herdr plugin's on-close
+            check, which has no age guard because closing the workspace is
+            itself the deliberate "I'm done" signal.
+          '';
+        };
+        schedule = lib.mkOption {
+          type = lib.types.str;
+          default = "daily";
+          description = "systemd OnCalendar expression for the autoPrune timer.";
+        };
+      };
+    };
     options.my.obsidian = {
       enable = lib.mkOption {
         type = lib.types.bool;

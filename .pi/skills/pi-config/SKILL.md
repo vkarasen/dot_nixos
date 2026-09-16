@@ -415,11 +415,11 @@ Rules:
 
 Pi extensions are TypeScript files under `modules/home/pi/extensions/`, wired
 into `~/.pi/agent/extensions/` by `home.file` entries in
-`modules/home/pi/policies.nix` (next to the `herdr-tab-rename.ts`,
-`last-activity.ts`, and `worktrunk-deferred.ts` entries, which share one
-`tsconfig.json`). Follow that pattern for new extensions: add the `.ts` under
-`modules/home/pi/extensions/` and a matching `home.file` source line in
-`policies.nix`.
+`modules/home/pi/policies.nix` (next to the `herdr-context-rename.ts`,
+`herdr-tab-relocate.ts`, `last-activity.ts`, and `worktrunk-deferred.ts`
+entries, which share one `tsconfig.json`). Follow that pattern for new
+extensions: add the `.ts` under `modules/home/pi/extensions/` and a matching
+`home.file` source line in `policies.nix`.
 
 ### Recon-nudge drift risk
 

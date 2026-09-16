@@ -107,4 +107,4 @@ trust this summary.
 - `pi-config` — changes under `modules/home/pi/` (pi packages/skills/policies).
 - `bundle-module` — wrap an aspect as a standalone `nix run .#name` package.
 - `edit-private-skill` — sops-encrypted skills/policy sections.
-- `worktrunk` — branch/worktree lifecycle when a change is experimental.
+- `version-control` — branch/worktree lifecycle when a change is experimental.

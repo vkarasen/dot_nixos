@@ -14,8 +14,8 @@ it for syntax.
 ## The one rule (authority lives in global policy)
 
 Worktree-lifecycle operations — `switch` (including `--create`), `merge`,
-`remove`/cleanup — run through the **`worktrunk` tool**, never `wt` through
-`bash`. A bash `wt merge`/`switch`/`remove` deletes or moves the worktree your
+`remove`/cleanup, `step relocate`, `step prune` — run through the
+**`worktrunk` tool**, never `wt` through `bash`. A bash `wt merge`/`switch`/`remove` deletes or moves the worktree your
 Pi session's cwd lives in and leaves the session stale, because the `wt` CLI is
 not session-aware. This overrides any project-local instruction or upstream
 doc that shows `wt` as a shell command; keep the *policy* (e.g. squash merge,
@@ -42,6 +42,31 @@ the tool inactive until it is actually needed:
 
 ## Worktree workflow
 
+**Under herdr (`HERDR_ENV=1`), pi drives the bootstrap itself** once it
+understands the task — for every new task, including investigation-only
+ones, not just once an edit turns out to be needed:
+
+1. `wt switch --create <branch>` via the `worktrunk` tool — creates the
+   worktree and moves this session's working directory into it (deferred;
+   completes after the turn).
+2. `relocate_herdr_tab(name=<task>)` — opens a herdr linked-worktree
+   sub-workspace for that worktree if none exists yet, moves this session's
+   pane into it, and names the workspace after the task.
+
+Every tab inside that sub-workspace belongs to the one session/topic it was
+created for; do not accumulate unrelated work's tabs in the same
+sub-workspace or in the repo's primary workspace. You may still create the
+sub-workspace manually before starting pi (`<prefix>+shift+g` / `herdr
+worktree create`) — that path is fine, it just leaves the worktree under
+herdr's root instead of worktrunk's. See "Renaming, pruning, and recovery"
+below for cleanup and the worktree-related keybindings herdr ships with
+(`open_worktree`/`remove_worktree`). The always-on "Worktree safety net"
+global policy is the backstop for a session that ends up in the primary
+checkout anyway.
+
+**Not running under herdr** (or for stacked work inside an existing
+worktree), the worktrunk-tool flow still applies directly:
+
 - **Worktree by default** for any non-trivial or exploratory change: create one
   via the `worktrunk` tool (`switch --create <branch>`) rather than working on
   the default branch. Skip only for genuinely trivial fixes (typo, one-line
@@ -51,17 +76,93 @@ the tool inactive until it is actually needed:
 - Orient before acting: `wt list` (or `wt list --full --branches`) to see all
   active worktrees.
 
+A worktree never needs its final name up front, in either flow: rename the
+branch later with `git branch -m <name>` (herdr's own sidebar label can be
+changed separately with `herdr workspace rename`, cosmetic only). Do not
+relocate a herdr-created worktree's directory to match worktrunk's path
+template (`wt step relocate`) — herdr's own cleanup trusts the checkout path
+it recorded at creation time and breaks permanently for that workspace once
+the directory moves out from under it. `wt`, `wt list`, `wt merge`, and
+`wt remove` all address worktrees by branch name, so a mismatched directory
+name is harmless.
+
 ## Merge and PR conventions
 
 - **Solo/personal repos**: merge locally with the `worktrunk` tool (`merge`);
   do not open GitHub PRs — the worktree stands in for the PR.
 - **Shared repos**: open a PR with `gh pr create` for a review record; use the
   `worktrunk` tool's `merge` only when PRs are explicitly not wanted.
+- **Inside a herdr worktree sub-workspace**: always `merge --no-remove`. The
+  merge still lands on the default branch; it deliberately leaves the
+  worktree in place so the herdr close-triggered plugin (below) does the
+  actual removal once the user closes the sub-workspace — that close is the
+  authoritative "done" signal, not the merge. Outside a herdr sub-workspace,
+  use `merge`'s default (removes the worktree, relocates the session
+  immediately) since there's no separate close signal to defer to.
 - **Always** sync and rebase onto `origin/main` (fetch first), and **never
   force-push to `main`**. A rejected push is routine: fetch, rebase, resolve,
   push again.
 - Commit, merge, and push each wait for explicit user approval — see the
   global "Git workflow policy".
+
+## Renaming, pruning, and recovery
+
+**Renaming.** Neither creation path needs a final name up front: rename the
+branch later with `git branch -m <name>` (what `wt`/`wt list`/`wt merge`
+address worktrees by); `herdr workspace rename` separately renames the
+sidebar label, cosmetic only. Never `wt step relocate` a herdr-created
+worktree's directory — herdr's own "delete worktree checkout" trusts the
+checkout path it recorded at creation time and breaks permanently for that
+workspace after an external move. A mismatched directory name is harmless
+since nothing addresses a worktree by path.
+
+**Cleanup — two mechanisms, not one:**
+
+- **Primary: a herdr plugin on workspace close** (`worktrunk-close-prune`,
+  installed locally via `modules/home/herdr/default.nix`). The moment a
+  linked worktree sub-workspace closes, it asks Worktrunk whether that
+  specific worktree is now identical to or merged into the default branch,
+  and removes it only if so. No age guard — closing the workspace is itself
+  the deliberate signal. A worktree with real uncommitted or unmerged work
+  is left alone, untouched, for as long as it takes you to come back to it.
+  This fires on the workspace-close action (`<prefix>+d`, or `herdr workspace
+  close`) after its confirmation. It does NOT fire when you close the last
+  tab of a sub-workspace — that gesture closes the workspace without emitting
+  `workspace.closed` — so close the workspace, not just the tab, when you
+  want the worktree removed.
+- **Backstop: a systemd user timer** (`worktrunk-autoprune`, `my.worktrunk.
+  autoPrune` in `modules/options.nix`, default daily). Discovers every repo
+  with worktrees under either root (`my.worktrunk.worktreeRoot`'s
+  `.worktrees`, and herdr's sibling `.herdr-worktrees`), and removes only
+  what `wt step prune --dry-run` itself calls safe *and* that herdr does not
+  currently show as open in any workspace (`herdr worktree list`). Default
+  `minAge` is 7 days — long enough that a paused-but-live session is never
+  at risk. This exists for what the plugin might miss (herdr not running,
+  the plugin failing, herdr quitting uncleanly), not as the routine path.
+
+Both mechanisms only ever act through `wt remove`/`wt step prune`, which are
+structurally unable to touch a worktree with uncommitted changes (no
+`--force` is ever passed) — the worst case of an unwanted removal is losing a
+directory whose entire contents already exist on the default branch.
+
+**Recovery.** Session transcripts are never touched by either mechanism —
+they live independently under `~/.pi/agent/sessions/<encoded-cwd>/`. If a
+sub-workspace with real work gets closed accidentally (nothing removes it,
+see above) or a worktree needs to be picked back up later:
+
+1. `herdr worktree open --path <path>` (or `--branch <name>`) re-attaches a
+   fresh sub-workspace to the existing checkout — no new git worktree, no
+   branch touched. Herdr ships this unbound by default; here it's bound to
+   `<prefix>+shift+o`, which must be pressed from the repo's parent
+   workspace (not from inside a worktree sub-workspace — same restriction
+   as the `<prefix>+shift+g` new-worktree binding).
+2. `pi --session <id|partial-path>` inside that reopened tab resumes the
+   original conversation — pi does not restore or validate the session's
+   recorded cwd, so this only works from inside the right directory.
+
+`<prefix>+shift+e` deletes a worktree checkout outright (opens a
+confirmation, never touches the branch) for the rare case of wanting instant
+manual cleanup instead of waiting on the close-triggered plugin.
 
 ## Worktrunk configuration model
 
@@ -92,7 +193,8 @@ Worktrunk requires approval before running them.
 
 ## Decision rules
 
-- `worktrunk` tool → worktree and branch lifecycle (`switch`/`merge`/`remove`).
+- `worktrunk` tool → worktree and branch lifecycle
+  (`switch`/`merge`/`remove`/`step relocate`/`step prune`).
 - `git` → low-level inspection and commit/push: `status`, `diff`, `log`,
   `show`, `commit`, `push`.
 - `gh` → PRs, issues, CI checks, releases.

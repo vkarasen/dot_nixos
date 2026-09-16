@@ -317,6 +317,9 @@
           - `merge` (including `--no-squash`, `--no-ff`, `--no-remove`,
             `merge <target>`)
           - `remove` / cleanup (the "prune" case)
+          - `step relocate` — moves the current worktree, same as switch
+          - `step prune` — removes the current worktree last and triggers a
+            cd to the primary worktree, same as merge/remove
 
           Session-neutral commands may stay in `bash`: `wt list`,
           `wt list --full --branches`, `wt config show`, `wt hook show`,
@@ -331,10 +334,55 @@
           "`wt merge --no-squash`" — keep the policy and carry its arguments
           into the worktrunk tool. A repo that wants a squash merge still gets
           one; it just runs through the tool, not the shell.
+
+          ## Merging inside a herdr worktree sub-workspace
+
+          Check whether the current workspace is a herdr-linked worktree
+          (`herdr worktree list --cwd .`, look for `is_linked_worktree` on
+          the entry matching the cwd). If it is, always pass `--no-remove`
+          to `merge`. The merge still lands the commits on the default
+          branch; it deliberately leaves the worktree in place instead of
+          removing it and relocating the session. Closing the sub-workspace
+          is the user's authoritative "I'm done" signal, not the merge —
+          herdr's own plugin cleans up the now-merged worktree at that point
+          (see the `version-control` skill). Outside a herdr-linked
+          sub-workspace, use `merge`'s default behavior (it removes the
+          worktree and relocates the session immediately, since there is no
+          separate close signal to defer to).
         '';
 
         "20-git-workflow" = ''
           # Git workflow policy
+
+          ## Worktree bootstrap (pre-edit safety net)
+
+          Under herdr (`HERDR_ENV=1`), pi drives the bootstrap itself once it
+          understands the task — for every new task, not just once an edit
+          turns out to be needed:
+
+          1. `wt switch --create <branch>` via the `worktrunk` tool — creates
+             the worktree and moves this session's working directory into it
+             (deferred; completes after the turn).
+          2. `relocate_herdr_tab(name=<task>)` — opens a herdr linked-worktree
+             sub-workspace for that worktree if none exists yet, moves this
+             session's pane into it, and names the workspace after the task.
+
+          Every tab in that sub-workspace belongs to the one session/topic it
+          was created for; closing it is the deliberate "I'm done" signal
+          that triggers cleanup (see the `version-control` skill's
+          renaming/pruning/recovery section).
+
+          If you find yourself about to edit a file meant to be committed while
+          still on the repo's DEFAULT branch (not a worktree), stop and run the
+          bootstrap above before editing. Skip the worktree only for genuinely
+          trivial fixes (typo, one-line tweak). You may still create the
+          sub-workspace manually before starting pi (`<prefix>+shift+g` /
+          `herdr worktree create`); that leaves the worktree under herdr's
+          root instead of worktrunk's, which is fine.
+
+          Not running under herdr, the worktrunk-tool flow still applies:
+          `switch --create <branch>` (placeholder name is fine) and continue
+          there, per the version-control skill's worktree-by-default rule.
 
           ## Commit approval — default: always wait
           Never commit, merge, or push unless the user has explicitly approved
@@ -522,12 +570,19 @@
         '';
 
         "25-herdr-tab-naming" = ''
-          # Herdr tab naming
+          # Herdr workspace/tab naming and relocation
 
-          When running inside herdr (`HERDR_ENV=1`), a `rename_herdr_tab` tool is
-          available. The first prompt of each session injects an instruction to
-          call it before starting work. Also call it whenever the session topic
-          shifts significantly.
+          When running inside herdr (`HERDR_ENV=1`), two tools are available:
+
+          - `rename_herdr_context` renames the unit this session lives in to
+            reflect the task: the WORKSPACE when the session is in a linked
+            worktree sub-workspace (the task-scoped unit), otherwise the TAB.
+            The first prompt of each session injects an instruction to call it
+            before starting work; also call it whenever the topic shifts.
+          - `relocate_herdr_tab` moves this session's pane into another herdr
+            workspace (opening a new tab there) and can rename that workspace
+            to the task name in the same call. Use it to move a session onto
+            its worktree workspace (existing or new) and name it after the task.
 
           ## Label style
           - 2–4 words, lowercase noun phrase
@@ -688,12 +743,17 @@
       };
 
     # -----------------------------------------------------------------------
-    # Herdr tab-rename extension + companion tsconfig.
+    # Herdr rename + relocate extensions + companion tsconfig.
     # The tsconfig uses paths relative to the deployed location
     # (~/.pi/agent/extensions/) so the LSP resolves pi's runtime modules.
     # -----------------------------------------------------------------------
-    home.file.".pi/agent/extensions/herdr-tab-rename.ts".source =
-      ./extensions/herdr-tab-rename.ts;
+    home.file.".pi/agent/extensions/herdr-context-rename.ts".source =
+      ./extensions/herdr-context-rename.ts;
+    # Lets the interactive session relocate its own pane into another herdr
+    # workspace (new tab there) via `herdr pane move`, so a session started in
+    # the parent workspace can move itself onto its worktree on its first turn.
+    home.file.".pi/agent/extensions/herdr-tab-relocate.ts".source =
+      ./extensions/herdr-tab-relocate.ts;
     # Single footer chip showing when this session was last active (absolute
     # day + month + time), refreshed on agent_settled and restored on load.
     home.file.".pi/agent/extensions/last-activity.ts".source =

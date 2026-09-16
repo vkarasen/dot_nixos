@@ -1,0 +1,10 @@
+id = "worktrunk-close-prune"
+name = "Worktrunk prune on workspace close"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "When a herdr worktree sub-workspace closes, remove its git worktree/branch if Worktrunk considers it fully merged into the default branch. A worktree with real uncommitted or unmerged work is left alone; recover it later with `herdr worktree open`."
+platforms = ["linux", "macos"]
+
+[[events]]
+on = "workspace.closed"
+command = ["./on-workspace-closed"]
