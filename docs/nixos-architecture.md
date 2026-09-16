@@ -56,6 +56,15 @@ only if you **regenerate them** (manually, or by deleting
 "Reset to Setup Mode" / "Restore Factory Keys" in the BIOS (which wipes the
 enrolled keys and requires re-enrollment).
 
+One exception changes PCR 7 *without* any key change: since systemd 261,
+`systemd-pcrosseparator.service` measures a constant `os-separator` string into
+PCRs 0-7/9/12-14 during early userspace (the initrd). It's a userspace
+measurement layered on top of the Secure Boot measurement, so after a systemd
+≥261 update the PCR 7 value shifts once even though the key set is untouched —
+a passphrase prompt right after that update is expected, not a security event.
+(It does not appear in the firmware event log; systemd logs userspace
+measurements to `/run/log/systemd/tpm2-measure.log`.)
+
 ## Desktop (Hyprland)
 
 - Stack: **Hyprland** (dwindle tiling) + **ghostty** (terminal) + **waybar**
@@ -87,6 +96,7 @@ enrolled keys and requires re-enrollment).
 |---|---|
 | LUKS prompt appears (TPM refused) | type the passphrase; if it keeps happening, re-enroll (below) |
 | TPM unlock broke after a Secure Boot key change | re-enroll the TPM (below) |
+| TPM unlock broke right after a systemd ≥261 update (no key change) | expected once — the new `systemd-pcrosseparator.service` measured `os-separator` into PCR 7; re-enroll the TPM (below) |
 | Secure Boot keys lost / firmware reset | regenerate keys (or re-enroll) + re-enroll the TPM |
 | Boot entry broken / bad generation | pick an older generation in the systemd-boot menu |
 | SSH / networking down | see `docs/nixos-debugging.md` |
