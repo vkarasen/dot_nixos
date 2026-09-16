@@ -24,6 +24,17 @@
       cp ${./plugins/worktrunk-close-prune/herdr-plugin.toml} $out/herdr-plugin.toml
       ln -s ${worktrunkClosePruneScript}/bin/on-workspace-closed $out/on-workspace-closed
     '';
+
+    # Standalone one-shot CLI: relocate misplaced pi tabs into their correct
+    # herdr workspace (logic in organize/herdr-organize.js). Wrapped with an
+    # absolute node shebang so it needs no node on PATH at runtime; the .js is
+    # the source of truth, this just makes it an executable on PATH.
+    herdrOrganize = pkgs.writeTextFile {
+      name = "herdr-organize";
+      executable = true;
+      destination = "/bin/herdr-organize";
+      text = "#!${pkgs.nodejs}/bin/node\n" + builtins.readFile ./organize/herdr-organize.js;
+    };
   in {
     programs.herdr = {
       enable = true;
@@ -70,7 +81,7 @@
       };
     };
 
-    home.packages = [pkgs.herdr];
+    home.packages = [pkgs.herdr herdrOrganize];
 
     # Run `herdr integration install pi` on every home-manager activation.
     # Herdr handles idempotency itself; we just ensure the target directory
