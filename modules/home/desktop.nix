@@ -33,11 +33,18 @@
         'Window: Toggle fullscreen — SUPER+F' \
         'Window: Move window (drag) — SUPER+Left click' \
         'Window: Resize window (drag) — SUPER+Right click' \
+        'Window: Focus window (vim) — SUPER+h/j/k/l' \
+        'Window: Move window in layout — SUPER+Shift+h/j/k/l' \
+        'Window: Swap window — SUPER+Ctrl+h/j/k/l' \
+        'Window: Window switcher (alt-tab) — SUPER+Tab' \
         'Workspace: Go to workspace 1 — SUPER+1' \
         'Workspace: Go to workspace 2 — SUPER+2' \
         'Workspace: Go to workspace 3 — SUPER+3' \
         'Workspace: Go to workspace 4 — SUPER+4' \
         'Workspace: Go to workspace 5 — SUPER+5' \
+        'Workspace: Send window to workspace — SUPER+Shift+1..5' \
+        'Monitor: Focus monitor left/right — SUPER+Alt+h/l' \
+        'Monitor: Move workspace to monitor — SUPER+Alt+Shift+h/l' \
         'Media: Mute audio — Mute key' \
         'Media: Volume down — Volume down key' \
         'Media: Volume up — Volume up key' \
@@ -50,7 +57,7 @@
         'System: Lock screen — SUPER+L' \
         'System: Exit Hyprland — SUPER+M' \
         'Help: Show keybindings — SUPER+/' \
-      | fuzzel --dmenu --prompt 'Keys ' --width 70 --lines 22
+      | fuzzel --dmenu --prompt 'Keys ' --width 70 --lines 40
     '';
 
     # Screenshot helper: captures the fullscreen or the active window,
@@ -80,6 +87,7 @@
         notify-send -a screenshot -i "$out" "Screenshot" "Copied to clipboard"
       '';
     };
+
   in {
     # Importing this aspect IS the GUI statement: derive the flag that
     # consumers (e.g. the pi GUI-vs-TUI context) read. NOTE: an aspect that
@@ -285,6 +293,24 @@
         };
       };
 
+      # hyprshell (formerly hyprswitch): GTK4 recent-window switcher, the
+      # alt-tab replacement. The daemon runs as a systemd user service;
+      # settings are rendered to ~/.config/hyprshell/config.json. Hold SUPER,
+      # tap Tab to cycle windows, release to close. switch.filter_by defaults
+      # to the current monitor — set [] for all monitors.
+      services.hyprshell = {
+        enable = true;
+        settings = {
+          version = 4;
+          windows = {
+            switch = {
+              modifier = "super";
+              key = "Tab";
+            };
+          };
+        };
+      };
+
       # Screenshot retention watchdog: a daily timer deletes screenshots older
       # than 30 days, so ~/Pictures/screenshots can't grow unbounded. The
       # leading `-` on ExecStart ignores find's exit code (e.g. before the
@@ -455,6 +481,147 @@
               _args = [
                 (lib.generators.mkLuaInline ''mod .. " + 5"'')
                 (lib.generators.mkLuaInline ''hl.dsp.focus({ workspace = "5" })'')
+              ];
+            }
+
+            # Window focus (vim-style): move focus between windows on the
+            # focused workspace. SUPER + h/j/k/l = left/down/up/right.
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + h"'')
+                (lib.generators.mkLuaInline ''hl.dsp.focus({ direction = "l" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + j"'')
+                (lib.generators.mkLuaInline ''hl.dsp.focus({ direction = "d" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + k"'')
+                (lib.generators.mkLuaInline ''hl.dsp.focus({ direction = "u" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + l"'')
+                (lib.generators.mkLuaInline ''hl.dsp.focus({ direction = "r" })'')
+              ];
+            }
+
+            # Move the active window within the layout (dwindle).
+            # SUPER + SHIFT + h/j/k/l.
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + SHIFT + h"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.move({ direction = "l" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + SHIFT + j"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.move({ direction = "d" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + SHIFT + k"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.move({ direction = "u" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + SHIFT + l"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.move({ direction = "r" })'')
+              ];
+            }
+
+            # Swap the active window with its neighbour. SUPER + CTRL + h/j/k/l.
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + CTRL + h"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.swap({ direction = "l" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + CTRL + j"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.swap({ direction = "d" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + CTRL + k"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.swap({ direction = "u" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + CTRL + l"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.swap({ direction = "r" })'')
+              ];
+            }
+
+            # Send the active window to workspace N without following (silent).
+            # SUPER + SHIFT + 1..5. Drop `follow = false` to follow the window.
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + SHIFT + 1"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.move({ workspace = "1", follow = false })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + SHIFT + 2"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.move({ workspace = "2", follow = false })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + SHIFT + 3"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.move({ workspace = "3", follow = false })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + SHIFT + 4"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.move({ workspace = "4", follow = false })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + SHIFT + 5"'')
+                (lib.generators.mkLuaInline ''hl.dsp.window.move({ workspace = "5", follow = false })'')
+              ];
+            }
+
+            # Monitor navigation — relative l/r selectors work docked or
+            # undocked, no hardcoded names. SUPER + ALT + h/l focuses the
+            # monitor; + SHIFT moves the current workspace to that monitor.
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + ALT + h"'')
+                (lib.generators.mkLuaInline ''hl.dsp.focus({ monitor = "l" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + ALT + l"'')
+                (lib.generators.mkLuaInline ''hl.dsp.focus({ monitor = "r" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + ALT + SHIFT + h"'')
+                (lib.generators.mkLuaInline ''hl.dsp.workspace.move({ monitor = "l" })'')
+              ];
+            }
+            {
+              _args = [
+                (lib.generators.mkLuaInline ''mod .. " + ALT + SHIFT + l"'')
+                (lib.generators.mkLuaInline ''hl.dsp.workspace.move({ monitor = "r" })'')
               ];
             }
 
