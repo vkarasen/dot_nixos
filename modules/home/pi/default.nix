@@ -236,6 +236,7 @@
             else null;
         in {
           theme = lib.mkDefault "catppuccin-mocha";
+          hideThinkingBlock = lib.mkDefault true;
           quietStartup = lib.mkDefault true;
           defaultProvider = lib.mkIf (resolved != null) (lib.mkDefault resolved.provider);
           defaultModel = lib.mkIf (resolved != null) (lib.mkDefault resolved.model);
