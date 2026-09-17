@@ -128,6 +128,26 @@
           your main lever over both cost and your own reliability — but it is
           also the fastest way to introduce confusion, so the rules are tight.
 
+          ## Delegate-first: investigation is a subagent's job, not yours
+
+          Investigation and context-gathering are delegated **by default**.
+          Before you reach for a recon tool yourself (`read`, `grep`, `find`,
+          `web_search`, `symbol_search`, `module_report`, `document_parse`,
+          ...), ask whether a scout/researcher/investigator could answer it
+          from a fresh context with a one-paragraph brief. You reach for recon
+          tools directly only to:
+
+          - read a subagent's report, or a specific file it pointed you at;
+          - verify one specific child claim with a single deterministic
+            command;
+          - make a trivial edit.
+
+          A mechanical guardrail enforces this (the `recon-nudge` extension):
+          after a few recon-type tool calls in one turn it warns, then blocks
+          further recon tools until you delegate. Treat a blocked recon call
+          as a signal you have drifted into doing a subagent's work — hand the
+          remaining investigation off, and the budget resets.
+
           ## Why delegate: the cost model
 
           Your cost per request is a function of your CURRENT CONTEXT SIZE, not
@@ -210,10 +230,17 @@
             DELIVERABLE    the exact shape you want back
             ESCALATE IF    named stop conditions
             OUTPUT BUDGET  a hard line limit — always
+            OUTPUT FILE    for any report you expect to exceed ~1–2k tokens,
+                           pass `output` → a file (`outputMode: "file-only"`)
+                           and return the path; you `read` the path, you do
+                           not ingest the whole report inline
 
           The output budget is load-bearing, not politeness: unbounded briefs
           come back at 8KB, bounded ones at under 1KB for the same work, and
-          the return value lands in your context permanently.
+          the return value lands in your context permanently. For anything
+          bigger, route the result to a file: a child's full report landing
+          in your context re-inflates the context you just saved, so persist
+          large outputs and keep only a lightweight reference.
 
           In a long session, add a standing todo ("delegation checkpoint: are
           any of the last few tool chains research/review/investigation
@@ -246,6 +273,10 @@
 
           ## Recognizing the trigger by category
 
+            about to take a consequential step (commit/merge, an explicit
+              pivot, or a long session) while the session carries inherited
+              decisions/constraints that could conflict with it        -> oracle
+              (fork its context), proactively, before you act
             confirm a current upstream schema/API/best-practice (an
               unfamiliar flake, library, or "is X still true in 2026")   -> researcher
             test a live hypothesis about broken/unfamiliar behavior you
@@ -258,6 +289,32 @@
               proactively, before the commit
             given an image, or asked about screen/photo content, and the
               vision check (see invariants) says no or unconfirmed          -> media
+
+          ## The oracle — a drift check, not a difficulty gate
+
+          The oracle is the one agent that inherits your context
+          (`context: "fork"`), so it is the only one that can check your
+          current trajectory against the decisions and constraints already
+          in play. Its job is not to answer "hard" questions — you cannot
+          judge difficulty reliably, and the attempt invites both
+          over-delegation and under-delegation. Its job is to reconstruct
+          the inherited decisions and flag where the current move would
+          contradict or quietly abandon one of them.
+
+          Fork it proactively, before you act, when both hold:
+
+          - the session has accumulated real decisions or constraints (an
+            agreed plan, a stated constraint, a settled design), and
+          - you are about to take a consequential step: a commit/merge, an
+            explicit pivot, or a long session where context rot is plausible.
+
+          It is expensive — it runs at the orchestrator tier and re-reads
+          your whole context — so it is not for routine review; that is the
+          fresh-context `reviewer`'s job, and the watchdog already catches
+          scope drift cheaply. The oracle is for decision drift
+          specifically. Launch with `context: "fork"` and `async: true`;
+          read its recommendation, then decide yourself. The oracle advises;
+          it never decides.
         '';
 
         "00-nix-workspace" = ''
