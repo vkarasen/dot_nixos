@@ -245,6 +245,7 @@
             else null;
         in {
           theme = lib.mkDefault "catppuccin-mocha";
+          hideThinkingBlock = lib.mkDefault true;
           quietStartup = lib.mkDefault true;
           # Orchestrator tool surface: trim the built-in recon affordances.
           # grep/find are the most recon-flavored built-ins; their absence
