@@ -114,6 +114,15 @@
         # followed by `git worktree prune` in the affected repos.
         worktreeBaseDir = "${config.xdg.cacheHome}/pi-subagents/worktrees";
 
+        # Recon children must start clean, not inherit the orchestrator's
+        # accumulated (expensive) context. Implicit-fork is the pi-subagents
+        # default when a parent session + leaf exists, which re-bills the
+        # orchestrator's context into every child; force fresh so a child
+        # relies on its brief rather than the orchestrator's history. The
+        # oracle is the one deliberate exception and is launched with
+        # context: "fork" explicitly (see the 05-delegation policy).
+        defaultSubagentContext = "fresh";
+
         # Native child tool permissions — pi-subagents' own gate, not a
         # third-party one. Applies ONLY to Pi child runtimes, never this
         # interactive session, and is not registered at all when no ask/deny
@@ -238,6 +247,13 @@
           theme = lib.mkDefault "catppuccin-mocha";
           hideThinkingBlock = lib.mkDefault true;
           quietStartup = lib.mkDefault true;
+          # Orchestrator tool surface: trim the built-in recon affordances.
+          # grep/find are the most recon-flavored built-ins; their absence
+          # pushes investigation to subagents (see 05-delegation and
+          # recon-nudge.ts). Extension tools (subagent, todo, worktrunk,
+          # pi-lens, web, doc) remain enabled. Keep read (child reports),
+          # bash (verification + builds), edit/write (trivial fixes), ls.
+          defaultTools = ["read" "bash" "edit" "write" "ls"];
           defaultProvider = lib.mkIf (resolved != null) (lib.mkDefault resolved.provider);
           defaultModel = lib.mkIf (resolved != null) (lib.mkDefault resolved.model);
           defaultThinkingLevel =
