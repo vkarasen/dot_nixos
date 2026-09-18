@@ -440,6 +440,13 @@
               follow_mouse = 1;
               touchpad.natural_scroll = true;
             };
+            # Wake a DPMS-off panel on any key press or mouse movement, so the
+            # Fn9 screen-off toggle (modules/hosts/troy.nix) never traps the
+            # display in a state only Fn9 can undo.
+            misc = {
+              key_press_enables_dpms = true;
+              mouse_move_enables_dpms = true;
+            };
             dwindle = {
               preserve_split = true;
             };
