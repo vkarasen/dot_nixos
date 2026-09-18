@@ -200,6 +200,57 @@
         fi
       fi
     '';
+
+    # Power-profile waybar module (click opens a fuzzel menu to pick a profile;
+    # scroll steps up/down). Backed by power-profiles-daemon and the AC hook in
+    # modules/nixos/laptop.nix; consumed by the custom/power-profile module in
+    # modules/home/desktop.nix.
+    power-profile-status = pkgs.writeShellApplication {
+      name = "power-profile-status";
+      runtimeInputs = [pkgs.power-profiles-daemon];
+      text = ''
+        profile="$(powerprofilesctl get 2>/dev/null || echo unknown)"
+        case "$profile" in
+          power-saver) text=$'\uF06C' class="powersave" ;;
+          balanced)    text=$'\uF24E' class="balanced" ;;
+          performance) text=$'\uF0E7' class="performance" ;;
+          *)           text="?" class="unknown" ;;
+        esac
+        printf '{"text":"%s","class":"%s","tooltip":"Power profile: %s (click to select)"}\n' \
+          "$text" "$class" "$profile"
+      '';
+    };
+
+    power-profile-select = pkgs.writeShellApplication {
+      name = "power-profile-select";
+      runtimeInputs = with pkgs; [power-profiles-daemon fuzzel];
+      text = ''
+        # Pop a fuzzel menu to pick a profile directly (instead of cycling).
+        choice="$(printf 'power-saver\nbalanced\nperformance\n' \
+          | fuzzel --dmenu --prompt 'Power profile: ' || true)"
+        if [ -n "$choice" ]; then
+          powerprofilesctl set "$choice"
+        fi
+      '';
+    };
+
+    power-profile-step = pkgs.writeShellApplication {
+      name = "power-profile-step";
+      runtimeInputs = [pkgs.power-profiles-daemon];
+      text = ''
+        case "$(powerprofilesctl get 2>/dev/null)" in
+          power-saver)
+            if [ "$1" = up ]; then powerprofilesctl set balanced; fi
+            ;;
+          balanced)
+            if [ "$1" = up ]; then powerprofilesctl set performance; else powerprofilesctl set power-saver; fi
+            ;;
+          performance)
+            if [ "$1" = down ]; then powerprofilesctl set balanced; fi
+            ;;
+        esac
+      '';
+    };
   in {
     # NOTE: an aspect that defines a my.* option must never be consumed by a
     # standalone wrapped package (repo AGENTS.md pitfall #6) — this one isn't.
@@ -207,12 +258,16 @@
       my.laptop.enable = true;
 
       # Toggle + waybar status emitters for the two Fn-key exception modes:
-      # battery (Fn12, charge-to-full) and suspend (Fn10, pause idle-suspend).
+      # battery (Fn12, charge-to-full) and suspend (Fn10, pause idle-suspend),
+      # plus the power-profile switcher (click/scroll in the waybar widget).
       home.packages = [
         battery-exception-toggle
         battery-exception-status
         suspend-exception-toggle
         suspend-exception-status
+        power-profile-status
+        power-profile-select
+        power-profile-step
       ];
 
       # Idle daemon: suspend on battery and lock right before suspend. See the

@@ -5,7 +5,42 @@
 # the laptop host (modules/hosts/troy.nix); without the battery/lid hardware
 # the units no-op gracefully.
 {...}: {
-  flake.modules.nixos.laptop = {...}: {
+  flake.modules.nixos.laptop = {pkgs, ...}: {
+    # Power profiles (power-profiles-daemon): expose power-saver / balanced /
+    # performance and auto-apply a default on AC transitions. ppd takes over
+    # the ACPI platform_profile knob from the firmware DYTC auto mode, so the
+    # profile must be (re)applied on each AC plug/unplug event — the udev rule
+    # fires the oneshot service, which reads the current AC state and sets the
+    # profile. A manual waybar choice persists until the next AC event (the
+    # hook only runs on transitions, so it never fights the widget).
+    services.power-profiles-daemon.enable = true;
+
+    services.udev.extraRules = ''
+      SUBSYSTEM=="power_supply", ATTR{type}=="Mains", TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-profile-refresh.service"
+    '';
+
+    systemd.services.power-profile-refresh = {
+      description = "Apply power profile from AC state";
+      wants = ["power-profiles-daemon.service"];
+      after = ["power-profiles-daemon.service"];
+      # Run once at boot too (not only on udev AC transitions), so a cold
+      # battery boot starts in power-saver immediately.
+      wantedBy = ["multi-user.target"];
+      serviceConfig.Type = "oneshot";
+      script = ''
+        ac=""
+        read -r ac < /sys/class/power_supply/AC/online 2>/dev/null || true
+        # Only drop to power-saver when we're certain we're on battery; an
+        # unreadable AC node defaults to balanced (matching the sibling scripts,
+        # which treat "can't read AC" as on-AC).
+        if [ "$ac" = "0" ]; then
+          ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set power-saver
+        else
+          ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set balanced
+        fi
+      '';
+    };
+
     # The lid is handled by the lid-grace-watch timer below (delayed suspend),
     # so logind must not act on it. NOTE: logind.conf changes need a
     # `systemctl reload systemd-logind` (the switch activation does not do it).

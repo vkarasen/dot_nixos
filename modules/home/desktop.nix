@@ -197,6 +197,7 @@
                 ["network" "pulseaudio"]
                 ++ lib.optional config.my.laptop.enable "custom/battery-exception"
                 ++ lib.optional config.my.laptop.enable "custom/suspend-exception"
+                ++ lib.optional config.my.laptop.enable "custom/power-profile"
                 ++ lib.optional config.my.laptop.enable "battery"
                 ++ ["tray"];
 
@@ -254,6 +255,19 @@
                 return-type = "json";
               };
 
+              # Power-profile switch (power-profiles-daemon): click opens a
+              # fuzzel menu to select the profile directly; scroll steps up/down.
+              # Backed by the power-profile-* scripts in modules/home/laptop.nix
+              # and ppd + the AC hook in modules/nixos/laptop.nix.
+              "custom/power-profile" = {
+                exec = "power-profile-status";
+                interval = 5;
+                return-type = "json";
+                on-click = "power-profile-select";
+                on-scroll-up = "power-profile-step up";
+                on-scroll-down = "power-profile-step down";
+              };
+
               tray = {
                 spacing = 8;
               };
@@ -289,6 +303,7 @@
             #network,
             #pulseaudio,
             #battery,
+            #custom-power-profile,
             #tray {
               padding: 0 8px;
               color: #bac2de;
@@ -322,6 +337,13 @@
               color: #89b4fa;
               font-weight: bold;
             }
+
+            /* Power profile: green = saving, yellow = balanced, red = performance.
+               Slightly larger glyph so the state is readable at a glance. */
+            #custom-power-profile { font-size: 14px; }
+            #custom-power-profile.powersave   { color: #a6e3a1; }
+            #custom-power-profile.balanced    { color: #f9e2af; }
+            #custom-power-profile.performance { color: #f38ba8; }
           '';
         };
       };
