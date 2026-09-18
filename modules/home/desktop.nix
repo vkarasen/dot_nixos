@@ -87,7 +87,6 @@
         notify-send -a screenshot -i "$out" "Screenshot" "Copied to clipboard"
       '';
     };
-
   in {
     # Importing this aspect IS the GUI statement: derive the flag that
     # consumers (e.g. the pi GUI-vs-TUI context) read. NOTE: an aspect that
@@ -196,6 +195,7 @@
               # my.laptop.enable is true (set by modules/home/laptop.nix).
               modules-right =
                 ["network" "pulseaudio"]
+                ++ lib.optional config.my.laptop.enable "custom/battery-exception"
                 ++ lib.optional config.my.laptop.enable "battery"
                 ++ ["tray"];
 
@@ -232,6 +232,15 @@
                 };
                 format-warning = "{icon} {capacity}%";
                 format-critical = "{icon} {capacity}%";
+              };
+
+              # Glowing marker when battery "exception mode" (charge-to-full)
+              # is armed — see modules/nixos/laptop.nix + modules/home/laptop.nix.
+              "custom/battery-exception" = {
+                exec = "battery-exception-status";
+                interval = 2;
+                return-type = "json";
+                hide-empty-text = true;
               };
 
               tray = {
@@ -276,6 +285,15 @@
 
             #battery.warning { color: #f9e2af; }
             #battery.critical { color: #f38ba8; }
+
+            /* Battery exception-mode indicator (glows orange while armed).
+               The module is hidden (hide-empty-text) when the flag is off. */
+            #custom-battery-exception.exception {
+              color: #fab387;
+              font-weight: bold;
+              text-shadow: 0 0 8px #fab387;
+              padding: 0 0 0 6px;
+            }
           '';
         };
       };

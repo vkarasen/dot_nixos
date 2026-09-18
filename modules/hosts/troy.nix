@@ -91,6 +91,14 @@
             (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("laptop-screen-toggle")'')
           ];
         }
+        {
+          # Fn12 (evdev 156 -> xkb 164) — battery exception toggle: charge to
+          # full (100/95) for one stretch; reverts on unplug or a second press.
+          _args = [
+            "code:164"
+            (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("battery-exception-toggle")'')
+          ];
+        }
       ];
     };
   };

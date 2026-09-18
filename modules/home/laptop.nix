@@ -28,11 +28,59 @@
         /run/current-system/sw/bin/systemctl suspend-then-hibernate
       fi
     '';
+
+    # Flip the battery "exception mode" flag that the root
+    # battery-exception-watch timer (modules/nixos/laptop.nix) reads. Arming
+    # only makes sense on AC (charging to full on battery is a no-op), so the
+    # toggle refuses to arm when unplugged; disarming always works. The flag
+    # lives in /run/user/1000 (tmpfs), so an exception never survives reboot.
+    battery-exception-toggle = pkgs.writeShellApplication {
+      name = "battery-exception-toggle";
+      runtimeInputs = with pkgs; [libnotify]; # notify-send
+      text = ''
+        state=/run/user/1000/battery-exception
+        mode=off
+        if [ -r "$state" ]; then
+          read -r mode < "$state" || true
+        fi
+        if [ "$mode" = "on" ]; then
+          printf 'off\n' > "$state"
+          notify-send -t 4000 "Battery exception OFF" "Back to 80% cap"
+        else
+          ac=""
+          read -r ac < /sys/class/power_supply/AC/online 2>/dev/null || true
+          if [ "$ac" = "1" ]; then
+            printf 'on\n' > "$state"
+            notify-send -t 4000 "Battery exception ON" "Charging to full (100/95) - reverts on unplug or Fn12"
+          else
+            notify-send -t 4000 "Battery exception" "Only works while plugged in (AC)"
+          fi
+        fi
+      '';
+    };
+
+    # Waybar indicator: emit JSON with a class when the flag is armed, empty
+    # text otherwise (waybar's hide-empty-text then hides the module).
+    battery-exception-status = pkgs.writeShellScriptBin "battery-exception-status" ''
+      state=/run/user/1000/battery-exception
+      mode=off
+      if [ -r "$state" ]; then
+        read -r mode < "$state" || true
+      fi
+      if [ "$mode" = "on" ]; then
+        printf '{"text":" ⚡","class":"exception","tooltip":"Battery exception: charging to full"}\n'
+      else
+        printf '{"text":""}\n'
+      fi
+    '';
   in {
     # NOTE: an aspect that defines a my.* option must never be consumed by a
     # standalone wrapped package (repo AGENTS.md pitfall #6) — this one isn't.
     config = {
       my.laptop.enable = true;
+
+      # Battery exception mode (Fn12): toggle script + waybar status emitter.
+      home.packages = [battery-exception-toggle battery-exception-status];
 
       # Idle daemon: suspend on battery and lock right before suspend. See the
       # header comment for the policy.
