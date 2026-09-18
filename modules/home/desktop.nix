@@ -196,6 +196,7 @@
               modules-right =
                 ["network" "pulseaudio"]
                 ++ lib.optional config.my.laptop.enable "custom/battery-exception"
+                ++ lib.optional config.my.laptop.enable "custom/suspend-exception"
                 ++ lib.optional config.my.laptop.enable "battery"
                 ++ ["tray"];
 
@@ -241,6 +242,16 @@
                 interval = 2;
                 return-type = "json";
                 hide-empty-text = true;
+              };
+
+              # Suspend widget (Fn10 exception + idle-suspend countdown) — see
+              # modules/home/laptop.nix. Always present: shows a dim "-:--"
+              # placeholder when idle-suspend isn't counting, so the bar
+              # layout doesn't shift. Ticks once a second.
+              "custom/suspend-exception" = {
+                exec = "suspend-exception-status";
+                interval = 1;
+                return-type = "json";
               };
 
               tray = {
@@ -293,6 +304,23 @@
               font-weight: bold;
               text-shadow: 0 0 8px #fab387;
               padding: 0 0 0 6px;
+            }
+
+            /* Suspend widget: a dim "-:--" placeholder by default (keeps the
+               bar layout stable), an orange moon while the exception is armed,
+               and a blue countdown while idle-suspend ticks down. */
+            #custom-suspend-exception {
+              color: #a6adc8;
+              padding: 0 0 0 6px;
+            }
+            #custom-suspend-exception.exception {
+              color: #fab387;
+              font-weight: bold;
+              text-shadow: 0 0 8px #fab387;
+            }
+            #custom-suspend-exception.counting {
+              color: #89b4fa;
+              font-weight: bold;
             }
           '';
         };

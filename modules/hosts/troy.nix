@@ -92,6 +92,14 @@
           ];
         }
         {
+          # Fn10 (evdev 445 -> xkb 453) — suspend exception toggle: pause the
+          # 5-min idle suspend on battery; reverts on AC or a second press.
+          _args = [
+            "code:453"
+            (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("suspend-exception-toggle")'')
+          ];
+        }
+        {
           # Fn12 (evdev 156 -> xkb 164) — battery exception toggle: charge to
           # full (100/95) for one stretch; reverts on unplug or a second press.
           _args = [
