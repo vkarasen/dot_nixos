@@ -1,4 +1,4 @@
-# Dendritic aspect: laptop idle behaviour (home-manager class) — the user-space
+# Dendritic aspect: laptop-specific behaviour (home-manager class) — the user-space
 # side of suspend/hibernate. The system side (lid handling, the
 # suspend-then-hibernate delay, battery thresholds) is modules/nixos/laptop.nix.
 #
@@ -10,6 +10,12 @@
 # hypridle honours the Wayland idle-inhibit lock by default, so browsers/players
 # that hold it during playback pause the timer. Locking happens only via
 # before_sleep_cmd right before suspend — there is no idle auto-lock.
+#
+# Generic laptop-only Hyprland binds may live here (NOT in the PC-shared
+# modules/home/desktop.nix — `settings.bind` is a merged list, so binds from
+# this aspect concatenate with desktop.nix's). Host- or hardware-specific binds
+# (e.g. troy's ThinkPad Fn keys) do NOT: they belong in the host's own aspect,
+# `flake.modules.homeManager.<host>` (see modules/hosts/troy.nix).
 {...}: {
   flake.modules.homeManager.laptop = {pkgs, ...}: let
     # Suspend on battery after idle. `read` is a shell builtin, so the script

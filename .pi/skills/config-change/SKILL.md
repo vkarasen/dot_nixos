@@ -101,6 +101,50 @@ trust this summary.
 - ThinkPad T14s Gen 1, Intel Comet Lake — Intel-only GPU, no NVIDIA
   considerations.
 
+#### Fn (top-row special) keys
+
+The Fn secondary functions on this T14s. **Fn1–Fn6** are bound in Hyprland via
+XF86 keysyms (mute / vol- / vol+ / mic-mute / bright- / bright+) — generic media
+keys, so they belong to the shared `modules/home/desktop.nix`. **Fn7–Fn12** are
+ThinkPad-specific; they arrive as **raw evdev codes** from the
+`thinkpad-extra-buttons` input device (not XF86 keysyms).
+
+**Gotcha — Hyprland's `code:N` is the XKB keycode, i.e. `evdev + 8`**, not the
+evdev code (verified empirically: Fn9’s evdev 444 binds as `code:452`; a
+`code:444` bind registers but silently never fires). The `evdev` column is what
+`evtest`/hwdb report; the `bind` column is the value to use:
+
+| Fn key | evdev | Hyprland bind | intended action |
+| --- | --- | --- | --- |
+| Fn7 | 227 | `code:235` | external displays (KEY_SWITCHVIDEOMODE) |
+| Fn8 | 238 | `code:246` | airplane mode (KEY_WLAN) — firmware rfkill, hard to reclaim |
+| Fn9 | 444 | `code:452` | notifications / quick settings (KEY_NOTIFICATION_CENTER) |
+| Fn10 | 445 | `code:453` | answer VoIP call (KEY_PICKUP_PHONE) |
+| Fn11 | 446 | `code:454` | hang up VoIP call (KEY_HANGUP_PHONE) |
+| Fn12 | 156 | `code:164` | favorites / star (KEY_BOOKMARKS) |
+
+Keyboard backlight is Fn+Space (evdev 228 → `code:236`, KEY_KBDILLUMTOGGLE).
+Fn7/Fn9/Fn12
+are the cleanest repurpose targets; Fn8 toggles radios in firmware, and
+Fn10/Fn11 are VoIP-call keys with no natural desktop role.
+
+These binds are **hardware-specific to troy** — not generic laptop behaviour —
+so they do NOT belong in `modules/home/laptop.nix` (which any laptop host
+reuses). They live in the host's own home aspect,
+`flake.modules.homeManager.troy` in `modules/hosts/troy.nix`, mirroring the
+host-specific Intel driver in `flake.modules.nixos.troy`. (`settings.bind` is a
+merged list, so binds there concatenate with desktop.nix's.) Fn9 toggles the
+internal panel's DPMS state via the `laptop-screen-toggle` helper; the shape is:
+
+```nix
+wayland.windowManager.hyprland.settings.bind = [
+  {_args = [
+    "code:452" # Fn9 (evdev 444 → xkb 452) — internal panel DPMS on/off
+    (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("laptop-screen-toggle")'')
+  ];}
+];
+```
+
 ## Sibling skills
 
 - `nix-search` — option/package lookup; **always first** for any option or package.
