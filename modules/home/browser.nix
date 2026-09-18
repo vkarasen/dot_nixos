@@ -83,6 +83,24 @@
           .tabbrowser-tab .tab-background {
             box-shadow: 0 0 0 1px var(--gnome-tabbar-tab-separator-color) !important;
           }
+
+          /* Same class of bug on the doorhanger/arrowpanel permission prompts
+             (geolocation, notifications, ...): the theme only sets
+             `--panel-text-color`/`--arrowpanel-color` on `panel:not([remote])`
+             (parts/popups.css), leaving every remote panel — including the
+             notification doorhanger, which is `panel#notification-popup[remote="true"]`
+             — on Firefox's Linux default `--panel-text-color: FieldText` (a raw
+             GTK system color, dark on this box) over the theme's dark
+             `--gnome-menu-background`. (Non-remote panels are fine: they pick up
+             `--gnome-menu-color`, which resolves through `light.css`'s
+             `var(--gnome-window-color)` to Stylix's light foreground regardless of
+             dark mode.) Rebind the panel text token directly for both notification
+             panels (the standalone doorhanger and its AppMenu mirror). */
+          #notification-popup,
+          #appMenu-notification-popup {
+            --panel-text-color: var(--gnome-window-color) !important;
+            --arrowpanel-color: var(--gnome-window-color) !important;
+          }
         '';
       };
     };
