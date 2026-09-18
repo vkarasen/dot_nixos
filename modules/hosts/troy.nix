@@ -15,6 +15,7 @@
     config.flake.modules.nixos.wifi
     config.flake.modules.nixos.laptop
     config.flake.modules.nixos.desktop
+    config.flake.modules.nixos.steam
     config.flake.modules.nixos.stylix
     config.flake.modules.nixos.lock
   ];
@@ -28,6 +29,7 @@
     config.flake.modules.homeManager.core
     config.flake.modules.homeManager.desktop
     config.flake.modules.homeManager.browser
+    config.flake.modules.homeManager.steam
     config.flake.modules.homeManager.kanshi
     config.flake.modules.homeManager.laptop
     config.flake.modules.homeManager.troy

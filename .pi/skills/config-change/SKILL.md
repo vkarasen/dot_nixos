@@ -72,8 +72,10 @@ trust this summary.
   current host via `readlink -f /run/current-system`. Services are systemd
   units (`systemctl` / `journalctl`).
 - **Impermanence is live** (`modules/nixos/impermanence.nix`): root is
-  erase-on-boot; `/persist` is the only path that survives a reboot. Never
-  treat a non-`/persist` path as durable. Disks are disko-declared LUKS+btrfs
+  erase-on-boot; the other top-level subvolumes (`/home`, `/nix`, `/persist`,
+  `/var/log`, `/swap`, `/games`) survive (see `modules/nixos/disks.nix`).
+  `/persist` is the opt-in persistence location; never treat an arbitrary
+  non-subvolume path as durable. Disks are disko-declared LUKS+btrfs
   (`modules/nixos/disks.nix`) — never hand-edit `/etc/fstab`.
 - **Secure Boot via Lanzaboote** (`modules/nixos/boot.nix`): the boot chain is
   signed; key enrollment is manual (no surprise reboot — the user enters BIOS

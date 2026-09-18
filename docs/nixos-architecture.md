@@ -19,9 +19,15 @@ how to recover it when something breaks. Read alongside `docs/nixos-install.md`
 
 - LUKS: `/dev/nvme0n1p2` → `/dev/mapper/cryptroot` (argon2id, `allowDiscards`).
 - Subvolumes: `root` (ephemeral), `home` (persistent), `nix`, `persist`, `log`,
-  `swap` (32G hibernation swapfile), `root-blank` (read-only pristine snapshot).
+  `swap` (32G hibernation swapfile), `games` (Steam library), `root-blank`
+  (read-only pristine snapshot).
+- The `games` subvolume is created automatically by disko on a fresh install
+  (nixos-anywhere runs disko's create phase, which makes every declared
+  subvolume). On an *already-installed* host, adding it only regenerates the
+  mount via `nixos-rebuild switch`, so create it once manually (`btrfs
+  subvolume create` at the pool top level, `subvol=/`).
 - Impermanence: only `root` is erased each boot; `/home`, `/nix`, `/persist`,
-  `/var/log` survive. `/persist` holds the opt-in state (SSH host keys, sops,
+  `/var/log`, `/swap`, `/games` survive. `/persist` holds the opt-in state (SSH host keys, sops,
   Secure Boot keys, machine-id, …).
 
 ## Secrets & credentials — where they live

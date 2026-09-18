@@ -64,6 +64,19 @@
                     mountOptions = ["nodatacow" "compress=none" "noatime"];
                     swap.swapfile.size = "32G";
                   };
+                  # Steam library: a separate subvolume so games (re-downloadable
+                  # runtime state) stay out of home snapshots/backups. The root
+                  # of the subvolume is chowned at boot by a tmpfiles rule in
+                  # modules/nixos/steam.nix. disko creates this subvolume on a
+                  # fresh install; on an already-installed host it must be
+                  # created once manually (btrfs subvolume create at the pool
+                  # top level, mounted subvol=/).
+                  "/games" = {
+                    mountpoint = "/games";
+                    # `nofail`: games are re-downloadable and non-boot-critical,
+                    # so a missing subvolume must not block boot.
+                    mountOptions = ["compress=zstd" "noatime" "nofail"];
+                  };
                 };
               };
             };
