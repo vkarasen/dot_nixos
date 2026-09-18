@@ -12,6 +12,9 @@
     programs.hyprland.enable = true;
 
     # OpenGL/Mesa infrastructure Hyprland needs for EGL rendering on the iGPU.
+    # VA-API decode drivers are host-specific hardware: the Intel iHD driver
+    # for this host lives in modules/hosts/troy.nix, not here — other hosts
+    # using nixos.desktop may not be Intel-graphics based.
     hardware.graphics.enable = true;
 
     # brightnessctl's udev rules grant the `video` (backlight) and `input`

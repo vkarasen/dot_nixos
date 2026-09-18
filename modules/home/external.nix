@@ -29,6 +29,10 @@
       mako.enable = false;
       fuzzel.enable = false;
       hyprlock.enable = false;
+      # Firefox is themed by Stylix's firefox-gnome-theme target (userChrome.css),
+      # not catppuccin's Firefox Color extension (whose settings home-manager
+      # writes to a legacy storage.js that modern Firefox ignores).
+      firefox.enable = false;
     };
 
     nix.registry.nixpkgs.flake = inputs.nixpkgs;
