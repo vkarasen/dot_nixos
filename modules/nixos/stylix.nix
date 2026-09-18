@@ -39,6 +39,15 @@
       mako.enable = true;
       hyprlock.enable = true;
       fuzzel.enable = true;
+      # Firefox via firefox-gnome-theme (writes userChrome.css). Deliberately
+      # NOT `colorTheme`: that uses the Firefox Color extension, whose settings
+      # home-manager seeds via a legacy storage.js that modern Firefox
+      # (IndexedDB-backed storage.local) ignores.
+      firefox = {
+        enable = true;
+        profileNames = ["vkarasen"];
+        firefoxGnomeTheme.enable = true;
+      };
     };
   };
 }

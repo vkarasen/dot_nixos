@@ -23,6 +23,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # rycee's firefox-addons: pinned Firefox add-on packages (uBlock Origin,
+    # SponsorBlock, ...). Each package exposes `addonId` in passthru, which is
+    # what home-manager's programs.firefox extension mechanism consumes.
+    firefox-addons = {
+      url = "gitlab:rycee/nur-expressions?dir=pkgs/firefox-addons";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nixvim = {
       url = "github:nix-community/nixvim";
     };
