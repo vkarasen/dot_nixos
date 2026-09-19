@@ -247,13 +247,15 @@
           theme = lib.mkDefault "catppuccin-mocha";
           hideThinkingBlock = lib.mkDefault true;
           quietStartup = lib.mkDefault true;
-          # Orchestrator tool surface: trim the built-in recon affordances.
-          # grep/find are the most recon-flavored built-ins; their absence
-          # pushes investigation to subagents (see 05-delegation and
-          # recon-nudge.ts). Extension tools (subagent, todo, worktrunk,
-          # pi-lens, web, doc) remain enabled. Keep read (child reports),
-          # bash (verification + builds), edit/write (trivial fixes), ls.
-          defaultTools = ["read" "bash" "edit" "write" "ls"];
+          # Orchestrator control plane: the only built-ins the orchestrator
+          # executes directly are `read` (child reports/diffs) and `bash`
+          # (the one deterministic verification command, plus screenshot
+          # capture via grim/hyprshot). Anything that produces a work product
+          # — editing, building, git, investigation — is delegated to a
+          # subagent (see 05-delegation). Extension tools (subagent, todo,
+          # worktrunk, herdr relocation, supervisor) are unaffected; grep/
+          # find are gone, and edit/write now belong to executor/generalist.
+          defaultTools = ["read" "bash"];
           defaultProvider = lib.mkIf (resolved != null) (lib.mkDefault resolved.provider);
           defaultModel = lib.mkIf (resolved != null) (lib.mkDefault resolved.model);
           defaultThinkingLevel =
