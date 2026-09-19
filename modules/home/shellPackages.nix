@@ -37,7 +37,7 @@
         fzf = rec {
           enable = true;
           defaultCommand = "fd --hidden --strip-cwd-prefix --exclude .git";
-          changeDirWidget.command = defaultCommand + " --type=d";
+          changeDirWidget.command = "";
           historyWidget.command = "";
         };
         starship.enable = true;
