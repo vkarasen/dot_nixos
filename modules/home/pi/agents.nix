@@ -81,6 +81,14 @@
         provider = "deepseek";
         thinking = "high";
       };
+      # Split out of `orchestrator` so the oracle is independently tunable:
+      # repointing the orchestrator tier (the session default) must not drag
+      # the oracle's model along with it.
+      oracle = {
+        model = "deepseek-v4-pro";
+        provider = "deepseek";
+        thinking = "high";
+      };
       executive = {
         model = "deepseek-v4-pro";
         provider = "deepseek";
@@ -132,21 +140,37 @@
     # (pi-config, bundle-module, edit-private-skill) are not in the
     # skillPath tree; phase 4/5 must materialise them or drop the references.
     my.pi.capabilityBundles = perField {
-      # Light code recon (ast-bro navigation). pi-lens is split into `lens`
-      # because it is executor/reviewer-only (§5) and cheap scouts must not
-      # pay its session_start cost.
-      code = {skills = ["ast-bro"];};
       # LSP diagnostics + structural search (pi-lens read-only tools).
+      #
+      # Tool list verified against pi-lens's actual registration (v2): the
+      # always-on tools plus `pi_lens_activate_tools`, which turns on the
+      # situational navigation/search tools. Those are listed here too so
+      # the strict `--tools` allowlist admits them once activated. The old
+      # list named `lsp_diagnostics` — a ghost present only in pi-lens's
+      # i18n strings, never in the compiled tool registration — and omitted
+      # `lsp_navigation`/`ast_grep_search`, which is why agents following the
+      # pi-lens skills got "denied" and fell back to grep. `ast_grep_replace`
+      # is excluded: it is a mutation tool and this bundle is shared with the
+      # read-only `reviewer`.
+      #
+      # ast-bro is gone from every agent: never observed in use, and its
+      # value is subsumed by these tools + grep. The skill stays installed
+      # for repos that want it; no agent bundles it.
       lens = {
         extensions = ["npm:pi-lens"];
         tools = [
           "lens_diagnostics"
-          "lsp_diagnostics"
           "symbol_search"
           "module_report"
           "read_symbol"
           "read_enclosing"
           "project_report"
+          "effective_config"
+          "pi_lens_activate_tools"
+          "lsp_navigation"
+          "ast_grep_search"
+          "ast_grep_outline"
+          "lens_diagnostic_mark"
         ];
       };
       # This bundle owns `bash` itself, and that is the point. Its value is
@@ -205,9 +229,12 @@
         tools = ["document_parse" "document_search" "document_screenshot"];
         mcpTools = ["video-analyzer"];
       };
+      # Commit mechanics only: version-control skill + a shell for git.
+      # Deliberately NO pi-worktrunk — worktree lifecycle (switch/merge/
+      # remove) moves the *parent* session, so it stays on the orchestrator.
       vcs = {
         skills = ["version-control"];
-        extensions = ["npm:pi-worktrunk"];
+        tools = ["bash"];
       };
     };
 
@@ -219,7 +246,7 @@
       scout = {
         description = "Fast codebase recon that returns compressed context for handoff";
         tier = "simple";
-        bundles = ["code"];
+        bundles = [];
         tools = readOnly;
         toolBudget = {hard = 40;};
         prompt = ''
@@ -275,20 +302,21 @@
       reviewer = {
         description = "Read-only review of code diffs, plans, and PRs — use proactively before committing sensitive changes, not only on request";
         tier = "executive";
-        bundles = ["code" "lens"];
+        bundles = ["lens"];
         tools = readOnly;
         toolBudget = {hard = 60;};
         prompt = ''
           You are a disciplined review subagent. Inspect, evaluate, and report
           findings with evidence; do not guess. Verify against source, tests,
-          docs, and requirements. Use lens_diagnostics / lsp_diagnostics for
-          type and structural checks. You are read-only: report what should
-          change, never edit.
+          docs, and requirements. Use lens_diagnostics for type and structural
+          checks; use pi_lens_activate_tools + lsp_navigation / ast_grep_search
+          for navigation and structural search. You are read-only: report what
+          should change, never edit.
         '';
       };
       oracle = {
         description = "High-context decision-consistency oracle that prevents drift";
-        tier = "orchestrator";
+        tier = "oracle";
         bundles = [];
         tools = ["read"];
         toolBudget = {hard = 20;};
@@ -330,7 +358,7 @@
       investigator = {
         description = "Disposable-worktree investigator that tests hypotheses and reports findings";
         tier = "worker";
-        bundles = ["code" "lens"];
+        bundles = ["lens"];
         tools = ["read" "grep" "find" "ls" "bash" "write" "edit"];
         permission = {
           write = "allow";
@@ -353,7 +381,7 @@
       executor = {
         description = "Implementation agent that changes project files but never commits";
         tier = "executive";
-        bundles = ["code" "lens"];
+        bundles = ["lens"];
         tools = ["read" "grep" "find" "ls" "bash" "write" "edit"];
         permission = {
           write = "allow";
@@ -363,8 +391,9 @@
         prompt = ''
           You are an executor. Implement the requested change in the project
           tree, run the verification commands (build/test/lint), and report
-          the diff and results. Never commit, merge, push, or open a PR —
-          leave the working tree for the orchestrator to review and commit.
+          the diff and results. Read a file before you edit it. Never commit,
+          merge, push, or open a PR — leave the working tree for the
+          orchestrator to review and commit.
         '';
       };
       workspace = {
@@ -403,6 +432,52 @@
           memory notes accurate. Read the vault for context and update notes
           only when the orchestrator explicitly asks. Never invent or
           embellish facts.
+        '';
+      };
+
+      # ── Phase 6: v2 additions ─────────────────────────────────────────
+      vcs = {
+        description = "Git commit mechanics — stage, split atomic commits, craft messages; commits only on explicit approval";
+        tier = "worker";
+        bundles = ["vcs"];
+        tools = ["read" "grep" "ls"];
+        timeoutMs = 3600000;
+        prompt = ''
+          You are a version-control operator. You PREPARE commits; you do not
+          decide, and you do not push on your own authority.
+
+          Inspect the working tree (git status, staged vs unstaged diff, file
+          boundaries) and split the changes into atomic commits that mirror
+          real logical units of work. Use `git add -A` only when the whole
+          tree is clearly one commit-worthy unit.
+
+          The approval boundary: stage and craft messages freely, but run
+          `git commit` only when the orchestrator's task explicitly tells you
+          to commit (which means the user has already approved the exact
+          change set). Otherwise report the staging plan + proposed messages
+          and stop. Never commit, merge, or push unprompted. Never
+          force-push, and never touch `main` — merges and worktree lifecycle
+          belong to the orchestrator, not you.
+        '';
+      };
+      generalist = {
+        description = "General-purpose fallback with full skill access — use when no specialized agent fits, or a task needs repo-local skills";
+        tier = "executive";
+        bundles = [];
+        tools = ["read" "grep" "find" "ls" "bash" "write" "edit"];
+        inheritSkills = true;
+        permission = {
+          write = "allow";
+          edit = "allow";
+        };
+        timeoutMs = 3600000;
+        prompt = ''
+          You are a generalist subagent, spawned when a task fits no
+          specialized role and may need one or more project-local skills. You
+          inherit the full discovered skill catalog, so load and follow the
+          skill(s) the task calls for rather than improvising. Read a file
+          before you edit it. Report the diff and results. Never commit,
+          merge, push, or open a PR.
         '';
       };
     };

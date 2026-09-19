@@ -5,11 +5,11 @@
  * WHY
  * ---
  * The orchestrator's main cost lever is its own context size, and every
- * read/grep/find/web-fetch it performs in-turn adds a round-trip that a cheap
- * read-only scout could absorb instead. The delegation policy
- * (05-delegation) says "delegate after ~3 tool round-trips", but a long turn
- * can drift past that silently. This extension enforces the deadline
- * mechanically in two escalating stages:
+ * read/bash/web-fetch it performs in-turn adds a round-trip that a cheap
+ * read-only scout could absorb instead. The orchestrator's built-in surface
+ * is already just `read` + `bash` (defaultTools), so this gate is the
+ * backstop that keeps even those verification calls bounded: it counts
+ * recon-shaped tool calls per turn and escalates mechanically in two stages:
  *
  *   1. NUDGE (soft): once reconCount crosses NUDGE_THRESHOLD, append a
  *      directive to the tail of the outgoing request telling the model to
@@ -58,8 +58,6 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 const RECON_TOOLS: readonly string[] = [
   "bash",
   "read",
-  "grep",
-  "find",
   "web_search",
   "web_fetch",
   "document_parse",
@@ -70,8 +68,11 @@ const RECON_TOOLS: readonly string[] = [
   "read_symbol",
   "read_enclosing",
   "project_report",
-  "lsp_diagnostics",
+  "effective_config",
   "lens_diagnostics",
+  "lsp_navigation",
+  "ast_grep_search",
+  "ast_grep_outline",
 ];
 
 // Hardcoded thresholds for the strict experiment. Soften here (raise
@@ -79,7 +80,7 @@ const RECON_TOOLS: readonly string[] = [
 // proves too aggressive in practice.
 const NUDGE_THRESHOLD = 3; // soft warning once this many recon calls deep
 const NUDGE_INTERVAL = 3; // re-warn every N more recon calls
-const GATE_THRESHOLD = 6; // hard-block recon tools at this many
+const GATE_THRESHOLD = 3; // hard-block recon tools at this many
 
 export default function (pi: ExtensionAPI) {
   // Per-session state. `/reload`, `/new` and session switches re-run
