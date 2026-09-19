@@ -43,6 +43,10 @@
               # bash-preexec (see the enableBashIntegration note above).
               ''
                 eval "$(atuin init bash)"
+                # Upstream intentionally leaves C-r unbound in vi-command mode (to
+                # preserve redo), so C-r in normal mode falls through to readline's
+                # native reverse-search-history. Bind it to atuin explicitly.
+                atuin-bind -m vi-command '\C-r' atuin-search-vicmd
               ''
             ];
 
@@ -89,7 +93,12 @@
             auto_sync = false;
             style = "auto";
             dialect = "uk";
-            filter_mode_shell_up_key_binding = "workspace";
+            # WORKAROUND: "workspace" collapses git worktrees to the main repo
+            # (atuin PR #3366, since 18.14), so a worktree shows the main
+            # checkout's history. "directory" (exact cwd) is the closest
+            # supported filter in 18.19.0; we still want a true per-worktree
+            # filter — see atuinsh/atuin#3819.
+            filter_mode_shell_up_key_binding = "directory";
             keymap_mode = "auto";
             update_check = false;
             workspaces = true;
