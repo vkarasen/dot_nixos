@@ -148,6 +148,15 @@
       # ast-bro is gone from every agent: never observed in use, and its
       # value is subsumed by these tools + grep. The skill stays installed
       # for repos that want it; no agent bundles it.
+      #
+      # `effective_config` is deliberately absent: it is not available in
+      # child sessions (it is session/config-scoped), so a child that
+      # allowlists it fails closed at launch ("unavailable child tools:
+      # effective_config"). Every other pi-lens tool in this bundle does
+      # register in children; the situational ones (lsp_navigation,
+      # ast_grep_search, ast_grep_outline, lens_diagnostic_mark) register
+      # deferred and are admitted by the same allowlist once
+      # pi_lens_activate_tools turns them on.
       lens = {
         extensions = ["npm:pi-lens"];
         tools = [
@@ -157,7 +166,6 @@
           "read_symbol"
           "read_enclosing"
           "project_report"
-          "effective_config"
           "pi_lens_activate_tools"
           "lsp_navigation"
           "ast_grep_search"
