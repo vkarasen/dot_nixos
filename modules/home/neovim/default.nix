@@ -30,17 +30,5 @@
       ];
       _module.args.copilotEnable = config.my.copilot.enable;
     };
-
-    # Generate .pi-lens.json so pi-lens picks up the same LSP initializationOptions
-    # as vim when running inside ~/nix/dot_nixos/.
-    # pi-lens walks up from cwd to find the config file, so placing it at the repo
-    # root is sufficient. Server IDs match pi-lens's built-in ids (see server.js).
-    home.file."nix/dot_nixos/.pi-lens.json".text = builtins.toJSON {
-      serverOverrides = {
-        rust.initializationOptions = lspSettings.rustAnalyzer;
-        nix.initializationOptions = nixdFull;
-        python.initializationOptions = lspSettings.pyright;
-      };
-    };
   };
 }

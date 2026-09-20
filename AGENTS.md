@@ -63,7 +63,7 @@ modules/
     skills-private/               # sops-encrypted .md files for private skills/policies
     _module.nix _skills.nix       # helpers (ignored by import-tree)
   home/neovim/
-    default.nix                   # nixvim aspect + generates .pi-lens.json with serverOverrides
+    default.nix                   # nixvim aspect (.pi-lens.json is a committed file at the repo root)
     _lsp-settings.nix             # single source of truth for LSP initializationOptions (vim + pi-lens)
   _nixvim/                        # shared nixvim module tree (NOT a flake-parts module — see pitfalls)
 skills/

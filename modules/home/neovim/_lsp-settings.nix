@@ -2,17 +2,17 @@
 # Each consumer applies its own wrapping convention:
 #   - rustaceanvim:  settings.server.default_settings."rust-analyzer" = lspSettings.rustAnalyzer
 #   - nixvim lspconfig: plugins.lsp.servers.<name>.settings = lspSettings.<name>
-#   - pi-lens (.pi-lens.json): serverOverrides.<id>.initializationOptions = lspSettings.<name>
+#   - pi-lens (.pi-lens.json): lsp.serverOverrides.<id>.initializationOptions = lspSettings.<name>
 #
 # Imported by:
 #   modules/_nixvim/lsp.nix            (nixvim plugin wiring; also used by standalone packages.nvim build)
-#   modules/home/neovim/default.nix    (.pi-lens.json generation, full nixd settings)
+#   modules/home/neovim/default.nix    (full nixd settings; .pi-lens.json is a committed file at the repo root)
 #
 # To add a new server with shared settings:
 #   1. Add an attrset here (protocol-level options only, no editor-specific wrapper)
 #   2. modules/_nixvim/lsp.nix: set  settings = lspSettings.<name>;  on the server entry
 #   3. modules/home/neovim/default.nix: add  <pi-id>.initializationOptions = lspSettings.<name>;
-#      to the serverOverrides block. Pi-lens server IDs: "rust", "nix", "bash", "python".
+#      to the lsp.serverOverrides block. Pi-lens server IDs: "rust", "nix", "bash", "python".
 {
   rustAnalyzer = {
     check = {

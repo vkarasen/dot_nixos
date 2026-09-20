@@ -1,0 +1,84 @@
+{
+  "lsp": {
+    "serverOverrides": {
+      "nix": {
+        "initializationOptions": {
+          "nixpkgs": {
+            "expr": "import <nixpkgs> {}"
+          },
+          "options": {
+            "home_manager": {
+              "expr": "(builtins.getFlake (toString ./.)).homeConfigurations.vkarasen.options"
+            },
+            "nixvim": {
+              "expr": "(builtins.getFlake (toString ./.)).nixVimOptions"
+            }
+          }
+        }
+      },
+      "python": {
+        "initializationOptions": {
+          "python": {
+            "analysis": {
+              "autoSearchPaths": true,
+              "typeCheckingMode": "basic",
+              "useLibraryCodeForTypes": true
+            }
+          }
+        }
+      },
+      "rust": {
+        "initializationOptions": {
+          "assist": {
+            "preferSelf": true
+          },
+          "cargo": {
+            "features": "all",
+            "targetDir": true
+          },
+          "check": {
+            "allTargets": true,
+            "command": "clippy"
+          },
+          "diagnostics": {
+            "styleLints": {
+              "enable": true
+            }
+          },
+          "files": {
+            "exclude": [
+              "**/.git/**",
+              "**/target/**",
+              "**/node_modules/**",
+              "**/dist/**",
+              "**/out/**"
+            ],
+            "watcher": "server"
+          },
+          "imports": {
+            "preferPrelude": true
+          },
+          "inlayHints": {
+            "closureCaptureHints": {
+              "enable": true
+            },
+            "closureReturnTypeHints": {
+              "enable": true
+            },
+            "genericParameterHints": {
+              "enable": true
+            },
+            "parameterHints": {
+              "missingArguments": {
+                "enable": true
+              }
+            }
+          },
+          "interpret": {
+            "tests": true
+          }
+        }
+      }
+    }
+  }
+}
