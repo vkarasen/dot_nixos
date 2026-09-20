@@ -214,10 +214,10 @@
             a way to reduce it. "Which files define X" is delegable; "why did
             this build break" is not.
           - **Never delegate when a silently wrong answer would be
-            unrecoverable.** See the two failure modes below.
+            unrecoverable.** See the three failure modes below.
           - Do not delegate what is already in your context.
 
-          ## Two observed failure modes — design around them
+          ## Three observed failure modes — design around them
 
           **A child may decline to escalate.** Children have
           `contact_supervisor` and it works end to end: the child blocks, you
@@ -240,6 +240,21 @@
           In one session a tool parameter that did not exist, a hotkey the
           docs asserted but no code registered, and an inference from a real
           error that would not reproduce were each confidently wrong.
+
+          **A third failure mode — the orchestrator re-inflating its own
+          context after delegating.** A child's native completion delivery
+          (an async wake, or a `contact_supervisor` reply) already returns a
+          short, synthesized result. Do not additionally: (a) manually `read`
+          the raw async-subagent-result JSON artifact (under
+          `/tmp/pi-subagents-*/async-subagent-results/` or
+          `subagent-artifacts/`) — that ingests the full unsynthesized
+          payload instead of the child's own bounded report (observed once
+          at 12.6KB for a task whose actual report was a few sentences); (b)
+          re-verify a writer child's completed work with more than one direct
+          command — ask the child to self-report its own verification (e.g.
+          "run `nix flake check`, report PASS/FAIL") rather than re-running
+          `git diff` *and* `nix flake check` *and* an exploratory follow-up
+          yourself.
 
           Always require citations in retrieval briefs — `file:line` for
           code, exact source URL + quoted line for docs/web — not for the
@@ -310,7 +325,10 @@
             confirm a current upstream schema/API/best-practice (an
               unfamiliar flake, library, or "is X still true in 2026")   -> researcher
             a mechanical, well-specified task (run a command, apply a
-              mechanical edit, verify a single claim)                  -> worker
+              mechanical edit, verify a single claim); e.g. renaming/
+              migrating a single config field across a handful of files;
+              reserve `executor` (pro) for changes needing actual design
+              judgment                                                 -> worker
               (flash)
             test a live hypothesis about broken/unfamiliar behavior, or
               dry-run a change before it touches real state           -> investigator
@@ -456,6 +474,20 @@
           2. `relocate_herdr_tab(name=<task>)` — opens a herdr linked-worktree
              sub-workspace for that worktree if none exists yet, moves this
              session's pane into it, and names the workspace after the task.
+
+          **Bootstrap before recon, not after.** This ordering has a real
+          cost, not just a hygiene preference: `activate_worktrunk` injects
+          the ~27KB `wt` CLI reference into the tool schema, and the
+          worktree switch changes the cwd embedded in the system prompt —
+          both break prompt-cache prefix matching and force a full context
+          reprocessing on the very next model call. That reprocessing cost
+          scales with however much context has already accumulated, so doing
+          even a couple of investigative `read`/`bash` calls or a subagent
+          spawn before the switch measurably inflates it (observed: two
+          ~42K-token/$0.056 cache-invalidation hits after ~8 prior turns,
+          versus a much smaller hit if paid at session start). Treat
+          "investigate this" the same as "fix this": bootstrap first,
+          investigate inside the worktree.
 
           Every tab in that sub-workspace belongs to the one session/topic it
           was created for; closing it is the deliberate "I'm done" signal
