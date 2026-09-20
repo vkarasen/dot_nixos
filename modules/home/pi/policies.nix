@@ -462,49 +462,37 @@
         "20-git-workflow" = ''
           # Git workflow policy
 
-          ## Worktree bootstrap (pre-edit safety net)
+          ## Worktree bootstrap (pi-launcher)
 
-          Under herdr (`HERDR_ENV=1`), pi drives the bootstrap itself once it
-          understands the task — for every new task, not just once an edit
-          turns out to be needed:
+          A `pi` launcher function runs *before* pi and handles the mechanical bootstrap
+          when you start pi from the main checkout: it creates a worktree on a
+          placeholder branch and, under herdr (`HERDR_ENV=1`), relocates the pane into
+          that worktree's workspace. By the time pi starts, the session is already
+          inside a fresh worktree with the correct cwd — there is no `activate_worktrunk`/
+          `wt switch`/`relocate_herdr_tab` to perform on the first turn, and no
+          prompt-cache break, because the cwd and model are correct from the first
+          request.
 
-          1. `wt switch --create <branch>` via the `worktrunk` tool — creates
-             the worktree and moves this session's working directory into it
-             (deferred; completes after the turn).
-          2. `relocate_herdr_tab(name=<task>)` — opens a herdr linked-worktree
-             sub-workspace for that worktree if none exists yet, moves this
-             session's pane into it, and names the workspace after the task.
+          On your first turn, name the task: rename the placeholder branch
+          (`git branch -m <task-name>`) and label the herdr workspace
+          (`rename_herdr_context <label>`). The worktree already exists.
 
-          **Bootstrap before recon, not after.** This ordering has a real
-          cost, not just a hygiene preference: `activate_worktrunk` injects
-          the ~27KB `wt` CLI reference into the tool schema, and the
-          worktree switch changes the cwd embedded in the system prompt —
-          both break prompt-cache prefix matching and force a full context
-          reprocessing on the very next model call. That reprocessing cost
-          scales with however much context has already accumulated, so doing
-          even a couple of investigative `read`/`bash` calls or a subagent
-          spawn before the switch measurably inflates it (observed: two
-          ~42K-token/$0.056 cache-invalidation hits after ~8 prior turns,
-          versus a much smaller hit if paid at session start). Treat
-          "investigate this" the same as "fix this": bootstrap first,
-          investigate inside the worktree.
+          The launcher fires only when ALL of these hold: a fresh task (not
+          `--resume`/`--continue`/`--session`/`--fork`/`--print`), inside a git repo,
+          and in the MAIN checkout (`.git` is a directory, not a file). Otherwise it
+          passes straight through to pi. Consequence: being in a worktree means "stay
+          here" — the launcher never creates a nested worktree, and worktrees are only
+          ever created from main.
 
-          Every tab in that sub-workspace belongs to the one session/topic it
-          was created for; closing it is the deliberate "I'm done" signal
-          that triggers cleanup (see the `version-control` skill's
-          renaming/pruning/recovery section).
+          Every tab in that sub-workspace belongs to the one session/topic it was
+          created for; closing it is the deliberate "I'm done" signal that triggers
+          cleanup (see the `version-control` skill's renaming/pruning/recovery section).
 
-          If you find yourself about to edit a file meant to be committed while
-          still on the repo's DEFAULT branch (not a worktree), stop and run the
-          bootstrap above before editing. Skip the worktree only for genuinely
-          trivial fixes (typo, one-line tweak). You may still create the
-          sub-workspace manually before starting pi (`<prefix>+shift+g` /
-          `herdr worktree create`); that leaves the worktree under herdr's
-          root instead of worktrunk's, which is fine.
-
-          Not running under herdr, the worktrunk-tool flow still applies:
-          `switch --create <branch>` (placeholder name is fine) and continue
-          there, per the version-control skill's worktree-by-default rule.
+          If you find yourself about to edit a file meant to be committed while still
+          on the repo's DEFAULT branch (not a worktree), stop: the launcher only
+          bootstraps on a fresh `pi` invocation, so exit, start pi again from the main
+          checkout, and let it create the worktree (or create one yourself). Skip the
+          worktree only for genuinely trivial fixes (typo, one-line tweak).
 
           ## Commit approval — default: always wait
           Never commit, merge, or push unless the user has explicitly approved

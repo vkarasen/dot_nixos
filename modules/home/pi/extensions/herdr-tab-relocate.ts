@@ -12,13 +12,10 @@
  * Two call shapes:
  *   - relocate_herdr_tab(workspace, name?, label?) — move to a workspace named
  *     by id or label, optionally renaming it and labelling the new tab.
- *   - relocate_herdr_tab(name?) — the bootstrap shape, used right after
- *     `wt switch --create <branch>` moved this session's cwd into a worktree:
- *     infer the worktree from cwd, auto-open a herdr workspace for it if none
- *     exists yet (`herdr worktree open`), then move the pane there and rename.
- *     This is the second half of the two-phase bootstrap; the worktrunk switch
- *     (which moves the cwd) stays a separate first step because it is deferred
- *     and session-moving, unlike the synchronous pane move here.
+ *   - relocate_herdr_tab(name?) — a manual relocation tool (the `pi` launcher
+ *     already handles the automatic bootstrap): infer the workspace from the
+ *     current worktree, opening one if none exists yet, then move the pane
+ *     there and rename.
  *
  * Self-identification: HERDR_PANE_ID is fixed at process spawn and goes stale
  * after the first move, but `herdr pane current` resolves the caller through
@@ -230,12 +227,14 @@ export default function (pi: ExtensionAPI) {
     name: "relocate_herdr_tab",
     label: "Relocate Tab",
     description:
-      "Move this pi session's own pane into another herdr workspace, opening a new tab there, and optionally rename that workspace to the task name. With no workspace argument, infer the workspace from the current worktree (opening one if needed) — the second half of the worktree bootstrap after `wt switch --create`.",
+      "Move this pi session's own pane into another herdr workspace, opening a new tab there, and optionally rename that workspace to the task name. With no workspace argument, infer the workspace from the current worktree (opening one if needed) — for a manual move to a worktree's workspace (the pi launcher already handles the automatic bootstrap).",
     promptSnippet: "Relocate this session to its worktree workspace",
     promptGuidelines: [
-      "After wt switch --create has moved the session into a worktree, call" +
-        " relocate_herdr_tab with just a name to open a herdr workspace for the" +
-        " worktree, move this session's pane there, and name it after the task.",
+      "For a manual move: after `wt switch --create` (via the worktrunk tool)" +
+        " has moved the session into a worktree, call relocate_herdr_tab with just" +
+        " a name to open a herdr workspace for the worktree, move this session's" +
+        " pane there, and name it. The pi launcher already relocates automatically" +
+        " when it bootstraps.",
     ],
     parameters: Type.Object({
       workspace: Type.Optional(

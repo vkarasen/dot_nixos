@@ -48,6 +48,49 @@
                 # native reverse-search-history. Bind it to atuin explicitly.
                 atuin-bind -m vi-command '\C-r' atuin-search-vicmd
               ''
+              # pi launcher: bootstrap a worktree before pi starts (see the
+              # "20-git-workflow" policy). Bypasses the pi function, the wt
+              # shell function, and the cd→z alias via command/builtin.
+              # bash
+              ''
+                pi() {
+                    # Pass-through: run pi in place for subcommands, help/version, and any
+                    # invocation that is not a fresh task. $1 covers first-arg cases; the loop covers flags.
+                    case "$1" in
+                      install|remove|uninstall|update|list|config|auth) command pi "$@"; return ;;
+                      -h|--help|-v|--version|--list-models)             command pi "$@"; return ;;
+                    esac
+                    local a
+                    for a in "$@"; do
+                      case "$a" in
+                        -r|--resume|-c|--continue|--session|--session-id|--fork) command pi "$@"; return ;;
+                        -p|--print|--mode|--session-dir|--no-session|--export)   command pi "$@"; return ;;
+                      esac
+                    done
+                  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { command pi "$@"; return; }
+                  local top
+                  top="$(git rev-parse --show-toplevel)"
+                  [ -d "$top/.git" ] || { command pi "$@"; return; }
+                  local slug wt_path
+                  slug="pi-$(date +%Y%m%d-%H%M%S)"
+                  if ! wt_path="$(command wt switch --create "$slug" --no-cd --format json 2>/dev/null | jq -r '.path')" || [ -z "$wt_path" ]; then
+                    command pi "$@"; return
+                  fi
+                  builtin cd "$wt_path" || { command pi "$@"; return; }
+                  if [ "''${HERDR_ENV:-}" = "1" ]; then
+                    local repo_root ws_id pane_id
+                    repo_root="$(git rev-parse --path-format=absolute --git-common-dir | sed 's#/\.git/*$##')"
+                    ws_id="$(herdr worktree list --cwd "$repo_root" 2>/dev/null | jq -r --arg p "$wt_path" '.result.worktrees[] | select(.path==$p) | (.open_workspace_id // empty)')"
+                    [ -n "$ws_id" ] || ws_id="$(herdr worktree open --path "$wt_path" 2>/dev/null | jq -r '.result.workspace.workspace_id')"
+                    pane_id="$(herdr pane current 2>/dev/null | jq -r '.result.pane.pane_id')"
+                    if [ -n "$ws_id" ] && [ -n "$pane_id" ]; then
+                      herdr pane move "$pane_id" --new-tab --workspace "$ws_id" --focus >/dev/null 2>&1
+                      herdr workspace focus "$ws_id" >/dev/null 2>&1 # pane move --focus focuses the pane but the client keeps rendering the old workspace; switch the client's view to the relocated workspace
+                    fi
+                  fi
+                  command pi "$@"
+                }
+              ''
             ];
 
           shellAliases = {

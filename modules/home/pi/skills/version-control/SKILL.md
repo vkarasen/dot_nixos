@@ -42,39 +42,34 @@ the tool inactive until it is actually needed:
 
 ## Worktree workflow
 
-**Under herdr (`HERDR_ENV=1`), pi drives the bootstrap itself** once it
-understands the task — for every new task, including investigation-only
-ones, not just once an edit turns out to be needed:
+**The `pi` launcher bootstraps automatically.** A shell function runs before
+pi and, on a fresh task started from the main checkout (a git repo where
+`.git` is a directory), creates a worktree on a placeholder branch and — under
+herdr — relocates the pane into that worktree's workspace. By the time pi
+starts you are already inside a fresh worktree with the correct cwd; there is
+no `wt switch`/`relocate_herdr_tab` to perform on the first turn and no
+prompt-cache break. On your first turn, name the task: `git branch -m
+<task-name>` and `rename_herdr_context <label>`.
 
-1. `wt switch --create <branch>` via the `worktrunk` tool — creates the
-   worktree and moves this session's working directory into it (deferred;
-   completes after the turn).
-2. `relocate_herdr_tab(name=<task>)` — opens a herdr linked-worktree
-   sub-workspace for that worktree if none exists yet, moves this session's
-   pane into it, and names the workspace after the task.
+The launcher passes through to pi unchanged (no bootstrap) for: not-a-git-repo,
+any fresh-task flag (`--resume`/`--continue`/`--session`/`--session-id`/
+`--fork`/`--print`/`--mode`), help/version, the subcommands
+(`install`/`update`/`list`/`config`/`auth`), and any checkout that is not the
+main one (`.git` is a file — you are in a worktree, i.e. where you meant to
+be). Worktrees are only ever created from main, never nested.
 
 Every tab inside that sub-workspace belongs to the one session/topic it was
-created for; do not accumulate unrelated work's tabs in the same
-sub-workspace or in the repo's primary workspace. You may still create the
-sub-workspace manually before starting pi (`<prefix>+shift+g` / `herdr
-worktree create`) — that path is fine, it just leaves the worktree under
-herdr's root instead of worktrunk's. See "Renaming, pruning, and recovery"
-below for cleanup and the worktree-related keybindings herdr ships with
-(`open_worktree`/`remove_worktree`). The always-on "Worktree safety net"
-global policy is the backstop for a session that ends up in the primary
-checkout anyway.
+created for; do not accumulate unrelated work's tabs in the same sub-workspace
+or in the repo's primary workspace. You may still create the sub-workspace
+manually before starting pi (`<prefix>+shift+g` / `herdr worktree create`);
+that leaves the worktree under herdr's root instead of worktrunk's, which is
+fine. See "Renaming, pruning, and recovery" below for cleanup.
 
-**Not running under herdr** (or for stacked work inside an existing
-worktree), the worktrunk-tool flow still applies directly:
-
-- **Worktree by default** for any non-trivial or exploratory change: create one
-  via the `worktrunk` tool (`switch --create <branch>`) rather than working on
-  the default branch. Skip only for genuinely trivial fixes (typo, one-line
-  tweak).
-- **Stacked work** that builds on the current branch: `switch --create
-  <branch> --base=@`.
-- Orient before acting: `wt list` (or `wt list --full --branches`) to see all
-  active worktrees.
+**Manual moves and stacked work** still go through the `worktrunk` tool and
+`relocate_herdr_tab`: to move to a different worktree, `switch --create
+<branch>` (add `--base=@` for stacked work on the current branch), then
+`relocate_herdr_tab`. Orient first with `wt list` (or `wt list --full
+--branches`).
 
 A worktree never needs its final name up front, in either flow: rename the
 branch later with `git branch -m <name>` (herdr's own sidebar label can be
