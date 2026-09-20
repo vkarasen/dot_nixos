@@ -118,9 +118,10 @@
         # accumulated (expensive) context. Implicit-fork is the pi-subagents
         # default when a parent session + leaf exists, which re-bills the
         # orchestrator's context into every child; force fresh so a child
-        # relies on its brief rather than the orchestrator's history. The
-        # oracle is the one deliberate exception and is launched with
-        # context: "fork" explicitly (see the 05-delegation policy).
+        # relies on its brief rather than the orchestrator's history. No
+        # agent forks by default; `context: "fork"` remains available for a
+        # future agent that must inherit parent context (see the 05-delegation
+        # policy).
         defaultSubagentContext = "fresh";
 
         # Native child tool permissions — pi-subagents' own gate, not a
@@ -312,7 +313,7 @@
 
             # NOTE: there are deliberately no `agentOverrides` here.
             #
-            # This key used to pin scout/researcher/oracle to a read-only tool
+            # This key used to pin scout/researcher to a read-only tool
             # list, from before those names were real agents. It is now handled
             # by each agent's own frontmatter (my.pi.agents.*.tools), and
             # re-adding it here would be worse than redundant: `tools` in an

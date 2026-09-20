@@ -42,22 +42,24 @@ Two more options you may want, declared in the same place and defaulted in
 
 Tiers: `orchestrator`, `executive`, `worker`, `simple`, `vision`.
 
-Bundles: `code`, `lens`, `nix`, `web`, `vault`, `workspace`, `media`, `vcs`.
+Bundles: `lens`, `nix`, `web`, `vault`, `workspace`, `media`, `vcs`.
 
 Agents (verify with the command in §6):
 
 | agent | tier | bundles |
 |---|---|---|
-| `oracle` | orchestrator | — |
-| `executor` | executive | code, lens |
-| `reviewer` | executive | code, lens |
-| `investigator` | worker | code, lens |
-| `researcher` | worker | web |
+| `scout` | simple | |
 | `nix-scout` | worker | nix |
+| `researcher` | worker | web |
+| `reviewer` | executive | lens |
+| `media` | vision | media |
+| `investigator` | worker | lens |
+| `worker` | simple | |
+| `executor` | executive | lens |
 | `workspace` | worker | workspace |
 | `twin` | worker | vault |
-| `media` | vision | media |
-| `scout` | simple | code |
+| `vcs` | worker | vcs |
+| `generalist` | executive | |
 
 `twin` ships with `enable = false` (it needs an Obsidian vault). Enable it
 with `my.pi.agents.twin.enable = true;`.
@@ -297,6 +299,63 @@ an unknown bundle key throws.
    `programs.pi-coding-agent.skills` are in that tree —
    **package-provided** skills (worktrunk, `pi-lens-*`, parse-document, …) are
    discovered from their `package.json` and are *not*. Do not list those here.
+
+---
+
+## Project-local skills and corporate wiring
+
+### Skill flow
+
+Pi auto-discovers a repo's `.pi/skills/` from the cwd. Project skills reach a
+child either via `inheritSkills: true` (the full discovered catalog) or via the
+`skill: [...]` launch param.
+
+`inheritSkills: true` means "the child sees Pi's full discovered skills
+catalog", which **includes the private sops skills** in
+`~/.pi/agent/skills-private/` (the `pi-private` aspect registers that dir in
+pi's `settings.skills`). Flipping it globally would therefore leak private
+skills into every child — do **not** do that.
+
+The safe default:
+
+- `inheritSkills: false`;
+- the orchestrator (skill gateway) passes **all** of a repo's project skills
+  via `skill: [...]` — the catalog is names + one-line descriptions, so "all
+  of them" is cheap and removes the prediction risk;
+- private skills are handed via explicit `skill`/`skillPath` only when a task
+  genuinely needs one;
+- `generalist` stays the one trusted `inheritSkills: true` fallback.
+
+### Wiring recipe
+
+**(a) Declare a corporate skill.** Public skills go through a corporate aspect
+adding to `programs.pi-coding-agent.skills` (then reference them from a
+capability bundle's `skills`); confidential skills go through
+`my.pi.privateSkills` (sops, materialized at activation).
+
+**(b) Wire `atlassian-mcp`.** Add a capability bundle and attach it to the
+agents that touch Jira — same MCP-bundle pattern as the base `workspace`
+(`mcpTools = ["google-workspace"]`) and `media` (`mcpTools =
+["video-analyzer"]`) bundles:
+
+```nix
+my.pi.capabilityBundles.atlassian = {
+  extensions = ["npm:pi-mcp-adapter"];
+  mcpTools = ["atlassian-mcp"];
+};
+```
+
+then add `"atlassian"` to those agents' `bundles` lists (remembering §3:
+lists replace, so restate the full list).
+
+**(c) Opt trusted agents into `inheritSkills: true`** on the corporate network
+(where the private skills are corp-internal anyway), e.g.
+`my.pi.agents.<name>.inheritSkills = true;`. This is a per-repo/per-flake opt-in
+— never global on the private flake.
+
+**(d) Add a jira/PR agent if the flow warrants one.** An `my.pi.agents.<name>`
+entry with the atlassian bundle; PR handling is `gh` via bash, already on
+`vcs`.
 
 ---
 

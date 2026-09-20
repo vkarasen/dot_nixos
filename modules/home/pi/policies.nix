@@ -158,6 +158,18 @@
           local skills, spawn the `generalist` (which inherits the full
           catalog).
 
+          In a repo that ships `.pi/skills/`, pass every one of that repo's
+          project skills to the child via `skill: [...]` rather than predicting
+          which it needs. The discovered catalog is names plus one-line
+          descriptions, so "all of them" is cheap and removes the prediction
+          risk. Private (sops) skills in `~/.pi/agent/skills-private/` are also
+          part of Pi's discovered catalog, so they would leak into any child
+          launched with `inheritSkills: true` — keep them out of the default
+          flow and hand one via `skill`/`skillPath` only when a task genuinely
+          needs it. `generalist` remains the one trusted `inheritSkills: true`
+          fallback; a trusted repo or flake may opt specific agents into
+          `inheritSkills: true` in its own config.
+
           A mechanical guardrail (the `recon-nudge` extension) keeps even your
           `read`/`bash` verification bounded: after a few recon-type tool calls
           in one turn it warns, then blocks further recon tools until you
@@ -272,7 +284,10 @@
                              its frontmatter cannot set this, and it covers
                              repo experiments; live-system-only tasks use
                              /tmp instead and just won't need the repo half
-            context: "fork"  for `oracle`; it is useless without your context
+            context: "fork"  fork is available but unused by default
+                             (defaultSubagentContext is fresh); reserve it
+                             for any future agent that must inherit parent
+                             context
             skill:           project-local skill names to hand a child — you
                              are the skill gateway (see above); children do
                              not see local skills unless you pass them
@@ -292,12 +307,11 @@
 
           ## Recognizing the trigger by category
 
-            about to take a consequential step (commit/merge, an explicit
-              pivot, or a long session) while the session carries inherited
-              decisions/constraints that could conflict with it        -> oracle
-              (fork its context), proactively, before you act
             confirm a current upstream schema/API/best-practice (an
               unfamiliar flake, library, or "is X still true in 2026")   -> researcher
+            a mechanical, well-specified task (run a command, apply a
+              mechanical edit, verify a single claim)                  -> worker
+              (flash)
             test a live hypothesis about broken/unfamiliar behavior, or
               dry-run a change before it touches real state           -> investigator
               (ALWAYS worktree: true — a disposable worktree you point it
@@ -313,32 +327,27 @@
             given an image, or asked about screen/photo content, and the
               vision check (see invariants) says no or unconfirmed          -> media
 
-          ## The oracle — a drift check, not a difficulty gate
+          ## Steering and re-awakening children
 
-          The oracle is the one agent that inherits your context
-          (`context: "fork"`), so it is the only one that can check your
-          current trajectory against the decisions and constraints already
-          in play. Its job is not to answer "hard" questions — you cannot
-          judge difficulty reliably, and the attempt invites both
-          over-delegation and under-delegation. Its job is to reconstruct
-          the inherited decisions and flag where the current move would
-          contradict or quietly abandon one of them.
+          Children are re-awakeable retained sessions, not one-shot report
+          generators. You can pause, steer, or resume them instead of
+          re-launching from scratch.
 
-          Fork it proactively, before you act, when both hold:
-
-          - the session has accumulated real decisions or constraints (an
-            agreed plan, a stated constraint, a settled design), and
-          - you are about to take a consequential step: a commit/merge, an
-            explicit pivot, or a long session where context rot is plausible.
-
-          It is expensive — it runs at the `oracle` tier (your own model) and
-          re-reads
-          your whole context — so it is not for routine review; that is the
-          fresh-context `reviewer`'s job, and the watchdog already catches
-          scope drift cheaply. The oracle is for decision drift
-          specifically. Launch with `context: "fork"` and `async: true`;
-          read its recommendation, then decide yourself. The oracle advises;
-          it never decides.
+          - `contact_supervisor` (reason `need_decision` / `interview_request`):
+            a child may pause mid-task and ask you a question. Answer it; do
+            not restart the child.
+          - `resume`: re-awake a finished child to ask a focused follow-up. It
+            continues from its own persisted context. Prefer this over asking
+            for a full re-report.
+          - `steer` (mode `follow_up` / `steer`): inject guidance into a live
+            child without restarting it.
+          - Output discoverability: children write findings to their own
+            session or a file and return a pointer; you read only what you
+            need. Never ingest a full child report inline — route reports over
+            ~1k tokens to a file via `output` / `outputMode: "file-only"`.
+          - Async-only: never launch a child with `async: false` — foreground
+            children do not load the provider extension, so their model call
+            fails. Always async and let completion wake the session.
         '';
 
         "00-nix-workspace" = ''

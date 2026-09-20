@@ -700,7 +700,7 @@ tabled pending a re-measure of the orchestrator prompt.
 **4 — read-mostly agents:** `scout` (cheap/code), `nix-scout` (cheap/nix),
 `researcher` (worker/web), `reviewer` (executive/code, read-only — note this
 deliberately *shadows* the builtin `reviewer`, which does "small fixes"; user
-agents win name collisions), `oracle` (orchestrator tier, no tools), `media`
+agents win name collisions), `media`
 (vision/media). All `readOnly`, all with
 `toolBudget` hard caps. Measure a real scout run before narrowing this repo's
 context — do not guess the narrowing up front.

@@ -81,14 +81,6 @@
         provider = "deepseek";
         thinking = "high";
       };
-      # Split out of `orchestrator` so the oracle is independently tunable:
-      # repointing the orchestrator tier (the session default) must not drag
-      # the oracle's model along with it.
-      oracle = {
-        model = "deepseek-v4-pro";
-        provider = "deepseek";
-        thinking = "high";
-      };
       executive = {
         model = "deepseek-v4-pro";
         provider = "deepseek";
@@ -314,20 +306,6 @@
           should change, never edit.
         '';
       };
-      oracle = {
-        description = "High-context decision-consistency oracle that prevents drift";
-        tier = "oracle";
-        bundles = [];
-        tools = ["read"];
-        toolBudget = {hard = 20;};
-        prompt = ''
-          You are the oracle: a high-context decision-consistency subagent.
-          Treat inherited forked context as the authoritative contract and
-          reconstruct the key decisions, constraints, and open questions
-          before answering. Flag conflicts and drift; do not make new
-          decisions on the orchestrator's behalf.
-        '';
-      };
       media = {
         description = "Vision/media analyst for video and documents";
         tier = "vision";
@@ -376,6 +354,26 @@
           a config toggle), keep it reversible and report exactly what
           changed. Report findings with evidence. Escalate rather than guess
           when a stop condition is unclear.
+        '';
+      };
+      # Flash 'simple' tier — NOT the pro-medium 'worker' tier.
+      worker = {
+        description = "Cheap flash worker for mechanical tasks: run commands, apply mechanical edits, verify a single claim";
+        tier = "simple";
+        bundles = [];
+        tools = ["read" "grep" "find" "ls" "bash" "write" "edit"];
+        permission = {
+          write = "allow";
+          edit = "allow";
+        };
+        timeoutMs = 3600000;
+        prompt = ''
+          You are a cheap mechanical worker on the flash tier. Execute the
+          concrete, well-specified task exactly as described: run commands,
+          apply mechanical edits, or verify a single claim. Read a file before
+          you edit it. Report command output and the resulting diff. Never
+          commit, merge, push, or open a PR. Escalate rather than guess when
+          the task is ambiguous or a stop condition is unclear.
         '';
       };
       executor = {
