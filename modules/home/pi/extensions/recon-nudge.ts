@@ -58,6 +58,11 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 const RECON_TOOLS: readonly string[] = [
   "bash",
   "read",
+  // mcp: direct calls to an MCP server the orchestrator could instead route
+  // to a dedicated agent whose bundle wires that same server (e.g. `workspace`
+  // for google-workspace) — treated as recon-shaped for the same reason
+  // bash/read are.
+  "mcp",
   "web_search",
   "web_fetch",
   "document_parse",
