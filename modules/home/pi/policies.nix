@@ -741,10 +741,11 @@
           When running inside herdr (`HERDR_ENV=1`), two tools are available:
 
           - `rename_herdr_context` renames the unit this session lives in to
-            reflect the task: the WORKSPACE when the session is in a linked
-            worktree sub-workspace (the task-scoped unit), otherwise the TAB.
-            The first prompt of each session injects an instruction to call it
-            before starting work; also call it whenever the topic shifts.
+            reflect the task: in a linked worktree sub-workspace it renames the
+            WORKSPACE (the task-scoped unit) and its TAB; otherwise it renames
+            just the TAB. The TAB is always prefixed `pi: `. The first prompt of
+            each session injects an instruction to call it before starting work;
+            also call it whenever the topic shifts.
           - `relocate_herdr_tab` moves this session's pane into another herdr
             workspace (opening a new tab there) and can rename that workspace
             to the task name in the same call. Use it to move a session onto

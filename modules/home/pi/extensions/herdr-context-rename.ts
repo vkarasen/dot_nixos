@@ -103,7 +103,7 @@ export default function (pi: ExtensionAPI) {
     name: "rename_herdr_context",
     label: "Rename Workspace or Tab",
     description:
-      "Rename the unit this session lives in to reflect the current task: the workspace when this session is in a linked worktree sub-workspace, otherwise the tab.",
+      "Rename the unit this session lives in to reflect the current task: in a linked worktree sub-workspace, rename the workspace and its tab; otherwise rename just the tab. The tab is always prefixed `pi: `.",
     promptSnippet: "Rename the workspace/tab this session lives in",
     promptGuidelines: [
       "Use rename_herdr_context as the first tool call each session to label the" +
@@ -155,21 +155,27 @@ export default function (pi: ExtensionAPI) {
         await pi.exec("herdr", ["workspace", "rename", workspaceId!, params.label], {
           timeout: 5000,
         });
+        await pi.exec("herdr", ["tab", "rename", tabId!, `pi: ${params.label}`], {
+          timeout: 5000,
+        });
         skipNextCheck = true;
         return {
           content: [
-            { type: "text", text: `Workspace renamed to "${params.label}".` },
+            {
+              type: "text",
+              text: `Workspace renamed to "${params.label}" and tab to "pi: ${params.label}".`,
+            },
           ],
           details: {},
         };
       }
 
-      await pi.exec("herdr", ["tab", "rename", tabId!, params.label], {
+      await pi.exec("herdr", ["tab", "rename", tabId!, `pi: ${params.label}`], {
         timeout: 5000,
       });
       skipNextCheck = true;
       return {
-        content: [{ type: "text", text: `Tab renamed to "${params.label}".` }],
+        content: [{ type: "text", text: `Tab renamed to "pi: ${params.label}".` }],
         details: {},
       };
     },
