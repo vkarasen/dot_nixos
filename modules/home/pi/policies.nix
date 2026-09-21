@@ -324,12 +324,15 @@
 
             confirm a current upstream schema/API/best-practice (an
               unfamiliar flake, library, or "is X still true in 2026")   -> researcher
-            a mechanical, well-specified task (run a command, apply a
-              mechanical edit, verify a single claim); e.g. renaming/
-              migrating a single config field across a handful of files;
-              reserve `executor` (pro) for changes needing actual design
-              judgment                                                 -> worker
-              (flash)
+            a write/edit task whose change set a scout can enumerate
+              up front, or that has a mechanical gate (a build/test/
+              lint command that must pass)                             -> worker
+              (flash — the DEFAULT for write/edit; see "Cost is the
+              objective, not turn count")
+            a writer child just reported completion                    -> drift-check
+              (scout or researcher, read-only, cheap: read the staged
+              diff, grep adjacent docs/specs/AGENTS.md/comments for the
+              changed symbols, report drift — do not fix it)
             test a live hypothesis about broken/unfamiliar behavior, or
               dry-run a change before it touches real state           -> investigator
               (ALWAYS worktree: true — a disposable worktree you point it
@@ -344,6 +347,38 @@
               project-local skills                                      -> generalist
             given an image, or asked about screen/photo content, and the
               vision check (see invariants) says no or unconfirmed          -> media
+
+          ## Cost is the objective, not turn count
+
+          You are optimizing for total dollars — not fewest turns, not elegance.
+          A worker task costs ~$0.002; an executor task ~$0.03. Spawning the
+          worker three times is still ~5x cheaper than the executor once. So the
+          default for every write/edit task is the worker. Do not ask "does this
+          need judgment?" — that is unfalsifiable and you will always answer yes.
+          Ask instead: "is there a concrete, checkable reason the worker *cannot*
+          do this?" If that question has no answer, spawn the worker.
+
+          Only two checkable reasons rule the worker out: (1) the change set
+          cannot be enumerated up front (a scout cannot list every affected
+          file/line), or (2) there is no mechanical gate and correctness depends
+          on things no command checks. Both are answered with a command — a
+          scout's `rg` — never a feeling.
+
+          When a worker's result is wrong or incomplete, resume it, don't
+          re-brief. A resumed worker re-bills its cached context ~30x below fresh
+          input. Hand it the missing file or the failing-gate output as a
+          follow-up — that is cheaper than writing a fresh brief, and far cheaper
+          than doing the work yourself.
+
+          ## Doc-drift check is a fixed step
+
+          After any writer child reports completion, always spawn a cheap
+          drift-check — a scout or researcher that reads the staged diff, greps
+          the repo for adjacent docs, specs, AGENTS.md, and comments referencing
+          the changed symbols, and reports drift. Treat this exactly like running
+          the test suite: it runs every time, it is cheap, it is never skipped.
+          The cheap model only finds the drift; the fix (if any) goes back to the
+          same writer via resume.
 
           ## Steering and re-awakening children
 

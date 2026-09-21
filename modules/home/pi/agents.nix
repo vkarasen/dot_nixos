@@ -366,7 +366,7 @@
       };
       # Flash 'simple' tier — NOT the pro-medium 'worker' tier.
       worker = {
-        description = "Cheap flash worker for mechanical tasks: run commands, apply mechanical edits, verify a single claim";
+        description = "Cheap flash worker — the default for every write/edit task. Spawn it first whenever the change is a closed set (a scout can enumerate every affected file/line) or there is a mechanical gate (a build/test/lint command that must pass). It executes the brief exactly and does not sweep adjacent files, so the brief must name every file. It is ~15x cheaper than the executor — three worker attempts still cost less than one executor run. Prefer three worker attempts over one executor run, always.";
         tier = "simple";
         bundles = [];
         tools = ["read" "grep" "find" "ls" "bash" "write" "edit"];
@@ -385,7 +385,7 @@
         '';
       };
       executor = {
-        description = "Implementation agent that changes project files but never commits";
+        description = "Pro implementation agent — reserve for what no cheap round can verify: changes whose blast radius cannot be enumerated up front, or whose correctness has no mechanical gate (doc drift, semantic coherence, design judgment). ~15x more expensive than the worker. Reach for it only after a worker has been tried and failed, or when a concrete, checkable reason — not a feeling — rules the worker out.";
         tier = "executive";
         bundles = ["lens"];
         tools = ["read" "grep" "find" "ls" "bash" "write" "edit"];
