@@ -89,13 +89,19 @@
                   fi
                   builtin cd "$wt_path" || { command pi "$@"; return; }
                   if [ "''${HERDR_ENV:-}" = "1" ]; then
-                    local repo_root ws_id pane_id
+                    local repo_root ws_id pane_id tab_id
                     repo_root="$(git rev-parse --path-format=absolute --git-common-dir | sed 's#/\.git/*$##')"
                     ws_id="$(herdr worktree list --cwd "$repo_root" 2>/dev/null | jq -r --arg p "$wt_path" '.result.worktrees[] | select(.path==$p) | (.open_workspace_id // empty)')"
                     [ -n "$ws_id" ] || ws_id="$(herdr worktree open --path "$wt_path" 2>/dev/null | jq -r '.result.workspace.workspace_id')"
                     pane_id="$(herdr pane current 2>/dev/null | jq -r '.result.pane.pane_id')"
                     if [ -n "$ws_id" ] && [ -n "$pane_id" ]; then
-                      herdr pane move "$pane_id" --new-tab --workspace "$ws_id" --focus >/dev/null 2>&1
+                      if herdr pane move "$pane_id" --new-tab --workspace "$ws_id" --focus >/dev/null 2>&1; then
+                        # Move the pi tab to the front of the workspace (cosmetic,
+                        # best-effort). Re-resolve the tab id after the move — the
+                        # pre-move id is stale.
+                        tab_id="$(herdr pane current 2>/dev/null | jq -r '.result.pane.tab_id')"
+                        [ -n "$tab_id" ] && herdr-tab-move "$tab_id" 0 >/dev/null 2>&1 || true
+                      fi
                       herdr workspace focus "$ws_id" >/dev/null 2>&1 # pane move --focus focuses the pane but the client keeps rendering the old workspace; switch the client's view to the relocated workspace
                     fi
                   fi

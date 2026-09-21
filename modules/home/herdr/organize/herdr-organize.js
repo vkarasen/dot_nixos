@@ -1,6 +1,6 @@
 // herdr-organize — consolidate herdr workspaces and relocate misplaced tabs.
 //
-// Two jobs, one pass over herdr's own JSON:
+// Three jobs, one pass over herdr's own JSON:
 //
 //   1. Relocate tabs — move every pane into the workspace that owns its
 //      checkout. A pi session goes where its session file says it is (the
@@ -14,6 +14,10 @@
 //      they're rooted at, keep one canonical workspace per checkout (prefer
 //      the herdr-managed one, else most panes, else lowest number), move
 //      every pane out of the others, then close the now-empty duplicates.
+//
+//   3. Sort + rename — after relocation, within each linked worktree
+//      sub-workspace move pi tabs to the front and rename only stale labels
+//      (empty/auto-numbered tab labels, empty/auto-slug workspace labels).
 //
 // Safety: nothing is ever force-deleted. A duplicate is closed only after all
 // its panes have moved out (0 remain). Workspaces whose checkout can't be
@@ -88,6 +92,103 @@ function labelFor(pane, checkout) {
     .trim();
   if (title) return "pi: " + title;
   return "pi: " + (checkout ? path.basename(checkout) : "pi");
+}
+
+// A tab label is "stale" (safe to rename) when empty or a bare auto-number.
+function isStaleTabLabel(label) {
+  return !label || /^[0-9]+$/.test(label);
+}
+
+// A workspace label is "stale" when empty or the auto-slug `wt switch --create`
+// generates (pi-YYYYmmdd-HHMMSS). Never rename a label a human/agent has set.
+function isStaleWorkspaceLabel(label) {
+  return !label || /^pi-\d{8}-\d{6}$/.test(label);
+}
+
+// Sort + rename, after relocation. Sorts only linked worktree sub-workspaces
+// (pi tabs to the front, preserving their relative order); the main checkout
+// and other plain workspaces are left in place so a human's deliberate tab
+// order is preserved. Renames are conservative: only stale labels (empty /
+// auto-numbered tabs, empty / auto-slug workspaces) are touched.
+function sortAndRename(panes, workspaces, tabs, wtByPath, dry) {
+  const rows = [];
+  const piTabIds = new Set();
+  for (const p of panes) {
+    if (p.agent === "pi" && p.tab_id) piTabIds.add(p.tab_id);
+  }
+  const panesByTab = new Map();
+  for (const p of panes) {
+    if (!panesByTab.has(p.tab_id)) panesByTab.set(p.tab_id, []);
+    panesByTab.get(p.tab_id).push(p);
+  }
+  const tabsByWs = new Map();
+  for (const t of tabs) {
+    if (!tabsByWs.has(t.workspace_id)) tabsByWs.set(t.workspace_id, []);
+    tabsByWs.get(t.workspace_id).push(t);
+  }
+
+  for (const ws of workspaces) {
+    const linked = !!(ws.worktree && ws.worktree.is_linked_worktree);
+    const checkout = ws.worktree && ws.worktree.checkout_path;
+    const wtMeta = checkout ? wtByPath.get(checkout) : null;
+    const wsTabs = tabsByWs.get(ws.workspace_id) || [];
+    const piTabs = wsTabs.filter((t) => piTabIds.has(t.tab_id));
+
+    if (linked && isStaleWorkspaceLabel(ws.label)) {
+      const branch = (wtMeta && wtMeta.branch) || (checkout ? path.basename(checkout) : "");
+      if (branch && branch !== ws.label) {
+        const note = `${ws.label || "(empty)"} -> ${branch}`;
+        if (dry) {
+          rows.push({ status: "would-rename-ws", pane: ws.workspace_id, title: ws.label || "", note });
+        } else {
+          try {
+            run(HERDR, ["workspace", "rename", ws.workspace_id, branch]);
+            rows.push({ status: "renamed-ws", pane: ws.workspace_id, title: ws.label || "", note });
+          } catch (e) {
+            rows.push({ status: "error", pane: ws.workspace_id, title: ws.label || "", note: "rename ws: " + (e.message || e) });
+          }
+        }
+      }
+    }
+
+    if (linked && piTabs.length > 0) {
+      let idx = 0;
+      for (const t of piTabs) {
+        const note = `-> index ${idx}`;
+        if (dry) {
+          rows.push({ status: "would-move-tab", pane: t.tab_id, title: t.label || "", note });
+        } else {
+          try {
+            run("herdr-tab-move", [t.tab_id, String(idx)]);
+            rows.push({ status: "moved-tab", pane: t.tab_id, title: t.label || "", note });
+          } catch (e) {
+            rows.push({ status: "error", pane: t.tab_id, title: t.label || "", note: "move tab: " + (e.message || e) });
+          }
+        }
+        idx++;
+      }
+    }
+
+    for (const t of piTabs) {
+      if (!isStaleTabLabel(t.label)) continue;
+      const pane = (panesByTab.get(t.tab_id) || []).find((p) => p.agent === "pi");
+      if (!pane) continue;
+      const label = labelFor(pane, checkout || null);
+      if (!label || label === t.label) continue;
+      const note = `${t.label || "(empty)"} -> ${label}`;
+      if (dry) {
+        rows.push({ status: "would-rename-tab", pane: t.tab_id, title: t.label || "", note });
+      } else {
+        try {
+          run(HERDR, ["tab", "rename", t.tab_id, label]);
+          rows.push({ status: "renamed-tab", pane: t.tab_id, title: t.label || "", note });
+        } catch (e) {
+          rows.push({ status: "error", pane: t.tab_id, title: t.label || "", note: "rename tab: " + (e.message || e) });
+        }
+      }
+    }
+  }
+  return rows;
 }
 
 // Compute per-workspace identity and the canonical workspace per checkout.
@@ -175,8 +276,9 @@ function computeModel(panes, workspaces) {
 function main() {
   if (HELP) {
     console.log(
-      "herdr-organize: consolidate herdr workspaces and relocate misplaced tabs.\n\n" +
-        "  herdr-organize              move tabs and close emptied duplicates\n" +
+      "herdr-organize: consolidate herdr workspaces, relocate misplaced tabs,\n" +
+        "  sort pi tabs to the front, and rename stale tabs/workspaces.\n\n" +
+        "  herdr-organize              apply all passes and close emptied duplicates\n" +
         "  herdr-organize --dry-run    preview only, change nothing\n",
     );
     return;
@@ -409,6 +511,21 @@ function main() {
       });
     }
   }
+
+  // ---- sort + rename pass (on fresh post-relocation state) ----
+  let postPanes = panes;
+  let postWorkspaces = workspaces;
+  let postTabs = [];
+  try {
+    postPanes = (herdrJson("pane", "list").result || {}).panes || panes;
+  } catch { /* keep pre-move view */ }
+  try {
+    postWorkspaces = (herdrJson("workspace", "list").result || {}).workspaces || workspaces;
+  } catch { /* keep */ }
+  try {
+    postTabs = (herdrJson("tab", "list").result || {}).tabs || [];
+  } catch { /* keep */ }
+  rows.push(...sortAndRename(postPanes, postWorkspaces, postTabs, wtByPath, DRY_RUN));
 
   // ---- close emptied duplicates (fail-safe: only zero-pane ones) ----
   const closes = [];

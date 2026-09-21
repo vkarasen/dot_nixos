@@ -35,6 +35,17 @@
       destination = "/bin/herdr-organize";
       text = "#!${pkgs.nodejs}/bin/node\n" + builtins.readFile ./organize/herdr-organize.js;
     };
+
+    # Sole owner of the `tab.move` socket protocol (there is no CLI wrapper):
+    # move a herdr tab to a position via the socket API (logic in
+    # tab-move/tab-move.js). Reordering is cosmetic, so callers treat failure
+    # as non-fatal. Wrapped with an absolute node shebang like herdrOrganize.
+    tabMove = pkgs.writeTextFile {
+      name = "herdr-tab-move";
+      executable = true;
+      destination = "/bin/herdr-tab-move";
+      text = "#!${pkgs.nodejs}/bin/node\n" + builtins.readFile ./tab-move/tab-move.js;
+    };
   in {
     programs.herdr = {
       enable = true;
@@ -81,7 +92,7 @@
       };
     };
 
-    home.packages = [pkgs.herdr herdrOrganize];
+    home.packages = [pkgs.herdr herdrOrganize tabMove];
 
     # Run `herdr integration install pi` on every home-manager activation.
     # Herdr handles idempotency itself; we just ensure the target directory

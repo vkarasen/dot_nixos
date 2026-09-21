@@ -29,7 +29,6 @@
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { createConnection } from "node:net";
 
 /**
  * Best-effort detection of a delegated (non-interactive) pi session.
@@ -45,55 +44,6 @@ function isDelegatedChild(): boolean {
   const modeIndex = argv.indexOf("--mode");
   if (modeIndex !== -1 && argv[modeIndex + 1] !== "tui") return true;
   return false;
-}
-
-/**
- * Send one request to the herdr socket and resolve with the JSON response.
- * Used only for `tab.move`, which has no CLI wrapper. The socket API is
- * newline-delimited JSON: one request per line, one response per line.
- */
-function socketRequest(
-  method: string,
-  params: Record<string, unknown>,
-  timeoutMs = 3000,
-): Promise<{ result?: unknown; error?: unknown }> {
-  const socketPath =
-    process.env.HERDR_SOCKET_PATH ||
-    `${process.env.HOME ?? ""}/.config/herdr/herdr.sock`;
-  const id = `pi-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-  return new Promise((resolve, reject) => {
-    const sock = createConnection(socketPath);
-    let buf = "";
-    let settled = false;
-    const timer = setTimeout(() => {
-      settle(() => {
-        sock.destroy();
-        reject(new Error("herdr socket timeout"));
-      });
-    }, timeoutMs);
-    const settle = (fn: () => void) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      fn();
-    };
-    sock.on("connect", () => sock.write(JSON.stringify({ id, method, params }) + "\n"));
-    sock.on("data", (chunk) => {
-      buf += chunk.toString();
-      const nl = buf.indexOf("\n");
-      if (nl === -1) return;
-      settle(() => {
-        sock.destroy();
-        try {
-          resolve(JSON.parse(buf.slice(0, nl)));
-        } catch {
-          reject(new Error("herdr socket returned non-JSON"));
-        }
-      });
-    });
-    sock.on("error", (err) => settle(() => reject(err)));
-    sock.on("close", () => settle(() => reject(new Error("herdr socket closed before response"))));
-  });
 }
 
 export default function (pi: ExtensionAPI) {
@@ -329,16 +279,13 @@ export default function (pi: ExtensionAPI) {
           `herdr pane move failed (exit ${r.code}): ${r.stderr || r.stdout || "no output"}`,
         );
       }
-      // Move the pi tab to the front of the workspace. `tab.move` has no CLI
-      // wrapper, so go through the raw socket; ordering is cosmetic, so a
-      // failure here is non-fatal.
+      // Move the pi tab to the front of the workspace. The tab.move socket
+      // protocol is owned by the herdr-tab-move helper (there is no CLI
+      // wrapper); ordering is cosmetic, so a failure here is non-fatal.
       try {
         const fresh = await currentPaneInfo();
         if (fresh) {
-          await socketRequest("tab.move", {
-            tab_id: fresh.tabId,
-            insert_index: 0,
-          });
+          await pi.exec("herdr-tab-move", [fresh.tabId, "0"], { timeout: 5000 });
         }
       } catch {
         // Ignore — the relocation already succeeded.
