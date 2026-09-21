@@ -534,7 +534,7 @@
           (`rename_herdr_context <label>`). The worktree already exists.
 
           The launcher fires only when ALL of these hold: a fresh task (not
-          `--resume`/`--continue`/`--session`/`--fork`/`--print`), inside a git repo,
+          `--resume`/`--continue`/`--session`/`--fork`/`--print`/`--no-worktree`), inside a git repo,
           and in the MAIN checkout (`.git` is a directory, not a file). Otherwise it
           passes straight through to pi. Consequence: being in a worktree means "stay
           here" — the launcher never creates a nested worktree, and worktrees are only

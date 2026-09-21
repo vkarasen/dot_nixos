@@ -54,6 +54,17 @@
               # bash
               ''
                 pi() {
+                    # Manual suppression: -w/--no-worktree skips the worktree
+                    # bootstrap and herdr relocation and runs pi in place. Runs
+                    # first and strips the flag so it never reaches pi.
+                    local _a args=() no_worktree=0
+                    for _a in "$@"; do
+                      case "$_a" in
+                        -w|--no-worktree) no_worktree=1 ;;
+                        *) args+=("$_a") ;;
+                      esac
+                    done
+                    if [ "$no_worktree" = 1 ]; then command pi "''${args[@]}"; return; fi
                     # Pass-through: run pi in place for subcommands, help/version, and any
                     # invocation that is not a fresh task. $1 covers first-arg cases; the loop covers flags.
                     case "$1" in

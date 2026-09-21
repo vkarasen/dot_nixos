@@ -54,9 +54,17 @@ prompt-cache break. On your first turn, name the task: `git branch -m
 The launcher passes through to pi unchanged (no bootstrap) for: not-a-git-repo,
 any fresh-task flag (`--resume`/`--continue`/`--session`/`--session-id`/
 `--fork`/`--print`/`--mode`), help/version, the subcommands
-(`install`/`update`/`list`/`config`/`auth`), and any checkout that is not the
+(`install`/`update`/`list`/`config`/`auth`), the suppression flag
+(`-w`/`--no-worktree`, which skips bootstrap and runs pi in place — see below),
+and any checkout that is not the
 main one (`.git` is a file — you are in a worktree, i.e. where you meant to
 be). Worktrees are only ever created from main, never nested.
+
+`pi --no-worktree` (short `-w`) deliberately starts pi on the current branch
+with no worktree bootstrap and no herdr relocation. Use it to stay on the main
+checkout (read-only work, a trivial edit, or when you want to pick the moment
+to switch). Switching later is the manual flow below: `switch --create
+<branch>` then `relocate_herdr_tab`.
 
 Every tab inside that sub-workspace belongs to the one session/topic it was
 created for; do not accumulate unrelated work's tabs in the same sub-workspace
