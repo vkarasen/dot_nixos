@@ -21,8 +21,6 @@
         # sha512crypt password hash for users.users.vkarasen. neededForUsers
         # makes sops decrypt it early so login works before the user session.
         user-password = {neededForUsers = true;};
-        # Wifi PSK (consumed by modules/nixos/wifi.nix ensureProfiles).
-        wifi-home-psk = {};
       };
     };
   };

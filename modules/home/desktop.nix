@@ -87,6 +87,85 @@
         notify-send -a screenshot -i "$out" "Screenshot" "Copied to clipboard"
       '';
     };
+
+    # Waybar sound-routing widget: emits one JSON line describing the current
+    # default audio sink (headphone glyph for bluetooth, speaker glyph
+    # otherwise). Backed by `wpctl` (pactl is not installed on this host, and
+    # wpctl has no `get-default` subcommand, so the default is read from the
+    # `*`-marked sink line in `wpctl status`). Consumed by the
+    # custom/audio-sink module below.
+    audio-sink-status = pkgs.writeShellApplication {
+      name = "audio-sink-status";
+      runtimeInputs = with pkgs; [
+        wireplumber # wpctl
+        gnused # sed
+        gnugrep # grep
+        coreutils # head
+      ];
+      text = ''
+        default_line="$(wpctl status | sed -n '/^Audio/,/^Video/p' | sed -n '/Sinks:/,/Sources:/p' | grep '\*' | head -n1)"
+        sink_id="$(printf '%s\n' "$default_line" | sed -nE 's/^[^0-9]*([0-9]+)\..*/\1/p')"
+        desc="$(printf '%s\n' "$default_line" | sed -nE 's/^[^0-9]*[0-9]+\. //; s/ \[vol:.*$//; s/[[:space:]]*$//p')"
+        api="$(wpctl inspect "$sink_id" 2>/dev/null | sed -n 's/^ *device.api = "\(.*\)"/\1/p' | head -n1)"
+        if [ "$api" = "bluez5" ]; then
+          glyph=$'\uF025' class="bt" label="$desc"
+        else
+          glyph=$'\uF028' class="speaker"
+          case "$desc" in
+            *Speaker*) label="Speaker" ;;
+            *HDMI*|*DisplayPort*)
+              label="$(printf '%s\n' "$desc" | sed -nE 's/.*[^0-9]([0-9]+) Output$/HDMI \1/p')"
+              [ -z "$label" ] && label="$desc"
+              ;;
+            *) label="$desc" ;;
+          esac
+        fi
+        printf '{"text":"%s","tooltip":"Output: %s","class":"%s"}\n' "$glyph" "$label" "$class"
+      '';
+    };
+
+    # Click handler for the sound-routing widget: list every sink's description
+    # in a fuzzel menu (the current default marked with a leading `*`) and, on
+    # selection, set that sink as the default. wpctl cannot move an individual
+    # stream (no move-sink-input), so currently-playing audio follows via
+    # WirePlumber's follow-default policy when the default changes.
+    audio-sink-select = pkgs.writeShellApplication {
+      name = "audio-sink-select";
+      runtimeInputs = with pkgs; [
+        wireplumber # wpctl
+        gnused # sed
+        gnugrep # grep
+        coreutils # head
+        gawk # awk
+        fuzzel # the dmenu picker
+      ];
+      text = ''
+        default_id="$(wpctl status | sed -n '/^Audio/,/^Video/p' | sed -n '/Sinks:/,/Sources:/p' \
+          | grep '\*' | sed -nE 's/^[^0-9]*([0-9]+)\..*/\1/p' | head -n1)"
+        sinks="$(wpctl status | sed -n '/^Audio/,/^Video/p' | sed -n '/Sinks:/,/Sources:/p' \
+          | while IFS= read -r line; do
+              id="$(printf '%s\n' "$line" | sed -nE 's/^[^0-9]*([0-9]+)\..*/\1/p')"
+              [ -z "$id" ] && continue
+              desc="$(printf '%s\n' "$line" | sed -nE 's/^[^0-9]*[0-9]+\. //; s/ \[vol:.*$//; s/[[:space:]]*$//p')"
+              case "$desc" in
+                *Speaker*) label="Speaker" ;;
+                *HDMI*|*DisplayPort*)
+                  label="$(printf '%s\n' "$desc" | sed -nE 's/.*[^0-9]([0-9]+) Output$/HDMI \1/p')"
+                  [ -z "$label" ] && label="$desc"
+                  ;;
+                *) label="$desc" ;;
+              esac
+              printf '%s|%s\n' "$id" "$label"
+            done)"
+        choice="$(printf '%s\n' "$sinks" | while IFS='|' read -r id label; do
+          if [ "$id" = "$default_id" ]; then printf '* %s\n' "$label"; else printf '  %s\n' "$label"; fi
+        done | fuzzel --dmenu --prompt 'Output: ' --width 40 --lines 6 || true)"
+        [ -z "$choice" ] && exit 0
+        chosen_label="$(printf '%s\n' "$choice" | sed -E 's/^\*//; s/^[[:space:]]+//')"
+        chosen_id="$(printf '%s\n' "$sinks" | awk -F'|' -v d="$chosen_label" '$2==d {print $1; exit}')"
+        [ -n "$chosen_id" ] && wpctl set-default "$chosen_id"
+      '';
+    };
   in {
     # Importing this aspect IS the GUI statement: derive the flag that
     # consumers (e.g. the pi GUI-vs-TUI context) read. NOTE: an aspect that
@@ -100,7 +179,22 @@
         hypr-cheatsheet # SUPER+/ keybinding cheatsheet
         screenshot # Shift+PrtSc = fullscreen, Alt+PrtSc = window (region is Flameshot)
         flameshot # PrtSc = interactive region (drag + adjust + Enter)
+        networkmanagerapplet # nm-applet: tray wifi applet for connecting to new networks
+        audio-sink-status # waybar sound-routing widget status emitter
+        audio-sink-select # click handler: fuzzel menu to switch the default output
       ];
+
+      # Flameshot's tray icon is disabled declaratively, so it applies on any
+      # host and survives a wipe. force = true lets activation overwrite any
+      # copy flameshot's config dialog writes at runtime (the tradeoff: GUI-set
+      # flameshot prefs revert on the next switch — declare them here if wanted).
+      home.file.".config/flameshot/flameshot.ini" = {
+        text = ''
+          [General]
+          disabledTrayIcon=true
+        '';
+        force = true;
+      };
 
       # Stylix owns the per-user DE chrome; its targets for these apps are
       # enabled on the NixOS side (modules/nixos/stylix.nix), not here — this
@@ -194,12 +288,11 @@
               # `battery` is laptop-only: in modules-right only when
               # my.laptop.enable is true (set by modules/home/laptop.nix).
               modules-right =
-                ["network" "pulseaudio"]
+                ["network" "tray" "bluetooth" "pulseaudio" "custom/audio-sink"]
                 ++ lib.optional config.my.laptop.enable "custom/battery-exception"
                 ++ lib.optional config.my.laptop.enable "custom/suspend-exception"
                 ++ lib.optional config.my.laptop.enable "custom/power-profile"
-                ++ lib.optional config.my.laptop.enable "battery"
-                ++ ["tray"];
+                ++ lib.optional config.my.laptop.enable "battery";
 
               "hyprland/workspaces" = {
                 format = "{name}";
@@ -218,11 +311,42 @@
                 tooltip-format = "{ifname}: {ipaddr}";
               };
 
+              bluetooth = {
+                format = " {icon}";
+                format-connected = " {icon} {num_connections}";
+                format-off = " {icon} off";
+                format-disabled = " {icon} off";
+                # Icons are NotoMono Nerd Font glyphs (private-use area),
+                # verified present in NotoMonoNerdFontMono-Regular.ttf
+                # (nerd-fonts 3.5.0): U+F00AF nf-md-bluetooth,
+                # U+F00B1 nf-md-bluetooth_connect, U+F00B2 nf-md-bluetooth_off.
+                format-icons = {
+                  enabled = "󰂯";
+                  connected = "󰂱";
+                  off = "󰂲";
+                  disabled = "󰂲";
+                };
+                on-click = "if bluetoothctl show | grep -q 'Powered: yes'; then bluetoothctl power off; else bluetoothctl power on; fi";
+                on-click-right = "blueman-manager";
+                tooltip-format = "Bluetooth {status}";
+                tooltip-format-connected = "{device_enumerate}";
+              };
+
               pulseaudio = {
                 format = "{icon} {volume}%";
                 format-muted = " muted";
                 format-icons = [" " " "];
-                on-click = "pactl set-sink-mute @DEFAULT_SINK@ toggle";
+                on-click = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
+              };
+
+              # Sound routing: click opens a fuzzel menu to switch the default
+              # output sink (e.g. headphones <-> speakers). Backed by the
+              # audio-sink-* scripts above.
+              "custom/audio-sink" = {
+                exec = "audio-sink-status";
+                interval = 3;
+                return-type = "json";
+                on-click = "audio-sink-select";
               };
 
               battery = {
@@ -301,7 +425,9 @@
             }
 
             #network,
+            #bluetooth,
             #pulseaudio,
+            #custom-audio-sink,
             #battery,
             #custom-power-profile,
             #tray {
@@ -311,6 +437,10 @@
 
             #battery.warning { color: #f9e2af; }
             #battery.critical { color: #f38ba8; }
+
+            /* Bluetooth powered off / rfkill-blocked: dim the rune. */
+            #bluetooth.off,
+            #bluetooth.disabled { color: #6c7086; }
 
             /* Battery exception-mode indicator (glows orange while armed).
                The module is hidden (hide-empty-text) when the flag is off. */
@@ -359,6 +489,19 @@
           padding = 10;
           # Colours + font are injected by Stylix's mako target.
         };
+      };
+
+      # polkit authentication agent for Hyprland — lets GUI tools (blueman,
+      # etc.) prompt for privileges. Runs as a systemd user service on
+      # graphical-session.target (which is active in this session).
+      services.hyprpolkitagent.enable = true;
+
+      # gnome-keyring: the secret-service backend nm-applet stores wifi PSKs
+      # in (via libsecret). "secrets" starts the org.freedesktop.secrets
+      # component nm-applet talks to; the daemon runs as a user service.
+      services.gnome-keyring = {
+        enable = true;
+        components = ["secrets"];
       };
 
       # hyprshell (formerly hyprswitch): GTK4 recent-window switcher, the
@@ -473,6 +616,8 @@
                 function()
                   hl.exec_cmd("waybar")
                   hl.exec_cmd("mako")
+                  hl.exec_cmd("nm-applet --indicator")
+                  hl.exec_cmd("blueman-applet")
                 end
               '')
             ];

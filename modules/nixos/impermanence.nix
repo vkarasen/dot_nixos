@@ -15,6 +15,9 @@
         "/var/lib/nixos"
         # Bluetooth pairings (re-pairing devices each boot is annoying).
         "/var/lib/bluetooth"
+        # Wifi profiles added at runtime (nmtui/nmcli/nm-applet) so ad-hoc
+        # connections survive the erase-on-boot root.
+        "/etc/NetworkManager/system-connections"
       ];
       files = [
         # Stable machine-id so journalctl can follow logs across reboots.

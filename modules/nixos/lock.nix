@@ -16,6 +16,12 @@
     # hyprlock — enables the package and its PAM service (needed to unlock).
     programs.hyprlock.enable = true;
 
+    # Unlock the user's gnome-keyring with the login password, so nm-applet
+    # can read stored wifi PSKs without a separate keyring-unlock prompt.
+    # greetd's PAM stack just substacks/includes `login`, so the module must
+    # be wired here for it to run during greetd auth/session.
+    security.pam.services.login.enableGnomeKeyring = true;
+
     # Login screen: greetd + ReGreet (GTK). Replaces the TTY auto-start.
     services.displayManager.regreet = {
       enable = true;

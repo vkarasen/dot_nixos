@@ -2,10 +2,11 @@
 # PSK sourced from sops. The SSID is not secret; only the PSK is. Shared across
 # personal hosts (same home network); a host opts in via its modules list.
 {...}: {
-  flake.modules.nixos.wifi = {
-    config,
-    ...
-  }: {
+  flake.modules.nixos.wifi = {config, ...}: {
+    # The PSK is the only secret this aspect consumes — declare it here (not
+    # in nixos/sops.nix) so it decrypts only on hosts that opt into wifi.
+    sops.secrets.wifi-home-psk = {};
+
     networking.networkmanager.ensureProfiles = {
       profiles.home-wifi = {
         connection = {

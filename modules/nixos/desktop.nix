@@ -21,5 +21,10 @@
     # (keyboard LEDs) groups write access, so the Fn brightness keys work
     # without root. The user is in both groups (modules/nixos/base.nix).
     services.udev.packages = [pkgs.brightnessctl];
+
+    # blueman — the bluetooth manager GUI + its privileged dbus mechanism.
+    # Bluetooth hardware itself is enabled in modules/nixos/base.nix; this
+    # wires the desktop pairing UI (blueman-manager/applet) + polkit.
+    services.blueman.enable = true;
   };
 }

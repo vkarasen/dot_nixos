@@ -59,7 +59,31 @@
     security.rtkit.enable = true;
     services.pipewire = {
       enable = true;
-      wireplumber.enable = true;
+      wireplumber = {
+        enable = true;
+        # Auto-switch the default audio sink to a bluetooth output when one
+        # connects, falling back to the built-in on disconnect. WirePlumber
+        # 0.5 grants a persisted default a +30000 priority bonus
+        # (restore-default-targets) that beats bluetooth's stock 1010 and so
+        # suppresses auto-switch; raising bluez outputs above that bonus
+        # (max ALSA session ~1600 + 30000 ≈ 31600) restores it. ALSA/HDMI
+        # keep low priorities, so a plugged-in monitor never grabs default.
+        extraConfig."99-autoswitch-bluetooth" = {
+          "monitor.bluez.rules" = [
+            {
+              matches = [
+                {
+                  "node.name" = "~bluez_output.*";
+                }
+              ];
+              actions.update-props = {
+                "priority.session" = 40000;
+                "priority.driver" = 40000;
+              };
+            }
+          ];
+        };
+      };
       alsa.enable = true;
       pulse.enable = true;
       jack.enable = true;
@@ -82,10 +106,22 @@
     # is base (#1e1e2e), not the light surface used for "black" text in a real
     # terminal. Full truecolor needs a terminal emulator.
     console.colors = [
-      "1e1e2e" "f38ba8" "a6e3a1" "f9e2af"
-      "89b4fa" "f5c2e7" "94e2d5" "bac2de"
-      "585b70" "f38ba8" "a6e3a1" "f9e2af"
-      "89b4fa" "f5c2e7" "94e2d5" "a6adc8"
+      "1e1e2e"
+      "f38ba8"
+      "a6e3a1"
+      "f9e2af"
+      "89b4fa"
+      "f5c2e7"
+      "94e2d5"
+      "bac2de"
+      "585b70"
+      "f38ba8"
+      "a6e3a1"
+      "f9e2af"
+      "89b4fa"
+      "f5c2e7"
+      "94e2d5"
+      "a6adc8"
     ];
 
     services.openssh = {
