@@ -178,7 +178,10 @@
           `read`/`bash` verification bounded: after a few recon-type tool calls
           in one turn it warns, then blocks further recon tools until you
           delegate. A blocked recon call means you have drifted into doing a
-          subagent's work — hand the rest off, and the budget resets.
+          subagent's work — hand the rest off, and the budget resets. If
+          delegation is unavailable (e.g. the subagent runner is broken), the
+          session can escape the gate with `/recon-gate off` (re-enable with
+          `/recon-gate on`).
 
           ## Why delegate: the cost model
 
