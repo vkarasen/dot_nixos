@@ -9,16 +9,30 @@
     config = {
       xdg.dataFile."lf/pv.sh" = {
         executable = true;
-        enable = true;
-        text =
-          #bash
-          ''
-            #!/usr/bin/env bash
-            bat --color=always "$1"
-          '';
+        source = ./previewer;
+      };
+
+      xdg.dataFile."lf/clean" = {
+        executable = true;
+        source = ./clean;
       };
 
       xdg.configFile."lf/icons".source = ./icons;
+
+      # Full previewer stack, shipped unconditionally. The runtime probe in
+      # pv.sh decides what actually gets used per terminal (kitty-protocol
+      # rendering when the terminal supports it, chafa-symbol / text tier
+      # otherwise) and self-probes `command -v` for each tool. kitty here only
+      # provides `kitten icat`, which emits/reads escape codes on /dev/tty and
+      # needs no display — safe on headless / remote hosts too.
+      home.packages = with pkgs; [
+        chafa # unicode-symbol image fallback (works in any terminal)
+        poppler-utils # pdftoppm (PDF->image) and pdftotext (text fallback)
+        ffmpegthumbnailer # video thumbnails + audio album art
+        mediainfo # media metadata
+        libarchive # bsdtar for archive listings
+        kitty # kitten icat for kitty-protocol rendering + support detection
+      ];
 
       programs = {
         bash = {
@@ -59,6 +73,7 @@
             drawbox = true;
             icons = true;
             ignorecase = true;
+            cleaner = toString config.xdg.dataFile."lf/clean".source;
           };
 
           # taken from https://github.com/gokcehan/lf/wiki/Integrations

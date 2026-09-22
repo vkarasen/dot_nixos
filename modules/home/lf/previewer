@@ -1,0 +1,207 @@
+#!/usr/bin/env bash
+# lf previewer — two-tier dispatch.
+#
+# lf calls this with: $1 = path, $2 = width, $3 = height, $4 = x, $5 = y
+# (preview-pane geometry in cells).
+#
+# kitty tier — full-resolution inline images via the Kitty graphics protocol,
+#   written straight to the controlling terminal (/dev/tty) with explicit
+#   placement. Active when the terminal implements the protocol — detected
+#   live via `kitten icat --detect-support` (so it also works over SSH from a
+#   kitty-capable client), with an env-var fast path for local terminals.
+#
+# text tier — always-safe fallback that works in any terminal (plain SSH,
+#   alacritty, xterm, ...): bat for code/text, chafa unicode symbols for
+#   images, pdftotext for PDFs, mediainfo for media, archive listings.
+
+set -uo pipefail
+
+f=${1:-}
+w=${2:-80}
+h=${3:-24}
+x=${4:-0}
+y=${5:-0}
+
+[ -n "$f" ] || exit 0
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# Ghostty, kitty and wezterm all implement the Kitty graphics protocol.
+# This env-var check is a cheap fast path for LOCAL terminals; over SSH these
+# vars are not forwarded, so the live probe below takes over instead.
+kitty_term() {
+  case "${TERM_PROGRAM:-}" in
+    ghostty|kitty|WezTerm) return 0 ;;
+  esac
+  case "${TERM:-}" in
+    *kitty*|*ghostty*|wezterm) return 0 ;;
+  esac
+  return 1
+}
+
+# Live probe: ask the terminal directly whether it speaks the Kitty graphics
+# protocol. The query travels end-to-end, so this works over SSH from a
+# kitty-capable client too. The result is cached per session+tty because it is
+# stable for the life of a terminal session, while a non-kitty terminal never
+# replies — so we cap the wait with --detection-timeout and pay it only once.
+kitty_capable() {
+  local tty_dev sess cache_dir cache_file v
+  if kitty_term; then
+    return 0
+  fi
+  tty_dev=$(tty 2>/dev/null || echo notty)
+  tty_dev=${tty_dev#/dev/}
+  sess="${SSH_CONNECTION:-local}"
+  sess=${sess//[^a-zA-Z0-9]/_}
+  cache_dir="${XDG_RUNTIME_DIR:-/tmp}/lf"
+  cache_file="$cache_dir/kitty-detect.$sess.${tty_dev//\//_}"
+  if [ -f "$cache_file" ]; then
+    read -r v <"$cache_file" && [ "$v" = yes ]
+    return
+  fi
+  mkdir -p "$cache_dir"
+  if have kitten && kitten icat --detect-support --detection-timeout 1 \
+      >/dev/tty 2>/dev/null </dev/tty; then
+    printf 'yes\n' >"$cache_file"
+    return 0
+  fi
+  printf 'no\n' >"$cache_file"
+  return 1
+}
+
+kitty_ok() { kitty_capable && have kitten; }
+
+ext=${f##*.}
+ext=${ext,,}
+
+is_image() {
+  case "$ext" in
+    png|jpg|jpeg|gif|bmp|webp|ico|tif|tiff|svg|avif|jxl) return 0 ;;
+  esac
+  return 1
+}
+
+is_pdf() { [ "$ext" = "pdf" ]; }
+
+is_video() {
+  case "$ext" in
+    mp4|mkv|webm|mov|avi|flv|wmv|m4v|mpg|mpeg|ogv|ts|3gp) return 0 ;;
+  esac
+  return 1
+}
+
+is_audio() {
+  case "$ext" in
+    mp3|flac|ogg|oga|opus|m4a|aac|wav|wma|alac|ape|wv) return 0 ;;
+  esac
+  return 1
+}
+
+is_archive() {
+  case "$f" in
+    *.7z|*.zip|*.rar|*.tar|*.tgz|*.gz|*.bz2|*.xz|*.zst|*.jar|*.deb|*.rpm|*.cab|*.iso) return 0 ;;
+    *.tar.*) return 0 ;;
+  esac
+  return 1
+}
+
+# Full-pane image from an image file or a rendered page/thumbnail.
+# Returns 0 when output is plain text (lf may cache), 1 when it wrote a kitty
+# image (lf must not cache — lf wiki "With Kitty and Pistol" recipe), 2 when
+# no renderer is available.
+draw_image() { # $1 = image path
+  if kitty_ok; then
+    if kitten icat --stdin no --transfer-mode stream \
+        --place "${w}x${h}@${x}x${y}" "$1" >/dev/tty; then
+      return 1
+    fi
+    # fall through to unicode symbols if the kitty draw failed
+  fi
+  have chafa || return 2
+  chafa --format=symbols --size "${w}x${h}" --animate off --polite on "$1"
+}
+
+# Thumbnail/album-art + metadata, composed as plain text so it renders in any
+# terminal (lf may cache it).
+media_preview() { # $1 = thumbnail png (may be empty)
+  local thumb=$1 rows=$(( h > 4 ? h / 2 : h ))
+  if [ -n "$thumb" ] && [ -f "$thumb" ] && have chafa; then
+    chafa --format=symbols --size "${w}x${rows}" --animate off --polite on "$thumb"
+    printf '\n'
+  fi
+  if have mediainfo; then
+    mediainfo "$f" 2>/dev/null | head -n "$(( h - rows - 1 ))"
+  elif have file; then
+    file -b -- "$f"
+  fi
+}
+
+# --- dispatch ---------------------------------------------------------
+
+if [ -d "$f" ]; then
+  if have eza; then
+    eza --color=always -la --group-directories-first -- "$f" | head -n "$h"
+  else
+    ls -la --color=always -- "$f" | head -n "$h"
+  fi
+  exit 0
+fi
+
+if is_image; then
+  draw_image "$f"
+  rc=$?
+  if [ "$rc" -eq 2 ]; then
+    have file && file -b -- "$f"
+    exit 0
+  fi
+  exit "$rc"
+fi
+
+if is_pdf; then
+  if kitty_ok && have pdftoppm; then
+    tmpd=$(mktemp -d)
+    if pdftoppm -f 1 -l 1 -png -singlefile "$f" "$tmpd/page" >/dev/null 2>&1; then
+      draw_image "$tmpd/page.png"
+      rc=$?
+      rm -rf "$tmpd"
+      exit "$rc"
+    fi
+    rm -rf "$tmpd"
+  fi
+  if have pdftotext; then
+    pdftotext -l 20 -nopgbrk -q -- "$f" - 2>/dev/null | head -n "$h"
+  elif have file; then
+    file -b -- "$f"
+  fi
+  exit 0
+fi
+
+if is_video || is_audio; then
+  thumb=""
+  if have ffmpegthumbnailer; then
+    tmpd=$(mktemp -d)
+    if ffmpegthumbnailer -i "$f" -o "$tmpd/thumb.png" -s 512 >/dev/null 2>&1; then
+      thumb="$tmpd/thumb.png"
+    fi
+  fi
+  media_preview "$thumb"
+  [ -n "$thumb" ] && rm -rf "$tmpd"
+  exit 0
+fi
+
+if is_archive; then
+  if have bsdtar; then
+    bsdtar -tf -- "$f" 2>/dev/null | head -n "$h"
+  elif have file; then
+    file -b -- "$f"
+  fi
+  exit 0
+fi
+
+# Default: syntax-highlighted text.
+if have bat; then
+  bat --color=always --style=plain -- "$f" 2>/dev/null || cat -- "$f"
+else
+  cat -- "$f"
+fi
+exit 0

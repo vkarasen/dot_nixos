@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# lf cleaner — remove a Kitty-protocol image left by the previewer.
+kitten icat --clear --stdin no --transfer-mode stream >/dev/tty 2>/dev/null || true
