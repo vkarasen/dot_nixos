@@ -3,7 +3,7 @@
 # with catppuccin-nix (see modules/home/external.nix and the desktop aspect),
 # so Stylix targets the DE surface only.
 {...}: {
-  flake.modules.nixos.stylix = {pkgs, ...}: {
+  flake.modules.nixos.stylix = {pkgs, config, ...}: {
     stylix = {
       enable = true;
       # Opt-in per-target: Stylix themes only what we enable here; everything
@@ -34,6 +34,37 @@
     # declared by the Stylix home module that homeManagerIntegration.autoImport
     # injects into users.vkarasen.
     home-manager.users.vkarasen.stylix.targets = {
+      # The gtk target is home-manager-only: Stylix's system->home forwarding
+      # does not copy stylix.targets.gtk, so it must be enabled HERE (the
+      # system-level targets.gtk.enable above only supplies programs.dconf.enable).
+      gtk = {
+        enable = true;
+        # Stylix emits @define-color, which libadwaita >= 1.9 no longer reads
+        # (stylix #2472). Restate the key libadwaita colours as element-scoped
+        # CSS variables (still honoured), generated from the same palette so it
+        # stays in sync with the scheme. Accent = base0E (catppuccin mauve);
+        # swap to base0D (blue) / base0C (teal) to change it.
+        extraCss = let c = config.lib.stylix.colors; in ''
+          window {
+            --accent-color: #${c.base0E-hex};
+            --accent-bg-color: #${c.base0E-hex};
+            --accent-fg-color: #${c.base00-hex};
+            --window-bg-color: #${c.base00-hex};
+            --window-fg-color: #${c.base05-hex};
+            --view-bg-color: #${c.base00-hex};
+            --view-fg-color: #${c.base05-hex};
+            --headerbar-bg-color: #${c.base01-hex};
+            --headerbar-fg-color: #${c.base05-hex};
+            --sidebar-bg-color: #${c.base01-hex};
+            --card-bg-color: #${c.base01-hex};
+            --popover-bg-color: #${c.base01-hex};
+            --dialog-bg-color: #${c.base01-hex};
+            --destructive-color: #${c.base08-hex};
+            --success-color: #${c.base0B-hex};
+            --warning-color: #${c.base0A-hex};
+          }
+        '';
+      };
       hyprland.enable = true;
       waybar.enable = true;
       mako.enable = true;

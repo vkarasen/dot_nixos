@@ -18,6 +18,7 @@
     config.flake.modules.nixos.gnome-keyring
     config.flake.modules.nixos.steam
     config.flake.modules.nixos.stylix
+    config.flake.modules.nixos.monitoring
     config.flake.modules.nixos.lock
   ];
 
@@ -46,6 +47,16 @@
     # in the shared nixos.desktop aspect, since other hosts using desktop
     # will not be Intel-graphics based.
     hardware.graphics.extraPackages = [pkgs.intel-media-driver];
+    # intel_gpu_top reads the i915 PMU via perf events, which needs
+    # CAP_PERFMON for an unprivileged user. security.wrappers setcaps a
+    # copy onto PATH so it runs without sudo. (btop gets the same grant,
+    # generically, in modules/nixos/monitoring.nix.)
+    security.wrappers.intel_gpu_top = {
+      owner = "root";
+      group = "root";
+      capabilities = "cap_perfmon+ep";
+      source = "${pkgs.intel-gpu-tools}/bin/intel_gpu_top";
+    };
 
     # Hardware scan (kernel modules, cpu governor, firmware) is captured after
     # first boot with `nixos-generate-config --no-filesystems` and folded in
@@ -82,6 +93,12 @@
     config = {
       # The internal-panel DPMS toggle is usable as a command too.
       home.packages = [laptop-screen-toggle];
+      # Troy's Comet Lake iGPU (8086:9b41) has no AV1 hardware decode
+      # (vainfo lists no AV1 profiles), so YouTube AV1 streams fall back to
+      # CPU decode and spin the fans. Refuse AV1 in Firefox so YouTube
+      # serves VP9/H.264, which the iHD VA-API driver decodes in hardware.
+      # The VA-API prefs themselves live in modules/home/browser.nix.
+      programs.firefox.profiles."vkarasen".settings."media.av1.enabled" = false;
 
       # Fn9 = internal panel on/off. Hyprland `code:N` is the XKB keycode
       # (evdev + 8); Fn9 emits evdev 444 (KEY_NOTIFICATION_CENTER), so the bind

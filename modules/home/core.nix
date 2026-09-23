@@ -21,6 +21,7 @@
       config.flake.modules.homeManager.worktrunk
       config.flake.modules.homeManager.tmux
       config.flake.modules.homeManager.lf
+      config.flake.modules.homeManager.monitoring
       config.flake.modules.homeManager.neovim
       config.flake.modules.homeManager.obsidian
       config.flake.modules.homeManager.rclone

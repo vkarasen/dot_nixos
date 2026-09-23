@@ -21,8 +21,9 @@
       autoEnable = true;
       enable = true;
       # The DE surface is themed by Stylix; disable catppuccin's copy so the
-      # two don't fight over the same config files. (gtk stays: catppuccin only
-      # sets the Papirus *icon* theme there, which Stylix doesn't touch.)
+      # two don't fight over the same config files. (Nothing to disable for
+      # GTK: catppuccin/nix >= 25.05 dropped GTK theming from its home-manager
+      # module, so it no longer sets a Papirus icon theme here.)
       # Everything else (terminals, CLI/TUI tools) stays catppuccin's.
       hyprland.enable = false;
       waybar.enable = false;

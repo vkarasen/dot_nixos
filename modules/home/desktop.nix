@@ -183,6 +183,7 @@
         networkmanagerapplet # nm-applet: tray wifi applet for connecting to new networks
         audio-sink-status # waybar sound-routing widget status emitter
         audio-sink-select # click handler: fuzzel menu to switch the default output
+        mission-center # CPU/GPU/fan/system monitoring dashboard (GUI)
       ];
 
       # Flameshot's tray icon is disabled declaratively, so it applies on any
