@@ -1,6 +1,6 @@
 # Assemble homeConfigurations from the dendritic aspect store. The standalone
 # portable config opts into the universal `core` bundle (plus the class-
-# agnostic generic.* aspects) — the TUI-only variant, no desktop/kanshi/laptop.
+# agnostic generic.* aspects) — the TUI-only variant, no desktop/laptop.
 # Adding a new always-on home aspect: add it to modules/home/core.nix.
 {
   inputs,
@@ -24,7 +24,7 @@
         [
           # The standalone portable config is the TUI-only variant: it opts
           # into the universal `core` bundle and omits the machine-specific
-          # desktop/kanshi/laptop aspects, so my.gui.enable and my.laptop.enable
+          # desktop/laptop aspects, so my.gui.enable and my.laptop.enable
           # stay false (their defaults). No Stylix either — the per-user
           # stylix.targets live on the NixOS side (modules/nixos/stylix.nix),
           # so no home aspect references `stylix` and no Stylix home module

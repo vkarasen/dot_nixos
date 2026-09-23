@@ -905,7 +905,7 @@
 
             This machine has no display and is reached over SSH. Prefer TUI/CLI
             tooling (tmux, lf, neovim); do not launch GUI apps, take
-            screenshots, or rely on `xdg-open`. The desktop/kanshi aspects are
+            screenshots, or rely on `xdg-open`. The desktop aspect is
             disabled on this host.
           '';
       };

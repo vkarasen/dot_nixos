@@ -50,7 +50,6 @@ modules/
   home/                           # one aspect per file/dir: flake.modules.homeManager.<name>
     core.nix                      # universal baseline: imports every always-on aspect below
     desktop.nix                   # GUI (laptop or not): apps, waybar, hyprlock — sets my.gui.enable
-    kanshi.nix                    # GUI: monitor profiles
     laptop.nix                    # laptop idle/suspend: hypridle listeners — sets my.laptop.enable
     base.nix                      # identity, stateVersion, xdg, catppuccin
     external.nix                  # external input modules (nix-index, catppuccin, nixvim, sops) + ast-bro + registry

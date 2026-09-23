@@ -39,7 +39,7 @@ alone.
   which `nixos.*` aspects this host imports. "Is impermanence / Secure Boot /
   disko active on this host?" is answered by reading that file, never from
   memory.
-- Machine-specific home aspects (`desktop`, `kanshi`, `laptop`) are selected
+- Machine-specific home aspects (`desktop`, `laptop`) are selected
   per host in `modules/hosts/<name>.nix`'s `homeModules` list — a headless or
   foreign host simply does not list them. The universal `modules/home/core.nix`
   bundle imports everything else.
@@ -55,7 +55,7 @@ alone.
 4. **Verify** every option and package name with the `nix-search` skill — never
    guess (the repo `AGENTS.md` "Looking up options & packages" mandates this).
 5. **Check the discriminator / selection** — is the setting in a
-   machine-specific aspect (`desktop`, `kanshi`, `laptop`, selected per host),
+   machine-specific aspect (`desktop`, `laptop`, selected per host),
    or gated by an environment discriminator (`my.is_private`, `my.is_nixos`)?
 6. **Change**, then `git add -A && nix flake check` — never just `nix build`
    (pitfall #6: the two commands do not test the same thing).

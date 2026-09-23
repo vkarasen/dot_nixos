@@ -15,13 +15,14 @@
     config.flake.modules.nixos.wifi
     config.flake.modules.nixos.laptop
     config.flake.modules.nixos.desktop
+    config.flake.modules.nixos.gnome-keyring
     config.flake.modules.nixos.steam
     config.flake.modules.nixos.stylix
     config.flake.modules.nixos.lock
   ];
 
   # Home-manager aspects this host opts into. `core` is the universal tooling;
-  # desktop/kanshi are the GUI (a laptop or a desktop PC alike); laptop is the
+  # desktop is the GUI (a laptop or a desktop PC alike); laptop is the
   # suspend/idle/battery behaviour specific to a laptop. browser follows
   # desktop: it is gated on my.gui.enable, so it only activates on GUI hosts.
   # `troy` (defined below) carries this host's own hardware-specific home bits.
@@ -30,7 +31,6 @@
     config.flake.modules.homeManager.desktop
     config.flake.modules.homeManager.browser
     config.flake.modules.homeManager.steam
-    config.flake.modules.homeManager.kanshi
     config.flake.modules.homeManager.laptop
     config.flake.modules.homeManager.troy
   ];

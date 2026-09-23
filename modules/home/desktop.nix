@@ -175,6 +175,7 @@
       my.gui.enable = true;
       home.packages = with pkgs; [
         grim # screenshots
+        nwg-displays # monitor layout GUI — writes monitors.lua, loaded via require("monitors") below
         brightnessctl # screen/keyboard backlight for the Fn keys
         hypr-cheatsheet # SUPER+/ keybinding cheatsheet
         screenshot # Shift+PrtSc = fullscreen, Alt+PrtSc = window (region is Flameshot)
@@ -195,6 +196,14 @@
         '';
         force = true;
       };
+
+      # Seed ~/.config/hypr/monitors.lua as a real file so require("monitors")
+      # never hits the fatal missing-module path (Hyprland kills config execution
+      # on a failed require). nwg-displays overwrites this file with hl.monitor(...)
+      # rules on its next "Apply".
+      home.activation.hyprlandMonitorsLua = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        touch "$HOME/.config/hypr/monitors.lua"
+      '';
 
       # Stylix owns the per-user DE chrome; its targets for these apps are
       # enabled on the NixOS side (modules/nixos/stylix.nix), not here — this
@@ -277,6 +286,12 @@
 
         waybar = {
           enable = true;
+          # Run waybar as a systemd user service (Restart=on-failure) instead
+          # of a bare exec_cmd from the Hyprland start hook, so the battery
+          # module crash (upstream #4901: uncaught exception in
+          # refreshBatteries when UCSI/Thunderbolt power_supply devices are
+          # removed) self-heals instead of taking the bar down until logout.
+          systemd.enable = true;
           settings = {
             mainBar = {
               layer = "top";
@@ -350,6 +365,10 @@
               };
 
               battery = {
+                # Pin to the ThinkPad's real battery so waybar never walks the
+                # UCSI/Thunderbolt power_supply entries that poison
+                # refreshBatteries.
+                "bat" = "BAT0";
                 format = "{icon} {capacity}%";
                 format-icons = [" " " " " " " " " "];
                 states = {
@@ -546,9 +565,12 @@
         enable = true;
         # stateVersion 26.05 defaults configType to "lua"; the settings below
         # are written against the Lua (hl.*) API.
-        # NOTE: monitor layout is intentionally left to auto-detection for the
-        # first slice. Clamshell handling (disable eDP when the lid is closed
-        # and only the Thunderbolt LG is connected) is a follow-up.
+        # NOTE: monitor layout defaults to auto-detection, but nwg-displays
+        # writes ~/.config/hypr/monitors.lua (per-machine, survives reboot,
+        # NOT in the repo), which this config `require`s below. Automatic
+        # clamshell/dock profile switching remains a possible future shikane
+        # follow-up.
+        extraConfig = ''require("monitors")'';
         settings = {
           # Lua locals — rendered as `local name = value`, referenced below.
           mod = {_var = "SUPER";};
@@ -614,7 +636,16 @@
               "hyprland.start"
               (lib.generators.mkLuaInline ''
                 function()
-                  hl.exec_cmd("waybar")
+                  -- The compositor is up now, but graphical-session.target fired
+                  -- ~6s earlier (manual `exec start-hyprland`), so hyprshell and
+                  -- waybar may have started against a stale/missing socket. Push
+                  -- the live session signature into the systemd user manager and
+                  -- restart both against the live compositor. `restart` also
+                  -- clears any StartLimit state from those early failed attempts;
+                  -- Restart=on-failure then supervises future crashes.
+                  hl.exec_cmd("systemctl --user import-environment HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP")
+                  hl.exec_cmd("systemctl --user restart hyprshell")
+                  hl.exec_cmd("systemctl --user restart waybar")
                   hl.exec_cmd("mako")
                   hl.exec_cmd("nm-applet --indicator")
                   hl.exec_cmd("blueman-applet")

@@ -4,7 +4,7 @@
 # its own right: it just imports the aspects wanted on every machine, so a host
 # (or the standalone portable config) lists `core` once instead of ~23 aspects.
 #
-# Machine-specific capabilities (desktop, kanshi, laptop) are NOT here — those
+# Machine-specific capabilities (desktop, laptop) are NOT here — those
 # are selected explicitly per host. Adding a new always-on home aspect = add it
 # to the imports below: one edit, no per-host list to touch.
 {config, ...}: {
