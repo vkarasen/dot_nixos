@@ -78,6 +78,12 @@
         {
           compaction = "auto";
           compactionEngine = "blackhole";
+          # Pin auto-compaction to a fixed token threshold instead of the
+          # built-in "default" curve, which on a 1M-context session model
+          # (deepseek-v4-pro) fires at floor(1M × 0.40) = 400k tokens — far
+          # too late in practice. 200k is well under the window while still
+          # giving a long session real headroom before compaction.
+          compactAfterTokens = 200000;
           tailBehavior = "minimal";
           midRunCompaction = "off";
           memory = true;
