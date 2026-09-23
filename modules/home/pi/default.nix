@@ -275,15 +275,7 @@
             "npm:pi-lens"
             "npm:@latentminds/pi-quotas"
             "npm:pi-blackhole"
-            # Pinned: 0.70.1 imports `createInitialSystemMessage` and
-            # `toToolDeclaration` from @earendil-works/pi-ai, neither of
-            # which the pi-ai bundled with the current pi core (0.85.1)
-            # exports — the async subagent runner dies at startup with a
-            # SyntaxError in src/watchdog/review.js. 0.70.0 is the last
-            # release whose imports all resolve. Re-test a subagent spawn
-            # before unpinning (when core pi-ai re-exports those symbols
-            # or a compatible pi-subagents release lands).
-            "npm:pi-subagents@0.70.0"
+            "npm:pi-subagents"
             # Pinned: 3 releases in its first week and a single author. Small,
             # dependency-free and deterministic (no model calls), so it is
             # cheap to audit — but not yet a package to track latest on.
