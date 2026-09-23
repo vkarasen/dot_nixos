@@ -8,16 +8,27 @@
  * read/bash/web-fetch it performs in-turn adds a round-trip that a cheap
  * read-only scout could absorb instead. The orchestrator's built-in surface
  * is already just `read` + `bash` (defaultTools), so this gate is the
- * backstop that keeps even those verification calls bounded: it counts
- * recon-shaped tool calls per turn and escalates mechanically in two stages:
+ * backstop that keeps even those verification calls bounded: it counts recon
+ * turns (model-request iterations that performed at least one recon call)
+ * and escalates mechanically in two stages:
  *
- *   1. NUDGE (soft): once reconCount crosses NUDGE_THRESHOLD, append a
+ *   1. NUDGE (soft): once reconTurns crosses NUDGE_THRESHOLD, append a
  *      directive to the tail of the outgoing request telling the model to
- *      stop and delegate. Repeated every NUDGE_INTERVAL calls.
- *   2. GATE (hard): once reconCount reaches GATE_THRESHOLD, block further
+ *      stop and delegate.
+ *   2. GATE (hard): once reconTurns reaches GATE_THRESHOLD, block further
  *      recon-shaped tool calls at the `tool_call` hook (returning
  *      { block: true, reason }); the reason becomes an error the model sees,
  *      so the only way forward is to delegate or finalize.
+ *
+ * Counting TURNS instead of individual tool calls makes the gate graceful by
+ * construction. A "turn" is one model-request iteration — the batch of tool
+ * calls the model issued together, before it could see any of their results
+ * or any warning about them. The counter is advanced only in the `context`
+ * hook, i.e. at the boundary between iterations, never during a turn. The
+ * gate therefore decides once per turn and stays constant for the whole
+ * batch: a batch issued before any warning always runs to completion, and
+ * the warning is always injected at a boundary before the gate can block the
+ * next batch.
  *
  * The `subagent` tool is NOT recon-shaped, so the forced delegation always
  * goes through. A successful `subagent` call resets the budget, which is what
@@ -96,11 +107,16 @@ const RECON_TOOLS: readonly string[] = [
   "ast_grep_outline",
 ];
 
-// Hardcoded thresholds for the strict experiment. Soften here (raise
-// GATE_THRESHOLD, or delete the `tool_call` handler to drop the gate) if this
-// proves too aggressive in practice.
-const NUDGE_THRESHOLD = 3; // soft warning once this many recon calls deep
-const NUDGE_INTERVAL = 3; // re-warn every N more recon calls
+// Thresholds are in RECON TURNS, not tool calls. A "turn" is one model-request
+// iteration — the batch of tool calls the model issued together — which is the
+// natural unit of "the orchestrator decided not to delegate." Counting turns
+// means the counter only advances at a turn boundary (the `context` hook), so
+// the hard gate can never trip mid-batch on calls the model issued before it
+// could have seen a warning.
+//
+// Soften here (raise GATE_THRESHOLD, or delete the `tool_call` handler to drop
+// the gate) if this proves too aggressive in practice.
+const NUDGE_THRESHOLD = 2; // warn once this many recon turns deep
 const GATE_THRESHOLD = 3; // hard-block recon tools at this many
 
 type GateMode = "on" | "block-all" | "off";
@@ -109,8 +125,8 @@ export default function (pi: ExtensionAPI) {
   // Per-session state. `/reload`, `/new` and session switches re-run
   // session_start, which resets the counter (same pattern as
   // worktrunk-deferred.ts).
-  let reconCount = 0;
-  let nextNudgeAt = NUDGE_THRESHOLD;
+  let reconTurns = 0; // model-request iterations this user-turn that performed recon
+  let turnHadRecon = false; // whether the iteration in progress performed recon
 
   // Per-session gate mode, mutated by the /recon-gate and /recon-gate-disable
   // commands. Resets to "on" on session_start (a new session starts with the
@@ -118,8 +134,8 @@ export default function (pi: ExtensionAPI) {
   let gateMode: GateMode = "on";
 
   const reset = () => {
-    reconCount = 0;
-    nextNudgeAt = NUDGE_THRESHOLD;
+    reconTurns = 0;
+    turnHadRecon = false;
   };
 
   pi.on("session_start", () => {
@@ -142,7 +158,7 @@ export default function (pi: ExtensionAPI) {
     if (ctx.mode !== "tui") return;
     if (gateMode === "off") return;
     if (!RECON_TOOLS.includes(event.toolName)) return;
-    if (gateMode === "block-all" || reconCount >= GATE_THRESHOLD) {
+    if (gateMode === "block-all" || reconTurns >= GATE_THRESHOLD) {
       return {
         block: true,
         reason:
@@ -151,10 +167,11 @@ export default function (pi: ExtensionAPI) {
               "investigation to a subagent (scout/researcher/investigator) or " +
               "finalize. Run /recon-gate off to disable the gate, /recon-gate " +
               "on to restore the default nudge+gate."
-            : `recon budget exhausted: ${reconCount} recon-type tool calls this turn ` +
-              "with no delegation. Hand the remaining investigation to a subagent " +
-              "(scout/researcher/investigator) with a clear brief, or finalize now. " +
-              "A successful delegation resets this budget. (User command: " +
+            : `recon budget exhausted: ${reconTurns} recon ` +
+              `${reconTurns === 1 ? "turn" : "turns"} this request with no ` +
+              "delegation. Hand the remaining investigation to a subagent " +
+              "(scout/researcher/investigator) with a clear brief, or finalize " +
+              "now. A successful delegation resets this budget. (User command: " +
               "/recon-gate off disables this gate for the session, /recon-gate " +
               "on restores it.)",
       };
@@ -171,10 +188,10 @@ export default function (pi: ExtensionAPI) {
       return;
     }
     // Errored (including gate-blocked) recon calls did not gather anything;
-    // do not let them advance the counter toward the gate.
+    // do not let them taint the turn toward the gate.
     if (event.isError) return;
     if (RECON_TOOLS.includes(event.toolName)) {
-      reconCount += 1;
+      turnHadRecon = true;
     }
   });
 
@@ -184,25 +201,39 @@ export default function (pi: ExtensionAPI) {
   pi.on("context", (event, ctx) => {
     if (ctx.mode !== "tui") return;
     if (gateMode !== "on") return;
-    if (reconCount < nextNudgeAt) return;
+
+    // Close out the iteration that just finished: if it performed recon,
+    // consume one unit of budget. This runs once per model request, so the
+    // counter stays constant for the whole of the NEXT iteration — the hard
+    // gate can therefore never trip mid-batch on calls the model issued
+    // before it could have seen a warning.
+    if (turnHadRecon) {
+      reconTurns += 1;
+      turnHadRecon = false;
+    }
+
+    if (reconTurns < NUDGE_THRESHOLD) return;
+
+    const remaining = GATE_THRESHOLD - reconTurns;
+    const text =
+      remaining > 0
+        ? `${reconTurns} recon ${reconTurns === 1 ? "turn" : "turns"} this ` +
+          "request with no delegation " +
+          `(${remaining} remaining before recon is blocked). Stop and hand ` +
+          "the remaining investigation to a subagent " +
+          "(scout/researcher/investigator) with a clear problem statement, " +
+          "or finalize within that budget."
+        : `${reconTurns} recon ${reconTurns === 1 ? "turn" : "turns"} this ` +
+          "request with no delegation — recon budget exhausted. Hand the " +
+          "remaining investigation to a subagent (scout/researcher/investigator), " +
+          "or finalize now; further recon calls will be blocked.";
 
     const nudge = {
       role: "user" as const,
-      content: [
-        {
-          type: "text" as const,
-          text:
-            `${reconCount} recon-type tool calls this turn with no delegation. ` +
-            "Stop and hand remaining investigation to a subagent" +
-            " (scout/researcher/investigator) with a clear problem statement" +
-            " unless you can name the final answer in <=2 more calls." +
-            ` (recon calls will be blocked at ${GATE_THRESHOLD}.)`,
-        },
-      ],
+      content: [{ type: "text" as const, text }],
       timestamp: Date.now(),
     };
 
-    nextNudgeAt = reconCount + NUDGE_INTERVAL;
     return { messages: [...event.messages, nudge] };
   });
 
