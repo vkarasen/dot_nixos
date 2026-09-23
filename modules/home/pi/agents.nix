@@ -28,7 +28,7 @@
     # ENTIRE definition, so a consumer flake that defines a single key
     # discards every sibling. Measured with evalModules: with a whole-attrset
     # default, a corporate `modelTiers.orchestrator = {...}` silently dropped
-    # worker/simple/vision/executive. For modelTiers and capabilityBundles
+    # worker/executive. For modelTiers and capabilityBundles
     # that fails loudly (_agents.nix throws `unknown tier`/`unknown bundle`),
     # but for `agents` it is SILENT — the other nine agents simply stop being
     # emitted, and the generated roster table shrinks to match, so the result
@@ -86,29 +86,16 @@
         provider = "deepseek";
         thinking = "high";
       };
+      # The workhorse tier: deepseek-flash at high thinking, for every cheap
+      # agent (scout, worker, media, nix-scout, researcher, investigator,
+      # workspace, twin, vcs). flash is text+vision (the catalog lists
+      # images: yes), so the old separate `vision` tier and its
+      # deepseek-v4-flash-vision-exp model are gone — that model left the
+      # store and its vision capability folded into deepseek-flash.
       worker = {
-        model = "deepseek-v4-pro";
+        model = "deepseek-flash";
         provider = "deepseek";
-        thinking = "medium";
-      };
-      simple = {
-        model = "deepseek-v4-flash";
-        provider = "deepseek";
-        thinking = "low";
-      };
-      # Measured A/B on a synthetic ground-truth image (shapes + verbatim
-      # text): deepseek-v4-flash-vision-exp and claude-haiku-4-5 were both
-      # 100% correct, at $0.0019 vs $0.0228 — 12x. The gap is almost entirely
-      # Anthropic cacheWrite: haiku billed 14,457 cacheWrite tokens to boot a
-      # prompt a one-shot child never re-reads; deepseek bills none. Prompt
-      # caching only pays back across many turns, and these children are
-      # short-lived by design. Fall back to anthropic/claude-haiku-4-5 if
-      # `-exp` (experimental upstream) starts refusing images or leaves the
-      # model store.
-      vision = {
-        model = "deepseek-v4-flash-vision-exp";
-        provider = "deepseek";
-        thinking = null;
+        thinking = "high";
       };
     };
 
@@ -245,7 +232,7 @@
     my.pi.agents = perField {
       scout = {
         description = "Fast codebase recon that returns compressed context for handoff";
-        tier = "simple";
+        tier = "worker";
         bundles = [];
         tools = readOnly;
         toolBudget = {hard = 40;};
@@ -256,9 +243,7 @@
           key symbols, data flow, likely-change files, constraints, risks.
         '';
       };
-      # Worker tier rather than simple: the `nix` bundle hands this agent a
-      # shell, and flash-at-low-thinking is the wrong model to hold a prose
-      # constraint about how to use one. toolTimeoutMs bounds a single hung
+      # toolTimeoutMs bounds a single hung
       # bash call (a first-run nix-search-tv index build, a command waiting on
       # input) in a way a read call cannot; timeoutMs is the whole-run window
       # — an hour, so a blocked supervisor ask is not truncated by the run
@@ -316,7 +301,7 @@
       };
       media = {
         description = "Vision/media analyst for video and documents";
-        tier = "vision";
+        tier = "worker";
         bundles = ["media"];
         tools = ["read"];
         toolBudget = {hard = 40;};
@@ -364,10 +349,10 @@
           when a stop condition is unclear.
         '';
       };
-      # Flash 'simple' tier — NOT the pro-medium 'worker' tier.
+      # `worker` tier (flash, high thinking) — the default workhorse.
       worker = {
         description = "Cheap flash worker — the default for every write/edit task. Spawn it first whenever the change is a closed set (a scout can enumerate every affected file/line) or there is a mechanical gate (a build/test/lint command that must pass). It executes the brief exactly and does not sweep adjacent files, so the brief must name every file. It is ~15x cheaper than the executor — three worker attempts still cost less than one executor run. Prefer three worker attempts over one executor run, always.";
-        tier = "simple";
+        tier = "worker";
         bundles = [];
         tools = ["read" "grep" "find" "ls" "bash" "write" "edit"];
         permission = {

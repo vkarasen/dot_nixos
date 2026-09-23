@@ -27,7 +27,7 @@
       # Scaled for 1M context windows.
       #
       # The permanent OM-worker model is picked from the first available
-      # provider (copilot haiku → deepseek v4-flash → anthropic haiku), with
+      # provider (copilot haiku → deepseek flash → anthropic haiku), with
       # the reflector overridden to the strongest available model (deepseek
       # pro → anthropic sonnet). When none is available no `model` is set, so
       # workers fall back to the session model via sessionFallback. Set
@@ -47,7 +47,7 @@
         else if hasDeepseek
         then {
           provider = "deepseek";
-          id = "deepseek-v4-flash";
+          id = "deepseek-flash";
           thinking = "low";
         }
         else if hasAnthropic
@@ -296,7 +296,7 @@
               # Frequent monitoring is the point here. Thinking is left off
               # (omitted = off upstream). Raise to a stronger model if the
               # scope-drift calls turn out to be poor.
-              main.model = "deepseek/deepseek-v4-flash";
+              main.model = "deepseek/deepseek-flash";
               # Reviews work against a scope artifact built from real user
               # prompts, flagging work that no longer serves the request.
               scope.enabled = true;
