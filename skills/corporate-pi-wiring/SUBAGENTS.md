@@ -40,7 +40,7 @@ Two more options you may want, declared in the same place and defaulted in
 
 ### What ships in the base flake
 
-Tiers: `orchestrator`, `executive`, `worker`, `simple`, `vision`.
+Tiers: `orchestrator`, `executive`, `worker`.
 
 Bundles: `lens`, `nix`, `web`, `vault`, `workspace`, `media`, `vcs`.
 
@@ -48,13 +48,13 @@ Agents (verify with the command in §6):
 
 | agent | tier | bundles |
 |---|---|---|
-| `scout` | simple | |
+| `scout` | worker | |
 | `nix-scout` | worker | nix |
 | `researcher` | worker | web |
 | `reviewer` | executive | lens |
-| `media` | vision | media |
+| `media` | worker | media |
 | `investigator` | worker | lens |
-| `worker` | simple | |
+| `worker` | worker | |
 | `executor` | executive | lens |
 | `workspace` | worker | workspace |
 | `twin` | worker | vault |
@@ -121,8 +121,8 @@ Two of those columns decide tier assignment:
 
 - **`thinking`** — a tier with a non-null `thinking` needs a model where this
   is `yes`. `orchestrator`, `executive` and `worker` all set one.
-- **`images`** — the `vision` tier requires `yes` here, or the `media` agent
-  cannot do its job.
+- **`images`** — the `worker` tier requires a model with `images: yes` here
+  (the `media` agent rides `worker`), or `media` cannot do its job.
 
 ### 2b. Repoint the tiers
 
@@ -144,9 +144,7 @@ my.pi.modelTiers = {
     thinking = "high";
   };
   executive = { model = "<…>"; provider = "github-copilot"; thinking = "high"; };
-  worker    = { model = "<…>"; provider = "github-copilot"; thinking = "medium"; };
-  simple    = { model = "<…>"; provider = "github-copilot"; thinking = "low"; };
-  vision    = { model = "<…>"; provider = "github-copilot"; thinking = null; };
+  worker    = { model = "<…>"; provider = "github-copilot"; thinking = "high"; };
 };
 ```
 

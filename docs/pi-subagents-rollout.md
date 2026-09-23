@@ -124,7 +124,7 @@ the orchestrator never took on.
 **Second correction: Anthropic children pay a boot tax.** A one-shot `media`
 child on `claude-haiku-4-5` billed 14,457 **cacheWrite** tokens — $0.018 of a
 $0.023 run — to write a prompt cache it never re-read. Deepseek bills zero
-cacheWrite. A/B on an identical vision task: `deepseek-v4-flash-vision-exp`
+cacheWrite. A/B on an identical vision task: `deepseek-flash`
 and `claude-haiku-4-5` were both 100% accurate at $0.0019 vs $0.0228. Prefer
 deepseek for short-lived children; Anthropic caching only pays back across
 many turns.
@@ -227,9 +227,8 @@ prevents misfires. Trimming attacks the routing signal. The only real lever is
   `nix-search` skill to a bash-less agent, so the skill was pure prompt tax for
   a capability that could not be exercised — and an invitation to try anyway.
   A bundle must carry every tool its skills require. Where that tool is `bash`,
-  the bundle also carries a `policy` block scoping what the shell is for, and
-  the agent moves up a tier: flash-at-low-thinking is the wrong model to hold a
-  prose constraint about shell use. Both compensations are advisory — prose
+  the bundle also carries a `policy` block scoping what the shell is for.
+  Both compensations are advisory — prose
   does not enforce — so this is a deliberate, priced trade, not a safe one.
   The structural exit is to stop needing a shell: wrap `nix-search-tv` as a
   native pi tool or MCP server, then the bundle drops `bash` and its policy.
@@ -254,7 +253,7 @@ prevents misfires. Trimming attacks the routing signal. The only real lever is
 ### Model tiering
 
 Private: Opus orchestrator · Sonnet / Deepseek-pro executive · Deepseek-flash
-simple · Haiku where vision is involved. Corporate: `github-copilot` only.
+worker. Corporate: `github-copilot` only.
 Orchestrator tier must itself be configurable — not every session needs Opus.
 
 **Superseded 2026-09-01.** `agentOverridesByProvider` is not used at all. Tiers
@@ -273,7 +272,7 @@ once rather than in two shapes that can silently disagree.
 **Option defaults are applied per FIELD, not per attrset.** `lib.mkDefault` on
 a whole attrset lowers the priority of the *entire* definition, so a consumer
 flake defining one key discards every sibling. Measured with `evalModules`: a
-corporate `modelTiers.orchestrator = {…}` dropped worker/simple/vision/
+corporate `modelTiers.orchestrator = {…}` dropped worker/
 executive. For tiers and bundles that fails loudly (`_agents.nix` throws
 `unknown tier` / `unknown bundle`), but for `my.pi.agents` it is **silent** —
 the base roster simply stops being written, and the generated roster table in
@@ -697,11 +696,11 @@ obsolete (`label` is workflow lane metadata, not a launch param — a
 single-child launch cannot be named). `toolDescriptionMode: compact` remains
 tabled pending a re-measure of the orchestrator prompt.
 
-**4 — read-mostly agents:** `scout` (cheap/code), `nix-scout` (cheap/nix),
+**4 — read-mostly agents:** `scout` (worker/code), `nix-scout` (worker/nix),
 `researcher` (worker/web), `reviewer` (executive/code, read-only — note this
 deliberately *shadows* the builtin `reviewer`, which does "small fixes"; user
 agents win name collisions), `media`
-(vision/media). All `readOnly`, all with
+(worker/media). All `readOnly`, all with
 `toolBudget` hard caps. Measure a real scout run before narrowing this repo's
 context — do not guess the narrowing up front.
 
