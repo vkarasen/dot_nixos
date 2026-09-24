@@ -1,6 +1,6 @@
 # Dendritic aspect: browser (home-manager class) — Firefox, configured
 # declaratively with pinned add-ons (uBlock Origin + SponsorBlock) and Intel
-# VA-API video-decode prefs. Theming is owned by Stylix (modules/nixos/stylix.nix),
+# VA-API video-decode prefs. Theming is owned by Stylix (modules/home/stylix.nix),
 # not here.
 #
 # GUI-only: the whole block is gated on `my.gui.enable`, which the desktop
@@ -48,7 +48,7 @@
 
           # firefox-gnome-theme optional contrast prefs (plain prefs, read by
           # the theme CSS Stylix's firefoxGnomeTheme target already imports —
-          # see modules/nixos/stylix.nix).
+          # see modules/home/stylix.nix).
           "gnomeTheme.activeTabContrast" = true;
           # Deliberately false: on Hyprland (no client-side decorations) this
           # forces Firefox's own window-close button into the tab strip,

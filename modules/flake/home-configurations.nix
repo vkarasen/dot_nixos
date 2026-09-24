@@ -25,10 +25,10 @@
           # The standalone portable config is the TUI-only variant: it opts
           # into the universal `core` bundle and omits the machine-specific
           # desktop/laptop aspects, so my.gui.enable and my.laptop.enable
-          # stay false (their defaults). No Stylix either — the per-user
-          # stylix.targets live on the NixOS side (modules/nixos/stylix.nix),
-          # so no home aspect references `stylix` and no Stylix home module
-          # needs importing here.
+          # stay false (their defaults). No Stylix either — the home-side
+          # Stylix config is its own aspect (modules/home/stylix.nix) that the
+          # desktop bundle imports, and this config never imports desktop, so
+          # no Stylix home module is pulled in.
           config.flake.modules.homeManager.core
         ]
         ++ builtins.attrValues (config.flake.modules.generic or {})

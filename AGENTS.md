@@ -332,6 +332,17 @@ with the home aspects nested under `users.vkarasen`. Keep shared logic in
    **Always run `nix flake check`, not just `nix build`, before calling a
    change done.**
 
+7. **Home config belongs in home aspects, never on the NixOS side.** Per-user
+   config goes in `modules/home/*.nix` (or `flake.modules.homeManager.*`), not
+   `home-manager.users.vkarasen.*` in a `nixos/` aspect. The nested config in
+   `nixosConfigurations` would still see it, but the generic
+   `homeConfigurations.<user>@<host>` wiring in
+   `modules/flake/nixos-configurations.nix` only sees `host.homeModules` —
+   anything set on the `home-manager.users.*` path is silently missing from
+   `nh home switch`. Same reason home config must live in a home aspect
+   reachable from `host.homeModules` — either listed there directly or pulled
+   in transitively by a bundle that is (e.g. `desktop` imports `stylix`).
+
 ## Google Drive bootstrap boundary
 
 This repo is the only place where the private Google Drive mount is wired

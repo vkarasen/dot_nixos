@@ -2,8 +2,10 @@
 # The user-facing apps (ghostty, waybar, mako, fuzzel, clipboard/screenshot
 # tools) and their config live in the home-manager aspect
 # modules/home/desktop.nix.
-{...}: {
+{config, ...}: {
   flake.modules.nixos.desktop = {pkgs, ...}: {
+    imports = [config.flake.modules.nixos.stylix];
+
     # Hyprland, the dynamic tiling Wayland compositor. Enabling it also wires
     # up xdg-desktop-portal-hyprland (portalPackage default) for screen
     # sharing. Launch it from a TTY with `start-hyprland` (the module's

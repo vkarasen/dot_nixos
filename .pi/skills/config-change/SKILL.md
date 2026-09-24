@@ -70,7 +70,11 @@ trust this summary.
 
 - **Apply changes with `nixos-rebuild switch --flake .#<host>`**; identify the
   current host via `readlink -f /run/current-system`. Services are systemd
-  units (`systemctl` / `journalctl`).
+  units (`systemctl` / `journalctl`). A change confined to home-manager
+  (anything under `modules/home/`) applies with `nh home switch .`, which
+  resolves `homeConfigurations.<user>@<host>` (falling back to
+  `homeConfigurations.<user>` on unknown hosts), skips the system rebuild, and
+  needs no root.
 - **Impermanence is live** (`modules/nixos/impermanence.nix`): root is
   erase-on-boot; the other top-level subvolumes (`/home`, `/nix`, `/persist`,
   `/var/log`, `/swap`, `/games`) survive (see `modules/nixos/disks.nix`).

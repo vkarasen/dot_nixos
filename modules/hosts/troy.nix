@@ -17,16 +17,17 @@
     config.flake.modules.nixos.desktop
     config.flake.modules.nixos.gnome-keyring
     config.flake.modules.nixos.steam
-    config.flake.modules.nixos.stylix
     config.flake.modules.nixos.monitoring
     config.flake.modules.nixos.lock
   ];
 
   # Home-manager aspects this host opts into. `core` is the universal tooling;
-  # desktop is the GUI (a laptop or a desktop PC alike); laptop is the
-  # suspend/idle/battery behaviour specific to a laptop. browser follows
-  # desktop: it is gated on my.gui.enable, so it only activates on GUI hosts.
-  # `troy` (defined below) carries this host's own hardware-specific home bits.
+  # desktop is the GUI (a laptop or a desktop PC alike) — it also bundles the
+  # stylix home aspect (see modules/home/desktop.nix), so stylix is deliberately
+  # not listed here; laptop is the suspend/idle/battery behaviour specific to a
+  # laptop. browser follows desktop: it is gated on my.gui.enable, so it only
+  # activates on GUI hosts. `troy` (defined below) carries this host's own
+  # hardware-specific home bits.
   flake.nixosHosts.troy.homeModules = [
     config.flake.modules.homeManager.core
     config.flake.modules.homeManager.desktop

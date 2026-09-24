@@ -1,7 +1,9 @@
 # Dendritic aspect: desktop (home-manager class) — Hyprland config + the
 # Wayland desktop apps (ghostty, waybar, mako, fuzzel) + clipboard/screenshot
 # tools. The compositor itself is enabled in modules/nixos/desktop.nix.
-{...}: {
+{config, ...}: let
+  stylixAspect = config.flake.modules.homeManager.stylix;
+in {
   flake.modules.homeManager.desktop = {
     pkgs,
     lib,
@@ -167,6 +169,8 @@
       '';
     };
   in {
+    imports = [stylixAspect];
+
     # Importing this aspect IS the GUI statement: derive the flag that
     # consumers (e.g. the pi GUI-vs-TUI context) read. NOTE: an aspect that
     # defines a my.* option must never be consumed by a standalone wrapped
@@ -206,11 +210,12 @@
         touch "$HOME/.config/hypr/monitors.lua"
       '';
 
-      # Stylix owns the per-user DE chrome; its targets for these apps are
-      # enabled on the NixOS side (modules/nixos/stylix.nix), not here — this
-      # shared home aspect must never reference `stylix`, so the standalone
-      # TUI-only config stays free of the Stylix home module. The
-      # terminal/CLI layer (ghostty, bat, nvim, …) is left to catppuccin-nix.
+      # Stylix owns the per-user DE chrome; its targets for these apps live in
+      # modules/home/stylix.nix, which THIS aspect imports (bundled above), so
+      # importing desktop is what brings the Stylix home module to a host. That
+      # aspect is gated on my.gui.enable, so the standalone TUI-only config
+      # (which never imports desktop) stays Stylix-free. The terminal/CLI layer
+      # (ghostty, bat, nvim, …) is left to catppuccin-nix.
 
       # Lock screen structure (Stylix's hyprlock target supplies the
       # background image + input-field colours).
