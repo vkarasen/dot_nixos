@@ -153,9 +153,13 @@ export default function (pi: ExtensionAPI) {
       return entry.open_workspace_id;
     }
 
-    const open = await pi.exec("herdr", ["worktree", "open", "--path", worktreePath], {
-      timeout: 5000,
-    });
+    const open = await pi.exec(
+      "herdr",
+      ["worktree", "open", "--cwd", repoRoot, "--path", worktreePath],
+      {
+        timeout: 5000,
+      },
+    );
     if (open.code !== 0) {
       throw new Error(
         `herdr worktree open failed: ${open.stderr || open.stdout || "no output"}`,
