@@ -431,6 +431,22 @@
         "type": "github"
       }
     },
+    "hyprmoncfg": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1790380408,
+        "narHash": "sha256-8CngoZQXTx9/yDSHE2nfrlyfWuVKvWE4rV998ptHO3c=",
+        "owner": "crmne",
+        "repo": "hyprmoncfg",
+        "rev": "51f8c0d8bc314cfbd3b38448a5a22975bd6517eb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "crmne",
+        "repo": "hyprmoncfg",
+        "type": "github"
+      }
+    },
     "impermanence": {
       "inputs": {
         "home-manager": "home-manager_2",
@@ -717,6 +733,7 @@
         "flake-parts": "flake-parts_2",
         "hm-wrapper-modules": "hm-wrapper-modules",
         "home-manager": "home-manager",
+        "hyprmoncfg": "hyprmoncfg",
         "impermanence": "impermanence",
         "import-tree": "import-tree",
         "lanzaboote": "lanzaboote",

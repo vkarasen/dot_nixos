@@ -79,6 +79,11 @@
       url = "github:nix-community/stylix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    hyprmoncfg = {
+      url = "github:crmne/hyprmoncfg";
+      flake = false;
+    };
   };
 
   # Dendritic pattern: every file under ./modules is a flake-parts module,
