@@ -26,7 +26,8 @@
     '';
 
     # Standalone one-shot CLI: relocate misplaced pi tabs into their correct
-    # herdr workspace (logic in organize/herdr-organize.js). Wrapped with an
+    # herdr workspace and repair hijacked/mis-rooted worktree workspaces
+    # (logic in organize/herdr-organize.js). Wrapped with an
     # absolute node shebang so it needs no node on PATH at runtime; the .js is
     # the source of truth, this just makes it an executable on PATH.
     herdrOrganize = pkgs.writeTextFile {
