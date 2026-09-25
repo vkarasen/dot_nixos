@@ -16,9 +16,9 @@ set -uo pipefail
 json="${HERDR_PLUGIN_EVENT_JSON:-}"
 [ -n "$json" ] || exit 0
 
-checkout_path="$(echo "$json" | jq -r '.workspace.worktree.checkout_path // empty' 2>/dev/null)"
-is_linked="$(echo "$json" | jq -r '.workspace.worktree.is_linked_worktree // empty' 2>/dev/null)"
-repo_root="$(echo "$json" | jq -r '.workspace.worktree.repo_root // empty' 2>/dev/null)"
+checkout_path="$(echo "$json" | jq -r '.data.workspace.worktree.checkout_path // empty' 2>/dev/null)"
+is_linked="$(echo "$json" | jq -r '.data.workspace.worktree.is_linked_worktree // empty' 2>/dev/null)"
+repo_root="$(echo "$json" | jq -r '.data.workspace.worktree.repo_root // empty' 2>/dev/null)"
 
 [ -n "$checkout_path" ] && [ "$is_linked" = "true" ] && [ -n "$repo_root" ] || exit 0
 [ -d "$checkout_path" ] || exit 0
