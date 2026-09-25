@@ -153,9 +153,12 @@ they live independently under `~/.pi/agent/sessions/<encoded-cwd>/`. If a
 sub-workspace with real work gets closed accidentally (nothing removes it,
 see above) or a worktree needs to be picked back up later:
 
-1. `herdr worktree open --path <path>` (or `--branch <name>`) re-attaches a
-   fresh sub-workspace to the existing checkout — no new git worktree, no
-   branch touched. Herdr ships this unbound by default; here it's bound to
+1. `herdr worktree open --cwd <repo-root> --path <path>` (or `--branch
+   <name>`) re-attaches a fresh sub-workspace to the existing checkout — no
+   new git worktree, no branch touched. Always pass `--cwd` (the main
+   checkout's path): without it herdr infers the repo from the shell's cwd
+   and can root the sub-workspace at the main checkout instead of the
+   worktree. Herdr ships this unbound by default; here it's bound to
    `<prefix>+shift+o`, which must be pressed from the repo's parent
    workspace (not from inside a worktree sub-workspace — same restriction
    as the `<prefix>+shift+g` new-worktree binding).
