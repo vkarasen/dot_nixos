@@ -56,6 +56,7 @@ in {
           'Media: Mute microphone — Mic mute key' \
           'Media: Brightness down — Brightness down key' \
           'Media: Brightness up — Brightness up key' \
+          'Keyboard: Cycle layout (US intl / RU phonetic) — SUPER+Shift+Space' \
           'Screenshot: Region — PrtSc' \
           'Screenshot: Fullscreen — Shift+PrtSc' \
           'Screenshot: Active window — Alt+PrtSc' \
@@ -303,7 +304,7 @@ in {
                 # `battery` is laptop-only: in modules-right only when
                 # my.laptop.enable is true (set by modules/home/laptop.nix).
                 modules-right =
-                  ["network" "tray" "bluetooth" "pulseaudio" "custom/audio-sink"]
+                  ["hyprland/language" "network" "tray" "bluetooth" "pulseaudio" "custom/audio-sink"]
                   ++ lib.optional config.my.laptop.enable "custom/battery-exception"
                   ++ lib.optional config.my.laptop.enable "custom/suspend-exception"
                   ++ lib.optional config.my.laptop.enable "custom/power-profile"
@@ -324,6 +325,15 @@ in {
                   format-ethernet = " {ifname}";
                   format-disconnected = " disconnected";
                   tooltip-format = "{ifname}: {ipaddr}";
+                };
+
+                # Keyboard layout indicator: shows the active XKB layout and
+                # cycles it on click (same action as the SUPER+Shift+Space bind).
+                "hyprland/language" = {
+                  keyboard-name = "at-translated-set-2-keyboard";
+                  format = " {short}";
+                  on-click = "hyprctl switchxkblayout current next";
+                  tooltip-format = "Keyboard layout: {long}";
                 };
 
                 bluetooth = {
@@ -597,7 +607,12 @@ in {
                 };
               };
               input = {
-                kb_layout = "us";
+                # us is first, so it is the default at login; altgr-intl puts
+                # accents/€ behind AltGr (€=AltGr+5, ü=AltGr+y) with no dead
+                # keys; ru phonetic is the ЯВЕРТЫ qwerty layout. CapsLock→Escape
+                # is unchanged (kb_options).
+                kb_layout = "us,ru";
+                kb_variant = "altgr-intl,phonetic";
                 kb_options = "caps:escape";
                 follow_mouse = 1;
                 touchpad.natural_scroll = true;
@@ -693,6 +708,14 @@ in {
                 _args = [
                   (lib.generators.mkLuaInline ''mod .. " + L"'')
                   (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("hyprlock")'')
+                ];
+              }
+              {
+                # Cycle keyboard layout (us altgr-intl <-> ru phonetic) — same
+                # action as clicking the waybar hyprland/language module.
+                _args = [
+                  (lib.generators.mkLuaInline ''mod .. " + SHIFT + SPACE"'')
+                  (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("hyprctl switchxkblayout current next")'')
                 ];
               }
               {
