@@ -37,6 +37,7 @@
           # rclone Google Drive mount config (full rclone.conf blob)
           # (used by modules/home/rclone.nix)
           rclone_gdrive_conf = {};
+          rclone_nextcloud_conf = {};
           #
           # openai_api_key = {};
           #

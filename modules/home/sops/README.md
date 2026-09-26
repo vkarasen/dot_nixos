@@ -165,6 +165,27 @@ If you prefer to keep the Google Workspace MCP client and the Drive mount
 fully separate, create a dedicated OAuth client for rclone and place its
 client ID, client secret, and token inside that `rclone.conf` blob.
 
+A Nextcloud remote needs a **second** full-file secret, `rclone_nextcloud_conf`,
+holding its own `[nextcloud]` config section. It uses an app password instead of
+an OAuth browser flow:
+
+```bash
+rclone config create nextcloud webdav vendor=nextcloud \
+  url=https://nextcloud.zqnr.de/remote.php/dav/files/vkarasen \
+  user=vkarasen pass='<app-password>'
+```
+
+`rclone config create` obscures the password automatically. Copy the resulting
+`[nextcloud]` section into sops from the config **file** — NOT `rclone config
+show`, which masks `pass` as `*** ENCRYPTED ***`:
+
+```bash
+sed -n '/\[nextcloud\]/,$p' ~/.config/rclone/rclone.conf
+```
+
+At activation every `rclone_*_conf` blob is concatenated into the single
+`~/.config/rclone/rclone.conf`, so all mounts and syncs share one config file.
+
 ## Managing Secrets
 
 ### Edit existing secrets
