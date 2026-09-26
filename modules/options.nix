@@ -70,14 +70,44 @@
         default = "~/nix/nix-portable";
       };
     };
-    options.my.gdrive.mountPoint = lib.mkOption {
-      type = lib.types.nonEmptyStr;
-      default = "/home/vkarasen/mnt/gdrive";
-      description = ''
-        Canonical filesystem path for the mounted Google Drive. Use this for
-        persistent private data that should be available across sessions and
-        machines without going through the Google Workspace MCP server.
-      '';
+    options.my.rclone = {
+      mounts = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.submodule ({name, ...}: {
+          options = {
+            enable = lib.mkEnableOption "rclone target ${name}";
+            type = lib.mkOption {
+              type = lib.types.enum ["mount" "sync" "bisync"];
+              default = "mount";
+              description = "mount = cached FUSE mount; sync = one-way remote→local; bisync = two-way sync with conflict handling.";
+            };
+            remote = lib.mkOption {
+              type = lib.types.nonEmptyStr;
+              description = "rclone remote path, e.g. `gdrive:` or `nextcloud:Music`.";
+            };
+            path = lib.mkOption {
+              type = lib.types.nonEmptyStr;
+              description = "Local path. mount: the mountpoint; sync/bisync: the local mirror directory. A leading ~/ is expanded.";
+            };
+            cacheDir = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              description = "Override the VFS cache dir (mount type only). Default ~/.cache/rclone.";
+            };
+            interval = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              description = "systemd OnCalendar for sync/bisync (e.g. \"*:0/15\", \"hourly\"). OnCalendar takes a calendar event, not a bare time span — \"15min\" is invalid. null = run once at session start, no timer.";
+            };
+            extraArgs = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
+              default = [];
+              description = "Extra rclone flags passed verbatim.";
+            };
+          };
+        }));
+        default = {};
+        description = "Declarative rclone targets. Each entry becomes a systemd user service (mount) or service+timer (sync/bisync).";
+      };
     };
     options.my.worktrunk = {
       worktreeRoot = lib.mkOption {
@@ -158,11 +188,12 @@
           type = lib.types.nullOr lib.types.nonEmptyStr;
           default = null;
           description = ''
-            Canonical filesystem path to the environment-global Obsidian vault.
-            When null, the home-manager aspect resolves this to a local vault
-            under the user's home directory using globalVault.name. Override
-            this in an environment-specific flake to place the vault on synced
-            storage such as Google Drive, SharePoint, or Azure.
+            Canonical LOCAL filesystem path to the environment-global Obsidian
+            vault. When null, the home-manager aspect resolves this to
+            "''${config.home.homeDirectory}/''${globalVault.name}". The
+            remote storage location (gdrive/nextcloud) is NOT configured here
+            — modules/home/rclone.nix owns the remote↔local sync mapping (see
+            the `vault` target there and the rclone-mounts skill).
           '';
         };
         dailyDir = lib.mkOption {

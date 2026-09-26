@@ -1,19 +1,17 @@
 # Dendritic aspect: rclone (home-manager class).
 #
-# Mounts Google Drive as a normal userspace path via rclone + FUSE.
-# The mount is private-only; corporate configs should not enable it.
+# Declarative rclone targets via `my.rclone.mounts`:
+#   type = "mount"   -> cached FUSE mount (systemd user service)
+#   type = "sync"    -> one-way remote->local mirror (service + optional timer)
+#   type = "bisync"  -> two-way sync with conflict handling (service + optional timer)
 #
-# Secret model:
-#  • sops stores one full rclone.conf blob as `rclone_gdrive_conf`.
-#  • The config is copied to ~/.config/rclone/rclone.conf on activation.
-#  • A systemd user service mounts `gdrive:` at the canonical
-#    `my.gdrive.mountPoint` and exposes it as `$GDRIVE_MOUNTPOINT`.
+# Secrets: sops stores one full rclone.conf blob per remote
+# (`rclone_gdrive_conf`, `rclone_nextcloud_conf`). They are concatenated into
+# ~/.config/rclone/rclone.conf at activation, so every target shares one config.
 #
-# Auth flow:
-#  1. Create/choose a Google OAuth client for rclone.
-#  2. Run `rclone config` once and complete the browser auth.
-#  3. Save the resulting rclone.conf contents into sops.
-#  4. Rebuild; the service will use the decrypted config on every machine.
+# Auth flow (per remote, one time): `rclone config create <name> <backend> ...`
+# (or `rclone config`), then save the resulting [<name>] section into sops as
+# `rclone_<name>_conf`, rebuild. Every target referencing `<name>:` just works.
 #
 # See also: modules/home/pi/skills/userspace-mounts/SKILL.md for the
 # host-side fusermount/FUSE checklist and WSL guidance.
@@ -24,91 +22,243 @@
     pkgs,
     ...
   }: let
-    mountPoint = config.my.gdrive.mountPoint;
-    rcloneConfigDir = "${config.home.homeDirectory}/.config/rclone";
-    rcloneConfigFile = "${rcloneConfigDir}/rclone.conf";
-    cacheDir = "${config.home.homeDirectory}/.cache/rclone";
-    # Resolve rclone by store path (works on both standalone home-manager and
-    # nested NixOS) — ~/.nix-profile/bin/rclone only exists on standalone.
+    cfg = config.my.rclone.mounts;
     rcloneBin = lib.getExe pkgs.rclone;
-    # Resolved via the service PATH (see Environment below) so it works on
-    # NixOS (/run/wrappers/bin) and non-NixOS (/bin or /usr/bin) alike.
     fusermountBin = "fusermount3";
-    commonMountArgs = ''
-      mount gdrive: "${mountPoint}" \
-        --config "${rcloneConfigFile}" \
-        --cache-dir "${cacheDir}" \
-        --vfs-cache-mode writes \
-        --dir-cache-time 1m \
-        --poll-interval 1m \
-        --umask 077 \
-        --file-perms 0600 \
-        --dir-perms 0700
-    '';
-  in
-    lib.mkIf config.my.is_private {
-      home.packages = [
-        pkgs.rclone
-      ];
+    rcloneConfigDir = "${config.xdg.configHome}/rclone";
+    rcloneConfigFile = "${rcloneConfigDir}/rclone.conf";
+    defaultCacheDir = "${config.xdg.cacheHome}/rclone";
 
-      # Materialize the secret config file for rclone.
-      home.activation.writeRcloneConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
-        $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -Dm600 \
-          "${config.sops.secrets.rclone_gdrive_conf.path}" \
-          "${rcloneConfigFile}"
+    # Expand a leading ~/ (defensive; all canonical targets use absolute paths).
+    expand = p:
+      if lib.hasPrefix "~/" p
+      then "${config.home.homeDirectory}/${lib.removePrefix "~/" p}"
+      else p;
+
+    # Shared mount flags. gdrive adds --poll-interval (Drive-only change
+    # polling; WebDAV/Nextcloud does not support it) — that is the only
+    # deliberate divergence between the two mounts.
+    commonMountArgs = [
+      "--vfs-cache-mode"
+      "full"
+      "--vfs-cache-max-age"
+      "720h"
+      "--vfs-cache-max-size"
+      "50G"
+      "--vfs-cache-poll-interval"
+      "5m"
+      "--vfs-read-ahead"
+      "128M"
+      "--buffer-size"
+      "16M"
+      "--dir-cache-time"
+      "1000h"
+      "--vfs-refresh"
+      "--vfs-fast-fingerprint"
+      "--umask"
+      "077"
+      "--file-perms"
+      "0600"
+      "--dir-perms"
+      "0700"
+    ];
+
+    # Seed a bisync target on its first run: when the local dir has no files
+    # yet, run with --resync (remote is authoritative) so bisync's empty-dir
+    # safety check doesn't abort. Usage: rclone-bisync-seed <remote> <local> [rclone args...]
+    bisyncSeed = pkgs.writeShellApplication {
+      name = "rclone-bisync-seed";
+      runtimeInputs = [pkgs.rclone pkgs.findutils];
+      text = ''
+        remote=$1
+        local=$2
+        shift 2
+        if [ -z "$(find "$local" -type f -print -quit 2>/dev/null)" ]; then
+          exec rclone bisync "$remote" "$local" --resync "$@"
+        fi
+        exec rclone bisync "$remote" "$local" "$@"
       '';
+    };
 
-      # Expose the canonical mount path to shells and agent tooling.
-      home.sessionVariables.GDRIVE_MOUNTPOINT = mountPoint;
+    # Canonical local path of the environment-global Obsidian vault.
+    vaultLocalDir =
+      if config.my.obsidian.globalVault.dir == null
+      then "${config.home.homeDirectory}/${config.my.obsidian.globalVault.name}"
+      else config.my.obsidian.globalVault.dir;
 
-      # This private profile uses Google Drive as the synced storage location
-      # for the environment-global Obsidian vault.  Other environments can
-      # override this option to point at local, SharePoint, Azure, or other
-      # storage without changing the vault semantics.
-      my.obsidian.globalVault.dir = lib.mkDefault "${mountPoint}/obsidian/${config.my.obsidian.globalVault.name}";
+    # Canonical target set. Hosts override individual fields by merging
+    # (attrsOf submodule merges per-field). `enable` defaults to false, so
+    # every live target sets it explicitly.
+    targets = {
+      gdrive = {
+        enable = true;
+        type = "mount";
+        remote = "gdrive:";
+        path = "/home/vkarasen/mnt/gdrive";
+        extraArgs = commonMountArgs ++ ["--poll-interval" "1m"];
+      };
+      nextcloud = {
+        enable = true;
+        type = "mount";
+        remote = "nextcloud:";
+        path = "/home/vkarasen/mnt/nextcloud";
+        cacheDir = "${config.xdg.cacheHome}/rclone-nextcloud";
+        extraArgs = commonMountArgs;
+      };
+      # Two-way offline copy of the Obsidian vault. The remote lives in gdrive;
+      # the local path is governed by my.obsidian.globalVault.dir (vaultLocalDir).
+      vault = {
+        enable = true;
+        type = "bisync";
+        remote = "gdrive:obsidian/${config.my.obsidian.globalVault.name}";
+        path = vaultLocalDir;
+        interval = "*:0/15";
+        extraArgs = ["--resilient" "--recover" "--max-lock" "2m"];
+      };
+      # Two-way offline copy of the Nextcloud private folder.
+      private = {
+        enable = true;
+        type = "bisync";
+        remote = "nextcloud:private";
+        path = "${config.home.homeDirectory}/sync/private";
+        interval = "*:0/15";
+        extraArgs = ["--resilient" "--recover" "--max-lock" "2m"];
+      };
+    };
 
-      # Only the cache dir is prepared at activation. The mountpoint itself is
-      # created/removed by the systemd unit (ExecStartPre/ExecStopPost) so it
-      # only ever exists while mounted — a write to it while unmounted fails
-      # loudly (ENOENT) instead of silently landing on local disk.
-      home.activation.prepareRcloneDirs = lib.hm.dag.entryAfter ["writeBoundary"] ''
-        $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -d -m700 "${cacheDir}"
-      '';
-
-      systemd.user.services.rclone-gdrive = {
-        Unit = {
-          Description = "Mount Google Drive with rclone";
-          Wants = ["sops-nix.service"];
-          After = ["sops-nix.service"];
-        };
-
-        Service = {
-          Type = "simple";
-          # PATH must let rclone's bash wrapper find a *setuid* fusermount3 before
-          # its own bundled non-setuid store copy. On NixOS the setuid helper is
-          # /run/wrappers/bin/fusermount3; on non-NixOS hosts it lives in /bin or
-          # /usr/bin (e.g. Debian's /bin/fusermount3). /run/wrappers/bin stays
-          # first for NixOS; /bin:/usr/bin cover non-NixOS without any sudo/reboot
-          # state (the /run/wrappers symlink trick is tmpfs and does not persist).
-          Environment = "PATH=/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/bin:/usr/bin";
-          # Tripwire: the mountpoint only exists while mounted. ExecStartPre
-          # creates it (fusermount3 requires write access to the mountpoint);
-          # ExecStopPost removes it again with `rmdir`, which only ever removes
-          # an empty dir — so a write to ~/mnt/gdrive while unmounted fails
-          # loudly (ENOENT), and any stray file that does appear makes the next
-          # mount fail loudly ("is not empty") as a backstop. ExecStopPost runs
-          # even when the mount fails to start, so the guard re-arms every cycle.
-          ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p \"${mountPoint}\"";
-          ExecStart = "${rcloneBin} ${commonMountArgs}";
-          ExecStop = "${fusermountBin} -u ${mountPoint}";
-          ExecStopPost = "${pkgs.coreutils}/bin/rmdir \"${mountPoint}\"";
-          Restart = "on-failure";
-          RestartSec = "5s";
-        };
-
-        Install = {
-          WantedBy = ["default.target"];
+    # Per-target systemd unit builders.
+    mkMount = name: t:
+      lib.mkIf t.enable {
+        "rclone-${name}" = {
+          Unit = {
+            Description = "Mount ${t.remote} at ${expand t.path} (rclone)";
+            Wants = ["sops-nix.service"];
+            After = ["sops-nix.service"];
+          };
+          Service = {
+            Type = "simple";
+            # PATH must let rclone's bash wrapper find a *setuid* fusermount3 before
+            # its own bundled non-setuid store copy. On NixOS the setuid helper is
+            # /run/wrappers/bin/fusermount3; on non-NixOS hosts it lives in /bin or
+            # /usr/bin. /run/wrappers/bin stays first for NixOS; /bin:/usr/bin cover
+            # non-NixOS without any sudo/reboot state.
+            Environment = "PATH=/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/bin:/usr/bin";
+            # Tripwire: the mountpoint only exists while mounted. ExecStartPre
+            # creates it; ExecStopPost removes it with `rmdir`, which only removes
+            # an empty dir — a write to it while unmounted fails loudly (ENOENT).
+            ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p \"${expand t.path}\"";
+            ExecStart = "${rcloneBin} mount ${t.remote} \"${expand t.path}\" --config \"${rcloneConfigFile}\" --cache-dir \"${
+              if t.cacheDir != null
+              then expand t.cacheDir
+              else defaultCacheDir
+            }\" ${lib.concatStringsSep " " t.extraArgs}";
+            ExecStop = "${fusermountBin} -u \"${expand t.path}\"";
+            ExecStopPost = "${pkgs.coreutils}/bin/rmdir \"${expand t.path}\"";
+            Restart = "on-failure";
+            RestartSec = "5s";
+          };
+          Install.WantedBy = ["default.target"];
         };
       };
+
+    mkSync = name: t:
+      lib.mkIf t.enable {
+        "rclone-${name}" = {
+          Unit = {
+            Description = "${t.type} ${t.remote} -> ${expand t.path} (rclone)";
+            Wants = ["sops-nix.service"];
+            After = ["sops-nix.service"];
+          };
+          Service = {
+            Type = "oneshot";
+            # Both bisync modes require the base dir to exist; rclone creates it
+            # lazily for `sync` but bisync refuses to run otherwise.
+            ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p \"${expand t.path}\"";
+            # bisync refuses its first run against an empty local dir ("Empty
+            # current PathN listing"), so the first run must seed with --resync.
+            # Detect "first run" as "the local dir has no files yet" and append
+            # --resync only then — no manual flag to add/remove, and an emptied
+            # local dir re-seeds from the remote instead of erroring. The guard
+            # lives in a writeShellApplication helper rather than an inline
+            # nested $(...) in ExecStart: systemd runs ExecStart through
+            # `/bin/sh -c`, where the inline form leaked a literal `)` into the
+            # --resync argument (`unknown flag: --resync)`).
+            ExecStart =
+              if t.type == "bisync"
+              then "${lib.getExe bisyncSeed} ${t.remote} \"${expand t.path}\" --config \"${rcloneConfigFile}\" ${lib.concatStringsSep " " t.extraArgs}"
+              else "${rcloneBin} ${t.type} ${t.remote} \"${expand t.path}\" --config \"${rcloneConfigFile}\" ${lib.concatStringsSep " " t.extraArgs}";
+          };
+          Install.WantedBy = lib.optional (t.interval == null) "default.target";
+        };
+      };
+
+    mkTimer = name: t:
+      lib.mkIf (t.enable && t.interval != null) {
+        "rclone-${name}" = {
+          Unit.Description = "Timer for rclone ${t.type} ${name}";
+          Timer = {
+            OnCalendar = t.interval;
+            Persistent = true;
+          };
+          Install.WantedBy = ["timers.target"];
+        };
+      };
+
+    mountTargets = lib.filterAttrs (_: t: t.type == "mount") cfg;
+    syncTargets = lib.filterAttrs (_: t: t.type != "mount") cfg;
+    mountCacheDirs = lib.unique (map (t:
+      if t.cacheDir != null
+      then expand t.cacheDir
+      else defaultCacheDir)
+    (lib.filter (t: t.enable) (lib.attrValues mountTargets)));
+  in
+    lib.mkIf config.my.is_private {
+      my.rclone.mounts = targets;
+
+      home.packages = [pkgs.rclone];
+
+      # Materialize the merged rclone.conf from the per-remote sops blobs.
+      home.activation.writeRcloneConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -d -m700 "${rcloneConfigDir}"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -m600 /dev/null "${rcloneConfigFile}"
+        ${lib.optionalString (config.sops.secrets ? rclone_gdrive_conf) ''
+          $DRY_RUN_CMD ${pkgs.coreutils}/bin/cat "${config.sops.secrets.rclone_gdrive_conf.path}" >> "${rcloneConfigFile}"
+        ''}
+        ${lib.optionalString (config.sops.secrets ? rclone_nextcloud_conf) ''
+          $DRY_RUN_CMD ${pkgs.coreutils}/bin/cat "${config.sops.secrets.rclone_nextcloud_conf.path}" >> "${rcloneConfigFile}"
+        ''}
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/chmod 600 "${rcloneConfigFile}"
+      '';
+
+      # Only cache dirs are prepared at activation; mountpoints are created/
+      # removed by each unit's ExecStartPre/ExecStopPost.
+      home.activation.prepareRcloneDirs = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        ${lib.concatMapStringsSep "\n" (d: "$DRY_RUN_CMD ${pkgs.coreutils}/bin/install -d -m700 \"${d}\"") mountCacheDirs}
+      '';
+
+      # Trigger every sync/bisync target immediately after activation so a
+      # switch syncs now instead of waiting for the next timer tick. `--no-block`
+      # keeps a slow first seed from stalling activation (the unit runs detached).
+      # daemon-reload first so the freshly-written units are known to systemd.
+      home.activation.rcloneSyncNow = lib.hm.dag.entryAfter ["writeRcloneConfig"] ''
+        $DRY_RUN_CMD ${pkgs.systemd}/bin/systemctl --user daemon-reload
+        ${lib.concatMapStringsSep "\n" (name: "$DRY_RUN_CMD ${pkgs.systemd}/bin/systemctl --user start --no-block rclone-${name}.service") (lib.attrNames (lib.filterAttrs (_: t: t.enable) syncTargets))}
+      '';
+
+      # Expose canonical mount paths to shells and agent tooling.
+      home.sessionVariables = {
+        GDRIVE_MOUNTPOINT = cfg.gdrive.path;
+        NEXTCLOUD_MOUNTPOINT = cfg.nextcloud.path;
+      };
+
+      # The private profile's Obsidian vault lives locally at my.obsidian.
+      # globalVault.dir; rclone bisyncs it against gdrive (see the `vault`
+      # target above). The remote↔local mapping is owned here, not in obsidian.
+      my.obsidian.globalVault.dir = lib.mkDefault "${config.home.homeDirectory}/sync/vault";
+
+      systemd.user.services = lib.mkMerge (
+        (lib.mapAttrsToList mkMount mountTargets) ++ (lib.mapAttrsToList mkSync syncTargets)
+      );
+      systemd.user.timers = lib.mkMerge (lib.mapAttrsToList mkTimer syncTargets);
     };
 }
