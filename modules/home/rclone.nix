@@ -218,7 +218,18 @@
       home.packages = [pkgs.rclone];
 
       # Materialize the merged rclone.conf from the per-remote sops blobs.
-      home.activation.writeRcloneConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      home.activation.writeRcloneConfig = lib.hm.dag.entryAfter ["writeBoundary" "sops-nix"] ''
+        # sops-nix materializes secrets via its systemd user service, which
+        # decrypts against the manifest of the generation systemd last
+        # daemon-reloaded. Home-manager's own daemon-reload runs AFTER the
+        # built-in sops-nix restart, so on the first switch that adds a new
+        # secret that restart is a no-op and the secret file is absent. Force
+        # a reload+restart here (linkGeneration has already relinked the unit)
+        # so the secrets exist before we read them.
+        if ${pkgs.systemd}/bin/systemctl --user is-system-running >/dev/null 2>&1; then
+          $DRY_RUN_CMD ${pkgs.systemd}/bin/systemctl --user daemon-reload
+          $DRY_RUN_CMD ${pkgs.systemd}/bin/systemctl --user restart sops-nix
+        fi
         $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -d -m700 "${rcloneConfigDir}"
         $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -m600 /dev/null "${rcloneConfigFile}"
         ${lib.optionalString (config.sops.secrets ? rclone_gdrive_conf) ''

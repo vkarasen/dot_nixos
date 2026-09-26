@@ -39,7 +39,9 @@ that one field.
 ## Secrets
 
 One full rclone.conf blob per remote, stored in sops: `rclone_gdrive_conf`,
-`rclone_nextcloud_conf`. Activation truncates and re-concatenates them into
+`rclone_nextcloud_conf`. The sops-nix systemd user service decrypts each blob
+into `~/.config/sops-nix/secrets/`; an activation step (`writeRcloneConfig`,
+ordered after `sops-nix`) truncates and re-concatenates them into
 `~/.config/rclone/rclone.conf`, so every target shares one config file.
 
 To add a remote (one time):
