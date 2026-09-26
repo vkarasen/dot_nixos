@@ -89,7 +89,7 @@ Before reaching for gdrive, apply this preference order:
    runtime caches, downloaded artifacts.
 
 When gdrive is the right choice, point the aspect at
-`config.my.gdrive.mountPoint` rather than inventing a new path under
+`config.my.rclone.mounts.gdrive.path` rather than inventing a new path under
 `$HOME`.
 
 Conventions:
@@ -106,7 +106,7 @@ being available — and **externally mutable**: treat writes as potentially
 visible outside this machine and hard to undo.
 
 See `modules/home/rclone.nix` for how the mount is wired and
-`modules/options.nix` for the canonical `my.gdrive.mountPoint` option.
+`modules/options.nix` for the canonical `my.rclone.mounts` option.
 
 ## Looking up options & packages (do this FIRST)
 
