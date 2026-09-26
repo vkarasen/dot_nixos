@@ -9,7 +9,9 @@
     # Mechanism B (primary cleanup path, see my.worktrunk.autoPrune doc for
     # mechanism A, the backstop): a local herdr plugin that prunes the git
     # worktree behind a herdr sub-workspace the moment it's closed, iff
-    # Worktrunk independently considers it merged. See
+    # Worktrunk independently considers it merged AND no live herdr pane or
+    # agent has its cwd equal to or inside that worktree path (a session
+    # still sitting there vetoes the removal). See
     # plugins/worktrunk-close-prune/on-workspace-closed.sh for the safety
     # reasoning; the script itself is the source of truth, this just wraps
     # it with an absolute-path PATH so it works regardless of what PATH the

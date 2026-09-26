@@ -509,8 +509,9 @@
           branch; it deliberately leaves the worktree in place instead of
           removing it and relocating the session. Closing the sub-workspace
           is the user's authoritative "I'm done" signal, not the merge —
-          herdr's own plugin cleans up the now-merged worktree at that point
-          (see the `version-control` skill). Outside a herdr-linked
+          herdr's own plugin then cleans up the now-merged worktree, unless a
+          live pane or agent still has its cwd inside it, which vetoes the
+          removal (see the `version-control` skill). Outside a herdr-linked
           sub-workspace, use `merge`'s default behavior (it removes the
           worktree and relocates the session immediately, since there is no
           separate close signal to defer to).

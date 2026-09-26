@@ -99,7 +99,9 @@ name is harmless.
   merge still lands on the default branch; it deliberately leaves the
   worktree in place so the herdr close-triggered plugin (below) does the
   actual removal once the user closes the sub-workspace — that close is the
-  authoritative "done" signal, not the merge. Outside a herdr sub-workspace,
+  authoritative "done" signal, not the merge. (A live pane or agent whose
+  cwd is still the worktree path or inside it vetoes that removal — see
+  below.) Outside a herdr sub-workspace,
   use `merge`'s default (removes the worktree, relocates the session
   immediately) since there's no separate close signal to defer to.
 - **Always** sync and rebase onto `origin/main` (fetch first), and **never
@@ -125,8 +127,10 @@ since nothing addresses a worktree by path.
   installed locally via `modules/home/herdr/default.nix`). The moment a
   linked worktree sub-workspace closes, it asks Worktrunk whether that
   specific worktree is now identical to or merged into the default branch,
-  and removes it only if so. No age guard — closing the workspace is itself
-  the deliberate signal. A worktree with real uncommitted or unmerged work
+  and removes it only if so — *and* only if no live herdr pane or agent has
+  its cwd equal to or inside that worktree path (`herdr pane list`): a
+  session still sitting in the worktree elsewhere vetoes the removal. No age
+  guard — closing the workspace is itself the deliberate signal. A worktree with real uncommitted or unmerged work
   is left alone, untouched, for as long as it takes you to come back to it.
   This fires on the workspace-close action (`<prefix>+d`, or `herdr workspace
   close`) after its confirmation. It does NOT fire when you close the last
@@ -137,8 +141,10 @@ since nothing addresses a worktree by path.
   autoPrune` in `modules/options.nix`, default daily). Discovers every repo
   with worktrees under either root (`my.worktrunk.worktreeRoot`'s
   `.worktrees`, and herdr's sibling `.herdr-worktrees`), and removes only
-  what `wt step prune --dry-run` itself calls safe *and* that herdr does not
-  currently show as open in any workspace (`herdr worktree list`). Default
+  what `wt step prune --dry-run` itself calls safe *and* that herdr neither
+  currently shows as open in any workspace (`herdr worktree list`) nor has
+  any live pane or agent whose cwd is that worktree path or inside it
+  (`herdr pane list`). Default
   `minAge` is 7 days — long enough that a paused-but-live session is never
   at risk. This exists for what the plugin might miss (herdr not running,
   the plugin failing, herdr quitting uncleanly), not as the routine path.

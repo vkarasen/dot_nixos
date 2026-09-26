@@ -142,9 +142,10 @@
             merged into the repo's default branch. It is structurally unable
             to remove a worktree with uncommitted changes (wt step prune has
             no --force), and it skips any worktree herdr currently shows as
-            open in a workspace. This is a backstop, not the primary cleanup
-            path — the primary path is the herdr plugin that prunes on
-            workspace close (see modules/home/herdr).
+            open in a workspace — and any worktree a live herdr pane or
+            agent has its cwd equal to or inside. This is a backstop, not
+            the primary cleanup path — the primary path is the herdr plugin
+            that prunes on workspace close (see modules/home/herdr).
           '';
         };
         minAge = lib.mkOption {

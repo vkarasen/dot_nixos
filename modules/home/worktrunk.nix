@@ -72,6 +72,24 @@
             done
           done
 
+          # Liveness helper: true when a live herdr pane's cwd is $1 itself or
+          # somewhere inside it. Prefix-safe by construction — the descendant
+          # test compares against "$1" plus "/", so /a matches /a/b but never
+          # /ab. Reads the global live_cwds snapshot (one absolute path per
+          # line), set per repo just below.
+          worktree_has_live_pane() {
+            local wt_path="''${1%/}"
+            [ -n "$wt_path" ] || return 1
+            local cwd
+            while IFS= read -r cwd; do
+              [ -n "$cwd" ] || continue
+              if [ "$cwd" = "$wt_path" ] || [ "''${cwd#"$wt_path"/}" != "$cwd" ]; then
+                return 0
+              fi
+            done <<<"''${live_cwds:-}"
+            return 1
+          }
+
           for main_repo in "''${!seen_repos[@]}"; do
             echo "worktrunk-autoprune: scanning $main_repo"
 
@@ -84,6 +102,21 @@
             fi
             open_paths="$(echo "$open_json" | jq -r '.result.worktrees[]? | select(.open_workspace_id) | .path' 2>/dev/null || true)"
 
+            # An open workspace is not the only way a worktree can still be
+            # in use: a pane (shell or agent) whose cwd sits inside a
+            # worktree keeps it busy even after its workspace was closed.
+            # `herdr pane list` with no --workspace returns every
+            # workspace's panes, each carrying the pane's cwd, so that is
+            # the liveness source. Same fail-safe posture as the check
+            # above: if the query fails or the envelope doesn't parse we
+            # cannot tell what is live, so skip the whole repo rather than
+            # remove a worktree out from under a running session.
+            if ! pane_json="$(herdr pane list 2>&1)" || ! jq -e '.result.panes | type == "array"' <<<"$pane_json" >/dev/null 2>&1; then
+              echo "worktrunk-autoprune: cannot read live herdr panes for $main_repo, skipping" >&2
+              continue
+            fi
+            live_cwds="$(jq -r '.result.panes[]? | .cwd // empty, .foreground_cwd // empty' <<<"$pane_json" 2>/dev/null || true)"
+
             candidates="$(wt step prune --dry-run --min-age="${cfg.autoPrune.minAge}" --format=json -C "$main_repo" 2>/dev/null)" || continue
 
             echo "$candidates" | jq -c '.[]?' | while read -r cand; do
@@ -93,6 +126,11 @@
 
               if [ "$kind" = "worktree" ] && [ "$path" != "null" ] && echo "$open_paths" | grep -qxF "$path"; then
                 echo "worktrunk-autoprune: skip $branch ($path) - open in a herdr workspace"
+                continue
+              fi
+
+              if [ "$kind" = "worktree" ] && [ "$path" != "null" ] && worktree_has_live_pane "$path"; then
+                echo "worktrunk-autoprune: skip $branch ($path) - a live herdr pane is inside it"
                 continue
               fi
 
