@@ -26,6 +26,7 @@
       config.flake.modules.homeManager.obsidian
       config.flake.modules.homeManager.rclone
       config.flake.modules.homeManager.sops
+      config.flake.modules.homeManager.keepass
       config.flake.modules.homeManager.pi
       config.flake.modules.homeManager.pi-agents
       config.flake.modules.homeManager.pi-mcp
