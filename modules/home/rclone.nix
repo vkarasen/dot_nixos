@@ -35,9 +35,16 @@
       then "${config.home.homeDirectory}/${lib.removePrefix "~/" p}"
       else p;
 
-    # Shared mount flags. gdrive adds --poll-interval (Drive-only change
-    # polling; WebDAV/Nextcloud does not support it) — that is the only
-    # deliberate divergence between the two mounts.
+    # Shared mount flags. The two mounts diverge deliberately in two ways:
+    #   * gdrive adds --poll-interval (Drive-only change polling, unsupported on
+    #     WebDAV/Nextcloud) and therefore keeps --dir-cache-time 1000h — polling
+    #     invalidates the directory cache on change, so a long TTL only saves
+    #     redundant re-listings.
+    #   * nextcloud (WebDAV, no polling) sets --dir-cache-time 1m so remote
+    #     changes appear promptly the next time a directory is accessed.
+    # Offline FILE access is unaffected by that: it comes from the VFS file
+    # cache (--vfs-cache-mode full + --vfs-cache-max-age 720h below), not from
+    # the directory-listing cache.
     commonMountArgs = [
       "--vfs-cache-mode"
       "full"
@@ -51,8 +58,6 @@
       "128M"
       "--buffer-size"
       "16M"
-      "--dir-cache-time"
-      "1000h"
       "--vfs-refresh"
       "--vfs-fast-fingerprint"
       "--umask"
@@ -95,7 +100,7 @@
         type = "mount";
         remote = "gdrive:";
         path = "/home/vkarasen/mnt/gdrive";
-        extraArgs = commonMountArgs ++ ["--poll-interval" "1m"];
+        extraArgs = commonMountArgs ++ ["--poll-interval" "1m" "--dir-cache-time" "1000h"];
       };
       nextcloud = {
         enable = true;
@@ -103,7 +108,7 @@
         remote = "nextcloud:";
         path = "/home/vkarasen/mnt/nextcloud";
         cacheDir = "${config.xdg.cacheHome}/rclone-nextcloud";
-        extraArgs = commonMountArgs;
+        extraArgs = commonMountArgs ++ ["--dir-cache-time" "1m"];
       };
       # Two-way offline copy of the Obsidian vault. The remote lives in gdrive;
       # the local path is governed by my.obsidian.globalVault.dir (vaultLocalDir).
