@@ -81,6 +81,7 @@
         mako.enable = true;
         hyprlock.enable = true;
         fuzzel.enable = true;
+        qt.enable = true;
         # Firefox via firefox-gnome-theme (writes userChrome.css). Deliberately
         # NOT `colorTheme`: that uses the Firefox Color extension, whose settings
         # home-manager seeds via a legacy storage.js that modern Firefox
@@ -91,6 +92,20 @@
           firefoxGnomeTheme.enable = true;
         };
       };
+    };
+
+    # Stylix's qt target writes `Appearance.custom_palette = true` into
+    # qt5ct.conf/qt6ct.conf but ships no color scheme (it relies on the Kvantum
+    # theme for the colours), so qt5ct would apply an empty custom palette.
+    # Disable it: qt5ct should not claim a custom palette it cannot supply.
+    # (Originally added chasing KeePassXC's built-in "Automatic" theme staying
+    # light — that detection reads the Qt palette and was unaffected, so this is
+    # no longer KeePassXC's fix. KeePassXC dark/classic theming is pinned via
+    # ApplicationTheme in modules/home/keepass.nix. The override stays as a
+    # correctness fix for the empty palette.)
+    qt = {
+      qt5ctSettings.Appearance.custom_palette = lib.mkForce false;
+      qt6ctSettings.Appearance.custom_palette = lib.mkForce false;
     };
   };
 }
