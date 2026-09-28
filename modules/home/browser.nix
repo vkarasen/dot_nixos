@@ -29,6 +29,7 @@
           ublock-origin # ad/sponsor blocking (full MV2)
           sponsorblock # YouTube sponsor-segment skipping
           darkreader # dark-by-default catch-all for sites that ignore prefers-color-scheme
+          reddit-enhancement-suite
         ];
 
         settings = {
