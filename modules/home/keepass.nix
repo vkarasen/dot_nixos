@@ -74,7 +74,11 @@
     # one this repo used to leave in place). We own the file now, and the old
     # copy held the KeeShare private key we are deliberately dropping, so
     # overwrite it without keeping a backup of the secret.
-    xdg.configFile."keepassxc/keepassxc.ini".force = true;
+    imports = [
+      (lib.mkIf (config.my.is_private && config.my.gui.enable) {
+        xdg.configFile."keepassxc/keepassxc.ini".force = true;
+      })
+    ];
 
     # Start minimized to the system tray (vault stays locked until first unlock
     # via the browser extension). Repo idiom for login-time GUI apps: a systemd
