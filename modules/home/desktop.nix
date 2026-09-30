@@ -38,9 +38,14 @@ in {
           'Window: Toggle fullscreen — SUPER+F' \
           'Window: Move window (drag) — SUPER+Left click' \
           'Window: Resize window (drag) — SUPER+Right click' \
-          'Window: Focus window (vim) — SUPER+h/j/k/l' \
-          'Window: Move window in layout — SUPER+Shift+h/j/k/l' \
+          'Window: Focus window/column (vim) — SUPER+h/j/k/l' \
+          'Window: Move window / swap column (vim) — SUPER+Shift+h/j/k/l' \
           'Window: Swap window — SUPER+Ctrl+h/j/k/l' \
+          'Window: Promote window to master column (scrolling) — SUPER+P' \
+          'Window: Resize column by one width (scrolling) — SUPER+minus / SUPER+equal' \
+          'Window: Fit and expand focused column (scrolling) — SUPER+Shift+F' \
+          'Window: Move column left / right (scrolling) — SUPER+Ctrl+Shift+h / SUPER+Ctrl+Shift+l' \
+          'Window: Window picker (fuzzy) — SUPER+O' \
           'Window: Window switcher (alt-tab) — SUPER+Tab' \
           'Workspace: Go to workspace 1 — SUPER+1' \
           'Workspace: Go to workspace 2 — SUPER+2' \
@@ -48,6 +53,7 @@ in {
           'Workspace: Go to workspace 4 — SUPER+4' \
           'Workspace: Go to workspace 5 — SUPER+5' \
           'Workspace: Send window to workspace — SUPER+Shift+1..5' \
+          'Workspace: Workspace 1 is dwindle, the others scroll (hybrid layout)' \
           'Monitor: Focus monitor left/right — SUPER+Alt+h/l' \
           'Monitor: Move workspace to monitor — SUPER+Alt+Shift+h/l' \
           'Media: Mute audio — Mute key' \
@@ -60,7 +66,7 @@ in {
           'Screenshot: Region — PrtSc' \
           'Screenshot: Fullscreen — Shift+PrtSc' \
           'Screenshot: Active window — Alt+PrtSc' \
-          'System: Lock screen — SUPER+L' \
+          'System: Lock screen — SUPER+ESC' \
           'System: Exit Hyprland — SUPER+M' \
           'Help: Show keybindings — SUPER+/' \
         | fuzzel --dmenu --prompt 'Keys ' --width 70 --lines 40
@@ -172,6 +178,40 @@ in {
           [ -n "$chosen_id" ] && wpctl set-default "$chosen_id"
         '';
       };
+
+      # Fuzzy window picker: list every Hyprland client as "class — title" and
+      # focus the selected one via the 0.56 `hl.dsp.focus` dispatch (the legacy
+      # `focuswindow` dispatcher no longer exists in 0.56+). The raw window
+      # address is kept out of the menu; the parallel `addrs` array carries it.
+      # Bound to SUPER+o in `extraConfig` below (SUPER+/ is already the
+      # keybinding cheatsheet).
+      hypr-window-picker = pkgs.writeShellApplication {
+        name = "hypr-window-picker";
+        runtimeInputs = with pkgs; [
+          hyprland # hyprctl clients / dispatch
+          jq # parse the -j client list
+          fuzzel # the dmenu picker
+          coreutils # printf
+        ];
+        text = ''
+          clients="$(hyprctl clients -j)"
+          mapfile -t addrs < <(jq -r '.[].address' <<< "$clients")
+          mapfile -t disp  < <(jq -r '.[] | ((.class // "") + " — " + (.title // ""))' <<< "$clients")
+
+          if [ "''${#disp[@]}" -eq 0 ]; then exit 0; fi
+
+          sel="$(printf '%s\n' "''${disp[@]}" | fuzzel --dmenu --prompt 'window: ')" || exit 0
+          [ -n "$sel" ] || exit 0
+
+          idx=-1
+          for i in "''${!disp[@]}"; do
+            if [ "''${disp[$i]}" = "$sel" ]; then idx="$i"; break; fi
+          done
+          [ "$idx" -ge 0 ] || exit 0
+
+          hyprctl dispatch "hl.dsp.focus({ window = \"address:''${addrs[$idx]}\" })"
+        '';
+      };
     in {
       imports = [stylixAspect hyprmoncfg];
 
@@ -190,6 +230,7 @@ in {
           networkmanagerapplet # nm-applet: tray wifi applet for connecting to new networks
           audio-sink-status # waybar sound-routing widget status emitter
           audio-sink-select # click handler: fuzzel menu to switch the default output
+          hypr-window-picker # fuzzy window switcher (fuzzel over `hyprctl clients`)
           mission-center # CPU/GPU/fan/system monitoring dashboard (GUI)
         ];
 
@@ -596,7 +637,9 @@ in {
                   active_border = "rgba(89b4faee)";
                   inactive_border = "rgba(313244ee)";
                 };
-                layout = "dwindle";
+                # Hybrid layout: scrolling ("niri-like" columns) everywhere,
+                # except workspace 1 which keeps dwindle — see workspace_rule.
+                layout = "scrolling";
               };
               decoration = {
                 rounding = 8;
@@ -627,11 +670,36 @@ in {
               dwindle = {
                 preserve_split = true;
               };
+              # Scrolling tiling layout. Every option is spelled out at its
+              # documented default so the behaviour is explicit rather than
+              # inherited: focus_fit_method = 1 fits the focused column into
+              # view (0 would centre it), follow_focus scrolls the strip as
+              # focus moves, and follow_min_visible keeps at least 40% of the
+              # next column on screen.
+              scrolling = {
+                column_width = 0.5;
+                direction = "right";
+                focus_fit_method = 1;
+                follow_focus = true;
+                follow_min_visible = 0.4;
+                explicit_column_widths = "0.333, 0.5, 0.667, 1.0";
+                wrap_focus = true;
+                wrap_swapcol = true;
+                fullscreen_on_one_column = true;
+              };
               # Suppress the "Hyprland was updated" popup + the donation nag.
               ecosystem = {
                 no_update_news = true;
                 no_donation_nag = true;
               };
+            };
+
+            # Workspace-specific layout override (the hybrid half). Rendered
+            # as hl.workspace_rule({ workspace = "1", layout = "dwindle" });
+            # every other workspace uses the scrolling default above.
+            workspace_rule = {
+              workspace = "1";
+              layout = "dwindle";
             };
 
             # Environment variables — rendered as hl.env("VAR", "value").
@@ -706,7 +774,7 @@ in {
               }
               {
                 _args = [
-                  (lib.generators.mkLuaInline ''mod .. " + L"'')
+                  (lib.generators.mkLuaInline ''mod .. " + ESCAPE"'')
                   (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("hyprlock")'')
                 ];
               }
@@ -755,59 +823,12 @@ in {
                 ];
               }
 
-              # Window focus (vim-style): move focus between windows on the
-              # focused workspace. SUPER + h/j/k/l = left/down/up/right.
-              {
-                _args = [
-                  (lib.generators.mkLuaInline ''mod .. " + h"'')
-                  (lib.generators.mkLuaInline ''hl.dsp.focus({ direction = "l" })'')
-                ];
-              }
-              {
-                _args = [
-                  (lib.generators.mkLuaInline ''mod .. " + j"'')
-                  (lib.generators.mkLuaInline ''hl.dsp.focus({ direction = "d" })'')
-                ];
-              }
-              {
-                _args = [
-                  (lib.generators.mkLuaInline ''mod .. " + k"'')
-                  (lib.generators.mkLuaInline ''hl.dsp.focus({ direction = "u" })'')
-                ];
-              }
-              {
-                _args = [
-                  (lib.generators.mkLuaInline ''mod .. " + l"'')
-                  (lib.generators.mkLuaInline ''hl.dsp.focus({ direction = "r" })'')
-                ];
-              }
-
-              # Move the active window within the layout (dwindle).
-              # SUPER + SHIFT + h/j/k/l.
-              {
-                _args = [
-                  (lib.generators.mkLuaInline ''mod .. " + SHIFT + h"'')
-                  (lib.generators.mkLuaInline ''hl.dsp.window.move({ direction = "l" })'')
-                ];
-              }
-              {
-                _args = [
-                  (lib.generators.mkLuaInline ''mod .. " + SHIFT + j"'')
-                  (lib.generators.mkLuaInline ''hl.dsp.window.move({ direction = "d" })'')
-                ];
-              }
-              {
-                _args = [
-                  (lib.generators.mkLuaInline ''mod .. " + SHIFT + k"'')
-                  (lib.generators.mkLuaInline ''hl.dsp.window.move({ direction = "u" })'')
-                ];
-              }
-              {
-                _args = [
-                  (lib.generators.mkLuaInline ''mod .. " + SHIFT + l"'')
-                  (lib.generators.mkLuaInline ''hl.dsp.window.move({ direction = "r" })'')
-                ];
-              }
+              # Directional window focus (SUPER + h/j/k/l) and in-layout
+              # reorder (SUPER + SHIFT + h/j/k/l) are LAYOUT-AWARE, so they are
+              # defined in `extraConfig` below instead of here: on a scrolling
+              # workspace they dispatch scrolling-layout verbs, on dwindle the
+              # generic focus/move dispatchers. See `extraConfig` for the
+              # bindings themselves.
 
               # Swap the active window with its neighbour. SUPER + CTRL + h/j/k/l.
               {
@@ -974,6 +995,57 @@ in {
               }
             ];
           };
+
+          # Layout-aware keybinds. `settings.bind` above cannot express these
+          # because the same key must dispatch a different verb per workspace:
+          # on a scrolling workspace the directional keys use the scrolling
+          # verbs (focus/swapcol/consume_or_expel), on dwindle the generic
+          # focus/window.move dispatchers. Appended with lib.mkAfter so the
+          # hyprmoncfg dofile(...) include line stays last. `mod` is the local
+          # rendered by settings above — the generated file is one chunk, so it
+          # is in scope here.
+          extraConfig = lib.mkAfter ''
+            -- Layout-aware directional binds ------------------------------------
+            -- Dispatch `tbl[<active workspace tiled_layout>]`; the active
+            -- layout is "scrolling" or "dwindle" here (workspace_rule keeps
+            -- dwindle on workspace 1, everything else scrolls).
+            local function layout_bind(tbl)
+              return function()
+                local ws = hl.get_active_special_workspace() or hl.get_active_workspace()
+                if not ws then return end
+                local dsp = tbl[ws.tiled_layout]
+                if dsp then hl.dispatch(dsp) end
+              end
+            end
+
+            -- focus (vim): column focus when scrolling, window focus on dwindle
+            hl.bind(mod .. " + h", layout_bind({ scrolling = hl.dsp.layout("focus l"), dwindle = hl.dsp.focus({ direction = "l" }) }))
+            hl.bind(mod .. " + j", layout_bind({ scrolling = hl.dsp.layout("focus d"), dwindle = hl.dsp.focus({ direction = "d" }) }))
+            hl.bind(mod .. " + k", layout_bind({ scrolling = hl.dsp.layout("focus u"), dwindle = hl.dsp.focus({ direction = "u" }) }))
+            hl.bind(mod .. " + l", layout_bind({ scrolling = hl.dsp.layout("focus r"), dwindle = hl.dsp.focus({ direction = "r" }) }))
+
+            -- reorder: swap the whole column when scrolling, move the window
+            -- within the tree on dwindle
+            hl.bind(mod .. " + SHIFT + h", layout_bind({ scrolling = hl.dsp.layout("swapcol l"), dwindle = hl.dsp.window.move({ direction = "l" }) }))
+            hl.bind(mod .. " + SHIFT + j", layout_bind({ scrolling = hl.dsp.layout("consume_or_expel next"), dwindle = hl.dsp.window.move({ direction = "d" }) }))
+            hl.bind(mod .. " + SHIFT + k", layout_bind({ scrolling = hl.dsp.layout("consume_or_expel prev"), dwindle = hl.dsp.window.move({ direction = "u" }) }))
+            hl.bind(mod .. " + SHIFT + l", layout_bind({ scrolling = hl.dsp.layout("swapcol r"), dwindle = hl.dsp.window.move({ direction = "r" }) }))
+
+            -- scrolling-only verbs. These are the raw layout dispatchers, so
+            -- they are silent no-ops on the dwindle workspace (1).
+            hl.bind(mod .. " + p", hl.dsp.layout("promote"))
+            hl.bind(mod .. " + minus", hl.dsp.layout("colresize -conf"))
+            hl.bind(mod .. " + equal", hl.dsp.layout("colresize +conf"))
+            hl.bind(mod .. " + SHIFT + f", hl.dsp.layout("fit expand"))
+
+            -- Move the focused column left/right as a whole (scrolling only;
+            -- distinct from SUPER+SHIFT+h/l, which swap column contents).
+            hl.bind(mod .. " + CTRL + SHIFT + h", hl.dsp.layout("move -col"))
+            hl.bind(mod .. " + CTRL + SHIFT + l", hl.dsp.layout("move +col"))
+
+            -- Fuzzy window picker (fuzzel over `hyprctl clients`).
+            hl.bind(mod .. " + o", hl.dsp.exec_cmd("hypr-window-picker"))
+          '';
         };
       };
     };

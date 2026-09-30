@@ -73,18 +73,35 @@ measurements to `/run/log/systemd/tpm2-measure.log`.)
 
 ## Desktop (Hyprland)
 
-- Stack: **Hyprland** (dwindle tiling) + **ghostty** (terminal) + **waybar**
-  (bar) + **mako** (notifications) + **fuzzel** (launcher); wl-clipboard,
-  grim/slurp for clipboard/screenshots. `modules/nixos/desktop.nix` enables the
+- Stack: **Hyprland** (scrolling tiling by default, dwindle on workspace 1) +
+  **ghostty** (terminal) + **waybar** (bar) + **mako** (notifications) +
+  **fuzzel** (launcher); wl-clipboard for clipboard, **Flameshot** for
+  interactive region capture, and `grim` only inside the fullscreen/window
+  `screenshot` helper. `modules/nixos/desktop.nix` enables the
   compositor (and the screen-share portal); `modules/home/desktop.nix` holds the
   apps + their config.
 - Launch: log in on **tty1** → `~/.bash_profile` runs `exec start-hyprland` (no
   display manager). Quitting Hyprland returns to the login prompt.
+- Layout: `general.layout = "scrolling"` (niri-like columns) is the default,
+  with `workspace_rule` pinning **workspace 1 to dwindle** so every other
+  workspace scrolls.
 - Keybinds: `SUPER+Return` ghostty, `SUPER+Space` fuzzel, `SUPER+Q` close,
-  `SUPER+V` float, `SUPER+F` fullscreen, `SUPER+M` exit, `SUPER+1..5` workspaces.
-- `configType = "hyprlang"` is pinned — stateVersion 26.05 would default to the
-  newer Lua configType, and catppuccin's Lua-only hyprland theming is disabled
-  in favour of explicit rgba colours in the hyprland.conf.
+  `SUPER+V` float, `SUPER+F` fullscreen, `SUPER+M` exit, `SUPER+ESC` lock,
+  `SUPER+1..5` workspaces (`SUPER+SHIFT+1..5` sends the window). Layout-aware
+  vim focus `SUPER+h/j/k/l` and move `SUPER+SHIFT+h/j/k/l` (column verbs while
+  scrolling, `focus`/`window.move` on dwindle); `SUPER+CTRL+h/j/k/l` swaps
+  windows; scrolling-only `SUPER+p` promote, `SUPER+minus`/`SUPER+equal`
+  colresize, `SUPER+SHIFT+f` fit expand, `SUPER+CTRL+SHIFT+h/l` move column;
+  `SUPER+o` fuzzy window picker; `SUPER+ALT+h/l` focus monitor (`+SHIFT` moves
+  the workspace there); PrtSc region capture (Flameshot), `SHIFT+PrtSc`
+  fullscreen and `ALT+PrtSc` window (the `screenshot` helper).
+- The Hyprland config is **Lua** (`hl.*`: `hl.config`, `hl.bind`, `hl.dsp.*`) —
+  the stateVersion 26.05 default `configType`; nothing pins `hyprlang`. The
+  generated file is `hyprland.lua`, not `hyprland.conf`.
+- catppuccin's **Hyprland** theming is disabled (`catppuccin.hyprland.enable =
+  false` in `modules/home/external.nix`) because **Stylix owns the DE surface**
+  and the two would fight over the same config files; the border colours are
+  explicit rgba values in the Hyprland config instead.
 - Gotcha: ghostty and ncurses both ship `share/terminfo/g/ghostty`, which
   collides in the shared home-manager buildEnv; the desktop aspect overrides
   ghostty to drop the duplicate entry and keep `x/xterm-ghostty`.

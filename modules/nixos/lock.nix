@@ -8,7 +8,7 @@
 #   - lock right before suspend/hibernate (before_sleep_cmd = hyprlock), so the
 #     machine always wakes to the lock screen (laptop only — a desktop PC never
 #     auto-suspends, so it never auto-locks)
-#   - manual lock via SUPER+L (desktop concern; see modules/home/desktop.nix)
+#   - manual lock via SUPER+ESC (desktop concern; see modules/home/desktop.nix)
 #   - this aspect (greetd + hyprlock PAM) is a GUI/login concern, kept for every
 #     GUI host even though only laptops auto-lock
 {...}: {
