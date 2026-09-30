@@ -168,12 +168,14 @@ bisection isolates `PrivateTmp=yes` → manual `mount -t tmpfs` works but
   `enableAllFirmware = false`), so Intel cards ship without `iwlwifi-*` ucode.
   Fix: `hardware.enableRedistributableFirmware = true`, then reload the module
   (`modprobe -r iwlwifi && modprobe iwlwifi`) or reboot.
-- **`networkmanager.ensureProfiles.secrets.entries`**: `key` is the **bare
-  property name** (e.g. `psk`), not a dotted path — the secret agent prefixes
-  the setting name itself (`802-11-wireless-security.psk`). `matchId` is the
-  connection id. (The agent serves auto-activations; a manual `nmcli
-  connection up` may not get the secret — that's a CLI quirk, boot auto-connect
-  is what matters.)
+- **PSK is system-owned, not agent-served**: the profile carries it inline via
+  `ensureProfiles.environmentFiles` + envsubst (`psk = "$WIFI_HOME_PSK"`), fed
+  by a sops template (`sops.templates` + `config.sops.placeholder`). NM then
+  logs "system settings secrets sufficient" and never calls a secret agent (no
+  `nm-file-secret-agent`). That matters on hibernate-resume: an agent-served
+  secret lets nm-applet (the active-session agent) answer "User canceled"
+  before the root file agent is reached, and `UserCanceled` is terminal in NM
+  — so don't reintroduce `secrets.entries`.
 
 ## 9. Deterministic vs. generation-specific failures
 
