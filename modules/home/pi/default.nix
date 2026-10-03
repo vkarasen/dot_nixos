@@ -280,7 +280,12 @@
             "npm:pi-lens"
             "npm:@latentminds/pi-quotas"
             "npm:pi-blackhole"
-            "npm:pi-subagents"
+            # Gate out 0.75.0: it breaks every child launch with
+            # "(0, _requiredChildExtensions.assertRequiredChildExtensionsAdmitted)
+            # is not a function" - pi-subagents #2593 (lazy executor import
+            # mixes old and new code after an update). Track latest once a
+            # fixed release lands.
+            "npm:pi-subagents@<0.75.0 || >0.75.0"
             # Pinned: 3 releases in its first week and a single author. Small,
             # dependency-free and deterministic (no model calls), so it is
             # cheap to audit — but not yet a package to track latest on.
