@@ -306,11 +306,12 @@
       type = lib.types.attrsOf (lib.types.attrsOf lib.types.raw);
       default = {};
       description = ''
-        MCP servers exposed to pi via ~/.pi/agent/mcp-adapter.json. Each key is a
-        server name; each value is a stdio server definition in the
-        pi-mcp-adapter mcpServers shape (type, command, args, env, ...).
-        Multiple modules merge additively by server name; a single
-        aggregation aspect folds the result into the mcp-adapter.json file.
+        MCP servers exposed to pi via ~/.pi/agent/mcp.json (pi's built-in MCP
+        configuration). Each key is a server name; each value is a server
+        definition in the standard mcpServers shape (command/args/env for
+        stdio, or url/headers for HTTP; optional timeout, description,
+        exposure, toolExposure). Multiple modules merge additively by server
+        name; a single aggregation aspect folds the result into mcp.json.
       '';
     };
     options.my.pi.modelTiers = lib.mkOption {

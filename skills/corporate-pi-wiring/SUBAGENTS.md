@@ -273,7 +273,6 @@ Declare it corporate-side only; the base flake stays site-agnostic.
 ```nix
 my.pi.capabilityBundles.jira = {
   skills = ["jira-workflows"];          # logical keys — see below
-  extensions = ["npm:pi-mcp-adapter"];  # note the npm: prefix
   tools = ["bash"];                     # unioned into consuming agents
   mcpTools = ["jira"];                  # rendered as mcp:-prefixed tools
   policy = ''
@@ -331,15 +330,14 @@ adding to `programs.pi-coding-agent.skills` (then reference them from a
 capability bundle's `skills`); confidential skills go through
 `my.pi.privateSkills` (sops, materialized at activation).
 
-**(b) Wire `atlassian-mcp`.** Add a capability bundle and attach it to the
+**(b) Wire `atlassian_mcp`.** Add a capability bundle and attach it to the
 agents that touch Jira — same MCP-bundle pattern as the base `workspace`
-(`mcpTools = ["google-workspace"]`) and `media` (`mcpTools =
-["video-analyzer"]`) bundles:
+(`mcpTools = ["google_workspace"]`) and `media` (`mcpTools =
+["video_analyzer"]`) bundles:
 
 ```nix
 my.pi.capabilityBundles.atlassian = {
-  extensions = ["npm:pi-mcp-adapter"];
-  mcpTools = ["atlassian-mcp"];
+  mcpTools = ["atlassian_mcp"];
 };
 ```
 
@@ -360,9 +358,10 @@ entry with the atlassian bundle; PR handling is `gh` via bash, already on
 ## 6. Pitfalls inherited from the base setup
 
 - **Never put MCP on a fan-out agent.** MCP servers spawn **per child** via
-  `npx`. Direct MCP tools also need `pi-mcp-adapter` loaded *and* explicit
-  `mcp:` entries — a global `directTools = true` is not sufficient. The
-  adapter caches metadata at startup, so **restart pi after adding a server**.
+  `npx`. Direct MCP tools need explicit `mcp:` entries — a global
+  `directTools = true` is not sufficient. Servers are declared in
+  `~/.pi/agent/mcp.json` (built-in MCP, no adapter extension); restart pi
+  after adding a server.
 - **Set the fan-out retry bound.** Wide fan-out contends on a single
   `status.json`; the default retry ladder parks the thread synchronously for
   ~7.9s and presents as a hung process at 0% CPU. The base flake sets

@@ -4,7 +4,7 @@
 # giving the agent access to Gmail, Google Drive, and Google Sheets.
 #
 # ── What this does ──────────────────────────────────────────────────────────
-#  • Writes ~/.pi/agent/mcp-adapter.json so pi-mcp-adapter discovers the server.
+#  • Contributes the server to ~/.pi/agent/mcp.json (pi's built-in MCP).
 #  • Writes ~/.config/google-workspace-mcp/credentials.json at activation
 #    time, pulling the OAuth client-id and client-secret from sops secrets.
 #  • Declares two sops secrets: google_oauth_client_id and
@@ -118,12 +118,13 @@
     lib.mkIf isPrivate {
       # ── MCP server declaration ─────────────────────────────────────────────
       # Contributed via my.pi.mcpServers; modules/home/pi/mcp.nix is the
-      # single writer of ~/.pi/agent/mcp-adapter.json. This entry is static (no
+      # single writer of ~/.pi/agent/mcp.json. This entry is static (no
       # secrets) — credentials live in credentials.json, written below.
-      my.pi.mcpServers."google-workspace" = {
+      my.pi.mcpServers."google_workspace" = {
         type = "stdio";
         command = "npx";
         args = ["-y" "@dguido/google-workspace-mcp"];
+        description = "Google Workspace: Gmail, Drive, Docs, Sheets, Calendar, Contacts, Slides";
         env = {
           GOOGLE_WORKSPACE_SERVICES = workspaceServices;
           # TOON format is disabled: it strips structuredContent from

@@ -108,11 +108,16 @@
     #
     # Verified semantics (pi-subagents child launch): a non-empty
     # `extensions:` list REPLACES ambient extensions (--no-extensions +
-    # only listed), it does not add to them. So a bundle that needs MCP must
-    # list pi-mcp-adapter itself, and the union of an agent's bundle
-    # extensions must be complete for that agent. Entries are passed to
-    # `pi --extension`, so packages need the `npm:` prefix (bare names are
-    # resolved as filesystem paths and fail the child launch).
+    # only listed), it does not add to them, and the union of an agent's
+    # bundle extensions must be complete for that agent. Entries are passed
+    # to `pi --extension`, so packages need the `npm:` prefix (bare names
+    # are resolved as filesystem paths and fail the child launch).
+    #
+    # MCP access is declared via `mcpTools` (rendered as `mcp:<server>`
+    # selectors in the tools allowlist), resolved against Pi's built-in MCP
+    # — no extension is required. Server names must use underscores, not
+    # hyphens: Pi normalizes `-` to `_` in tool namespaces, but pi-subagents'
+    # built-in resolver matches the raw selector.
     #
     # Not yet representable here: package-provided skills (worktrunk,
     # parse-document, pi-lens-*, mcp-scripting) and repo-local skills
@@ -207,14 +212,13 @@
       vault = {skills = ["obsidian-vault-read" "obsidian-vault-maintenance"];};
       workspace = {
         skills = ["google-workspace" "linkedin-profile"];
-        extensions = ["npm:pi-mcp-adapter"];
-        mcpTools = ["google-workspace"];
+        mcpTools = ["google_workspace"];
       };
       media = {
         skills = ["video-analyzer"];
-        extensions = ["npm:pi-docparser" "npm:pi-mcp-adapter"];
+        extensions = ["npm:pi-docparser"];
         tools = ["document_parse" "document_search" "document_screenshot"];
-        mcpTools = ["video-analyzer"];
+        mcpTools = ["video_analyzer"];
       };
       # Commit mechanics only: version-control skill + a shell for git.
       # Deliberately NO pi-worktrunk — worktree lifecycle (switch/merge/

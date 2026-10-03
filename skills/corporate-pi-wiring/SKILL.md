@@ -182,7 +182,6 @@ corporate flake. This is the aspect that owns your corporate pi settings:
 
           packages = [
             # Start with the private baseline and prune / extend:
-            "npm:pi-mcp-adapter"
             "npm:context-mode"
             "npm:pi-lens"
             "npm:@barlevalon/worktrunk-skill"

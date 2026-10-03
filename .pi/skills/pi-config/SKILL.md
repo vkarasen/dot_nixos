@@ -163,7 +163,6 @@ my.pi.modelTiers.corp-cheap = {
 # A new bundle (skills + extensions + tools + mcp + policy, together):
 my.pi.capabilityBundles.jira = {
   skills = ["jira-workflows"];           # logical keys, resolved via skillPath
-  extensions = ["npm:pi-mcp-adapter"];   # npm: prefix REQUIRED
   tools = ["bash"];                       # unioned into consuming agents
   mcpTools = ["jira"];
   policy = ''...scope the shell...'';

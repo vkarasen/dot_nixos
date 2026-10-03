@@ -17,14 +17,15 @@
       pkgs.yt-dlp
     ];
 
-    my.pi.mcpServers."video-analyzer" = {
+    my.pi.mcpServers."video_analyzer" = {
       type = "stdio";
       command = "npx";
       args = ["-y" "mcp-video-analyzer@latest"];
+      description = "Video analysis: transcripts, key frames, OCR, and metadata for video URLs and local files";
       # Frame extraction + OCR are CPU-bound and can take minutes on long
-      # videos — raise the request timeout well above the SDK's ~60s default
-      # so the slow path (full-analysis queries) has headroom.
-      requestTimeoutMs = 300000;
+      # videos — raise the request timeout (seconds) well above pi's 60s
+      # default so the slow path (full-analysis queries) has headroom.
+      timeout = 300;
     };
   };
 }

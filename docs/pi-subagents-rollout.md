@@ -360,19 +360,21 @@ first model turn the child diffs declared names against the filtered registry
 and **fails closed**, naming the missing tools. Load providers via `extensions`
 or `subagentOnlyExtensions` (the latter loads only in children). A non-empty
 `extensions:` list **replaces** ambient extensions (`--no-extensions` + only the
-listed ones) rather than adding to them — so any bundle that needs MCP must
-list `pi-mcp-adapter` itself (verified in the child launch arg builder,
-`pi-args.ts`). And `--tools` is a **strict allowlist over all tools** —
+listed ones) rather than adding to them (verified in the child launch arg
+builder, `pi-args.ts`). And `--tools` is a **strict allowlist over all tools** —
 built-in, extension, and custom alike — so an extension's tools must also be
 named explicitly in `tools`; loading the extension alone does not surface them
 (pi `usage.md`). `extensions` entries are passed to `pi --extension`, so npm
 packages need the `npm:` prefix — bare names resolve as filesystem paths and
 fail the child launch.
 
-**MCP:** requires `pi-mcp-adapter` *and* explicit `mcp:` frontmatter entries —
-global `directTools: true` is insufficient. Metadata is cached at startup, so
-**restart pi after adding a server**. Servers spawn **per child** via `npx`, so
-MCP must never land on a fan-out agent.
+**MCP:** built-in since pi 0.99 — servers are declared in `~/.pi/agent/mcp.json`
+(or `.pi/mcp.json` in a trusted project); explicit `mcp:` frontmatter entries
+select from them, and no adapter extension is needed (`directTools: true` alone
+is still insufficient). Server names use underscores, not hyphens: pi
+normalizes `-` to `_` in tool namespaces, but pi-subagents' built-in resolver
+matches the raw selector. Restart pi after adding a server. Servers spawn
+**per child** via `npx`, so MCP must never land on a fan-out agent.
 
 **`bash` is not gateable by pi-subagents** (`watchdog.md`): "Bash rules are
 rejected rather than parsed, gated, denied, or audited." Non-bash tools do have
@@ -396,7 +398,7 @@ for ~7.9s and presents as a hung process at 0% CPU.
 allowlisted): `pi-lens` heaviest (LSP + knip/jscpd/madge/gitleaks/trivy at
 `session_start`) → executor/reviewer only · `pi-worktrunk` can merge/push → vcs
 bundle only · `rpiv-web-tools` burns Tavily credits → researcher only ·
-`pi-mcp-adapter` only where `mcp:` entries exist · `pi-docparser` media only ·
+`pi-docparser` media only ·
 `rpiv-todo` and the pure-TUI packages (`pi-catppuccin`, `pi-vim`, `pi-fzfp`,
 `pi-usage`, `pi-quotas`) excluded. `pi-blackhole` is fine —
 `observeAfterTokens: 30000` means short scouts never trigger observation;
