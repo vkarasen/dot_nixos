@@ -92,6 +92,10 @@
         #     x/shift+x pane/tab-close ladder since this is more permanent.
         keys.open_worktree = lib.mkDefault "prefix+shift+o";
         keys.remove_worktree = lib.mkDefault "prefix+shift+e";
+        keys.navigate_workspace_up = lib.mkDefault "k";
+        keys.navigate_workspace_down = lib.mkDefault "j";
+        keys.navigate_pane_up = lib.mkDefault "ctrl+k";
+        keys.navigate_pane_down = lib.mkDefault "ctrl+j";
       };
     };
 
