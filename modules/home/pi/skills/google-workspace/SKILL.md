@@ -1,16 +1,27 @@
 ---
 name: google-workspace
-description: Required guidance for Google Workspace MCP usage. Use whenever the google-workspace MCP server is available or any Gmail, Drive, Docs, Sheets, Calendar, Contacts, or Slides tool may be called.
+description: Required guidance for Google Workspace MCP usage. Use whenever the `google_workspace` MCP server is available or any Gmail, Drive, Docs, Sheets, Calendar, Contacts, or Slides tool may be called.
 user-invocable: true
 ---
 
 # Google Workspace
 
 This is the required companion skill for the
-`google-workspace` MCP server.
+`google_workspace` MCP server.
 
 Use it any time the server is connected, visible, or likely to be used.
 If Google Workspace tools are on the table, load this skill first.
+
+## Calling tools
+
+The `google_workspace` server's tools are exposed to you **directly**, each
+named `mcp__google_workspace__<tool>`. Call them like any other tool, passing
+the tool's own arguments.
+
+The main/orchestrator session does **not** have these tools: the server is
+declared with `deferred` exposure and the recon gate withholds `tool_search` /
+`codemode`, so Workspace work reaches this server only through a subagent whose
+frontmatter selects it (`mcp:google_workspace` — the `workspace` agent).
 
 ## Safety rules
 

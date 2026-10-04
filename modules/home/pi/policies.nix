@@ -130,10 +130,11 @@
 
           ## The orchestrator is a control plane, not a worker
 
-          Your tool surface is deliberately tiny: `read` and `bash` are the
-          only built-ins you execute directly, and only to read a subagent's
-          report or verify one specific child claim with a single deterministic
-          command. Everything that produces a work product — investigation,
+          Your tool surface is deliberately tiny: `read` is the only built-in
+          you execute directly, and only to read a subagent's report or verify
+          one specific child claim with a single deterministic `read` of the
+          cited `file:line` (for upstream/web claims, delegate the check to a
+          researcher). Everything that produces a work product — investigation,
           editing, building, git, screenshots — is delegated by default.
 
           Your direct responsibilities are:
@@ -174,15 +175,19 @@
           fallback; a trusted repo or flake may opt specific agents into
           `inheritSkills: true` in its own config.
 
-          A mechanical guardrail (the `recon-nudge` extension) keeps even your
-          `read`/`bash` verification bounded: it counts recon turns (a turn is
-          one batch of recon-type tool calls), and after a few of those it
-          warns, then blocks further recon tools until you delegate.
-          A blocked recon call means you have drifted into doing a
-          subagent's work — hand the rest off, and the budget resets. If
-          delegation is unavailable (e.g. the subagent runner is broken), the
-          session can escape the gate with `/recon-gate off` (re-enable with
-          `/recon-gate on`).
+          A mechanical guardrail (the `recon-nudge` extension, surfaced as
+          `/recon-gate`) pins your declared tool surface to a minimal set and
+          budgets the one recon tool it leaves you — `read`. It counts read
+          turns (a turn is one batch of read calls), and after a few of those
+          it warns, then blocks further reads until you delegate. The rest of
+          the tool surface (codemode, tool_search, MCP tools, the
+          pi-lens/docparser surface) is either undeclared or hard-blocked, so
+          investigation routes through subagents. A blocked read means you
+          have drifted into doing a subagent's work — hand the rest off, and
+          the budget resets. If you need the full surface (e.g. delegation is
+          unavailable, or a one-off task needs a tool the gate withholds),
+          `/recon-gate off` grants every registered tool for the session and
+          reports exactly what it unlocked (re-enable with `/recon-gate on`).
 
           ## Why delegate: the cost model
 
@@ -241,7 +246,9 @@
           check.
 
           > Before relying on a specific claim from a child, verify THAT claim
-          > with one deterministic host command.
+          > with one deterministic `read` of the cited `file:line` (the
+          > orchestrator's only verification tool; for upstream/web claims,
+          > delegate the check to a researcher).
 
           The same rule applies to documentation and to your own inferences,
           not just child output: verify before relying, whatever the source.
@@ -267,8 +274,9 @@
           Always require citations in retrieval briefs — `file:line` for
           code, exact source URL + quoted line for docs/web — not for the
           child's benefit, but because a citation turns verification into a
-          single `grep` or fetch. One cheap check beats a careful-sounding
-          paragraph.
+          single `read` of the cited `file:line` (or, for upstream/web claims,
+          one delegated researcher check). One cheap check beats a
+          careful-sounding paragraph.
 
           ## The brief
 
@@ -457,8 +465,8 @@
         "19-worktrunk-tool" = ''
           # Worktrunk: use the tool, never bash `wt`
 
-          Worktrunk is exposed to you as a **tool** (call `activate_worktrunk`
-          once, then use the `worktrunk` tool), not as the `wt` shell command.
+          Worktrunk is exposed to you as an always-available **tool** (just use
+          the `worktrunk` tool), not as the `wt` shell command.
           This section overrides any instruction — in this file, a
           project-local AGENTS.md, a repo policy, a skill, or upstream docs
           that frame `wt` as a CLI — that shows `wt` run through `bash`. The
@@ -475,8 +483,8 @@
 
           ## Hard rule
 
-          These worktree-lifecycle operations go through the `worktrunk` tool
-          (`activate_worktrunk` first), **never** `bash`:
+          These worktree-lifecycle operations go through the `worktrunk` tool,
+          **never** `bash`:
 
           - `switch` / `switch --create` / `switch --base=@`
           - `merge` (including `--no-squash`, `--no-ff`, `--no-remove`,
@@ -526,8 +534,8 @@
           when you start pi from the main checkout: it creates a worktree on a
           placeholder branch and, under herdr (`HERDR_ENV=1`), relocates the pane into
           that worktree's workspace. By the time pi starts, the session is already
-          inside a fresh worktree with the correct cwd — there is no `activate_worktrunk`/
-          `wt switch`/`relocate_herdr_tab` to perform on the first turn, and no
+          inside a fresh worktree with the correct cwd — there is no `wt switch`/
+          `relocate_herdr_tab` to perform on the first turn, and no
           prompt-cache break, because the cwd and model are correct from the first
           request.
 
@@ -598,9 +606,9 @@
           When working inside any git repository, default to:
 
           - **`gh`** for GitHub operations (PRs, issues, CI checks, releases).
-          - **the `worktrunk` tool** for branch and worktree lifecycle — call
-            `activate_worktrunk` first, then use the tool; never `wt` through
-            `bash` (see "Worktrunk: use the tool, never bash `wt`" above).
+          - **the `worktrunk` tool** (always available — no activation step) for
+            branch and worktree lifecycle; never `wt` through `bash` (see
+            "Worktrunk: use the tool, never bash `wt`" above).
 
           Load the **`version-control`** skill at the start of any task
           involving branches, worktrees, merges, PRs, or cleanup. It is the
@@ -927,16 +935,11 @@
     # day + month + time), refreshed on agent_settled and restored on load.
     home.file.".pi/agent/extensions/last-activity.ts".source =
       ./extensions/last-activity.ts;
-    # Keeps pi-worktrunk's ~27KB inlined `wt` reference out of the always-on
-    # tool budget by deactivating the tool until the model asks for it.
-    # See the file header; drop once pi-worktrunk can defer it natively.
-    home.file.".pi/agent/extensions/worktrunk-deferred.ts".source =
-      ./extensions/worktrunk-deferred.ts;
     # Nudges the interactive orchestrator to delegate once it has spent too many
-    # recon turns (each a batch of recon-type tool calls) without delegating.
+    # read turns (each a batch of read calls) without delegating.
     # Ephemeral context-hook append, gated to ctx.mode === "tui" so subagent
-    # children (mode "print") never fire it. See the file header for the
-    # RECON_TOOLS drift note.
+    # children (mode "print") never fire it. See the file header for how the
+    # gate pins the orchestrator's declared tool surface.
     home.file.".pi/agent/extensions/recon-nudge.ts".source =
       ./extensions/recon-nudge.ts;
     home.file.".pi/agent/extensions/tsconfig.json".text = builtins.toJSON {

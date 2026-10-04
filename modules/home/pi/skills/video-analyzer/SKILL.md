@@ -8,15 +8,19 @@ was given). Cite timestamps (`M:SS`) in every answer.
 
 ## Calling tools
 
-Use the `mcp__video_analyzer` namespace proxy, passing the **un-prefixed** tool
-name (`get_transcript`, not `video-analyzer_get_transcript`):
+The `video_analyzer` server's tools are exposed to you **directly**, each named
+`mcp__video_analyzer__<tool>` (`mcp__video_analyzer__get_transcript`,
+`mcp__video_analyzer__get_frame_at`, …). Call them like any other tool, passing
+the tool's own arguments — there is no `{tool, args}` wrapper:
 
 ```js
-mcp__video_analyzer({ tool: "get_transcript", args: { url: "<url>" } })
+mcp__video_analyzer__get_transcript({ url: "<url>" })
 ```
 
-For discovery or parameter details use `mcp({ search: "..." })` /
-`mcp({ describe: "..." })`; for fan-out across several calls use `mcpScript`.
+The main/orchestrator session does **not** have these tools: the server is
+declared with `deferred` exposure and the recon gate withholds `tool_search` /
+`codemode`, so video work reaches this server only through a subagent whose
+frontmatter selects it (`mcp:video_analyzer` — the `media` agent).
 
 Pick the cheapest path that answers the question. Three cover almost everything:
 
@@ -37,7 +41,7 @@ frame(s) you asked for, which is far cheaper than a full pass:
 - `get_frame_at` for a single timestamp (one frame):
 
 ```js
-mcp__video_analyzer({ tool: "get_frame_at", args: { url: "<url>", timestamp: "1:30" } })
+mcp__video_analyzer__get_frame_at({ url: "<url>", timestamp: "1:30" })
 ```
 
 - `analyze_moment` for a short range — takes `from`/`to` timestamps
@@ -61,9 +65,10 @@ For anything beyond the three paths above (batch jobs, metadata-only checks,
 raising frame width for dense-UI screen recordings, motion/burst frames), read
 the tool descriptions rather than guessing:
 
-1. `mcp({ search: "..." })` to find the right tool.
-2. `mcp({ describe: "..." })` to read its parameters before calling — the
-   parameter descriptions are where the per-call options live.
+1. List your `mcp__video_analyzer__*` tools and read their descriptions to find
+   the right one.
+2. Read the parameters before calling — the parameter descriptions are where
+   the per-call options live.
 
 ## Gotchas
 

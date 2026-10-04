@@ -415,21 +415,21 @@ Rules:
 Pi extensions are TypeScript files under `modules/home/pi/extensions/`, wired
 into `~/.pi/agent/extensions/` by `home.file` entries in
 `modules/home/pi/policies.nix` (next to the `herdr-context-rename.ts`,
-`herdr-tab-relocate.ts`, `last-activity.ts`, and `worktrunk-deferred.ts`
+`herdr-tab-relocate.ts`, and `last-activity.ts`
 entries, which share one `tsconfig.json`). Follow that pattern for new
 extensions: add the `.ts` under `modules/home/pi/extensions/` and a matching
 `home.file` source line in `policies.nix`.
 
-### Recon-nudge drift risk
+### Orchestrator recon-gate
 
-`modules/home/pi/extensions/recon-nudge.ts` keeps a hand-maintained
-`RECON_TOOLS` list of read-only / gathering tools that count toward its
-delegation deadline. There is **no automated check** that this list matches the
-orchestrator's actual tool surface. When you add a new tool to the
-orchestrator — a built-in, a pi-lens or pi-docparser tool, an MCP tool, or
-anything another extension registers — check whether it is recon-shaped
-(read-only/gathering) and add it to `RECON_TOOLS` if so. Missing entries
-silently undercount; this is a known drift risk.
+`modules/home/pi/extensions/recon-nudge.ts` gates the interactive
+orchestrator's tool surface: it pins a minimal declared set, budgets only
+`read` via `RECON_TOOLS = ["read"]` (NUDGE_THRESHOLD soft-warns, GATE_THRESHOLD
+hard-blocks), and hard-blocks `codemode` / `tool_search` / `list_mcp_resources`
+/ `mcp__*` at the `tool_call` hook. `RECON_TOOLS` is deliberately just
+`["read"]` — the gate does **not** grow this list; the withheld surface is
+handled by the minimal declared set plus the hard-block list instead. So there
+is no "add new recon-shaped tools to `RECON_TOOLS`" step anymore.
 
 ## How the wiring works
 

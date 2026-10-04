@@ -22,6 +22,11 @@
       command = "npx";
       args = ["-y" "mcp-video-analyzer@latest"];
       description = "Video analysis: transcripts, key frames, OCR, and metadata for video URLs and local files";
+      # Keep the orchestrator's declared tool set clean: these tools stay out of
+      # the model's prompt and are reached through tool_search. Subagent
+      # bundles still get them directly via the `mcp:video_analyzer` selector,
+      # which bypasses exposure (docs/agents.md).
+      exposure = "deferred";
       # Frame extraction + OCR are CPU-bound and can take minutes on long
       # videos — raise the request timeout (seconds) well above pi's 60s
       # default so the slow path (full-analysis queries) has headroom.

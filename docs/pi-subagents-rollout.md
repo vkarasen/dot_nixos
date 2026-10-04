@@ -86,7 +86,8 @@ prompt + tool schemas). That is the wrong target:
 
 - it is a **fixed** cost, and prompt caching makes it nearly free after turn one
 - the whole 27KB saved by deferring the `worktrunk` tool is worth ≈ **$0.40 per
-  session**
+  session** (that deferral has since been **reverted** — the shim was deleted
+  and `worktrunk` is always-on again; see §2)
 
 The real cost is **recurring**: anything read into the orchestrator's context is
 re-sent on every subsequent turn.
@@ -162,7 +163,7 @@ expense of (a) or (b).
 | commit | change |
 | --- | --- |
 | `ee22ced` | `herdr-tab-rename.ts`: guard so delegated children never register `rename_herdr_tab`. Children inherit `HERDR_ENV`/`HERDR_TAB_ID` and would rename the *parent's* tab. Guards at factory time (`PI_SUBAGENT_*` env, headless argv) and again on `ctx.mode !== "tui"`. |
-| `7219854` | `worktrunk-deferred.ts`: deactivate pi-worktrunk's tool at `before_agent_start`, re-activate via `activate_worktrunk`. −26,854 bytes always-on (−24.1%). |
+| `7219854` | `worktrunk-deferred.ts`: deactivate pi-worktrunk's tool at `before_agent_start`, re-activate via `activate_worktrunk`. −26,854 bytes always-on (−24.1%). **REVERTED**: the shim is deleted and `worktrunk` is always-on — an always-on tool keeps a byte-identical prompt prefix (cache-stable), while activation via `setActiveTools()` rebuilds the system prompt (cache miss). The measurements below stand as history. |
 | `c2e6082` | alejandra pass on `policies.nix` + `private.nix` (pre-existing drift; formatted up front so later diffs stay semantic). Output store path unchanged — provably no-op. |
 | `878a464` | `my.pi.agentInvariants`: prohibitions-only block at the top of `AGENTS.md`, separately reusable for child prompts. |
 

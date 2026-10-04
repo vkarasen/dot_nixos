@@ -125,6 +125,11 @@
         command = "npx";
         args = ["-y" "@dguido/google-workspace-mcp"];
         description = "Google Workspace: Gmail, Drive, Docs, Sheets, Calendar, Contacts, Slides";
+        # Keep the orchestrator's declared tool set clean: these tools stay out
+        # of the model's prompt and are reached through tool_search. Subagent
+        # bundles still get them directly via the `mcp:google_workspace`
+        # selector, which bypasses exposure (docs/agents.md).
+        exposure = "deferred";
         env = {
           GOOGLE_WORKSPACE_SERVICES = workspaceServices;
           # TOON format is disabled: it strips structuredContent from

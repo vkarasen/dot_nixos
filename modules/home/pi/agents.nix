@@ -310,8 +310,10 @@
         tools = ["read"];
         toolBudget = {hard = 40;};
         prompt = ''
-          You are a media analyst. For videos, use the video-analyzer MCP
-          tools to transcribe and inspect frames; for documents, use
+          You are a media analyst. For videos, call your direct video MCP
+          tools — named `mcp__video_analyzer__<tool>` (the `video_analyzer`
+          server's tools, exposed directly to you) — to transcribe and inspect
+          frames; for documents, use
           document_parse / document_search / document_screenshot. Report with
           timestamps or page references.
         '';
@@ -402,7 +404,9 @@
         };
         timeoutMs = 3600000;
         prompt = ''
-          You are a workspace operator. Use the google-workspace MCP tools to
+          You are a workspace operator. Call your direct
+          `mcp__google_workspace__<tool>` tools (the `google_workspace`
+          server's tools, exposed directly to you) to
           act on Gmail, Drive, Docs, Sheets, Calendar, and Contacts. Follow
           the google-workspace skill's guidance (auth, scoping, idempotency)
           before any mutating operation.

@@ -1,6 +1,6 @@
 ---
 name: version-control
-description: Version control on this machine — the worktrunk tool and its deferred activation, worktree lifecycle, Worktrunk config/hooks/approvals, and commit/merge/PR conventions. Use when starting git, branch, worktree, merge, PR, or cleanup work.
+description: Version control on this machine — the always-available worktrunk tool, worktree lifecycle, Worktrunk config/hooks/approvals, and commit/merge/PR conventions. Use when starting git, branch, worktree, merge, PR, or cleanup work.
 ---
 
 # Version control
@@ -24,21 +24,20 @@ session-neutral commands (`wt list`, `wt config show`, `wt hook show`,
 `wt hook <type> --dry-run`) and plain `git` (`status`, `diff`, `commit`,
 `push`) are fine via `bash`.
 
-## Activating the tool (deferred by design)
+## The `worktrunk` tool (always available)
 
-`pi-worktrunk` registers the `worktrunk` tool, but its description inlines the
-full generated `wt` CLI reference (~27KB — roughly a quarter of the always-on
-context budget). A local extension (`worktrunk-deferred.ts`) therefore keeps
-the tool inactive until it is actually needed:
+`pi-worktrunk` registers the `worktrunk` tool and it is active from the first
+turn — there is **no activation step**. Its description inlines the full
+generated `wt` CLI reference (~27KB — roughly a quarter of the always-on
+context budget), and that cost is accepted deliberately: an always-on tool
+keeps a byte-identical prompt prefix (cache-stable), whereas toggling the tool
+set calls `setActiveTools()` and rebuilds the system prompt (cache miss).
 
-- Call **`activate_worktrunk`** once before any worktree operation. The
-  `worktrunk` tool becomes available on the next turn.
-- `activate_worktrunk` is cheap (no prompt snippet); only the tool itself
-  carries the heavy reference, so that cost is paid only when you actually do
-  worktree work.
+- Just use the **`worktrunk` tool** for any worktree operation — nothing to
+  activate first.
 - `/wt` is a slash command, not a tool: session placement, branch markers,
-  recovery, and approval gating all keep working without the tool active, and
-  cost no prompt tokens.
+  recovery, and approval gating all come from the `pi-worktrunk` extension
+  and keep working regardless.
 
 ## Worktree workflow
 
