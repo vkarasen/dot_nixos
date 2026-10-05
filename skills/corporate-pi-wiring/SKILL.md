@@ -182,9 +182,9 @@ corporate flake. This is the aspect that owns your corporate pi settings:
 
           packages = [
             # Start with the private baseline and prune / extend:
-            "npm:context-mode"
+            "npm:pi-worktrunk"
             "npm:pi-lens"
-            "npm:@barlevalon/worktrunk-skill"
+            "npm:pi-docparser"
             # ... add corporate-specific packages ...
           ];
         };
