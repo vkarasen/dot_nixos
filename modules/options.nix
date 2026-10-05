@@ -314,6 +314,25 @@
         name; a single aggregation aspect folds the result into mcp.json.
       '';
     };
+    options.my.pi.mcpProxyServers = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.attrsOf lib.types.raw);
+      default = {};
+      description = ''
+        Stdio MCP server definitions (command/args/env) for the shared
+        mcp-proxy singleton. Each key is a server name; each value is a server
+        definition in the standard mcpServers shape (command/args/env). Unlike
+        my.pi.mcpServers, these are written to the mcp-proxy config file
+        (~/.config/pi-mcp/mcp-servers.json), not to ~/.pi/agent/mcp.json, and
+        are spawned once by the pi-mcp-proxy systemd user service. pi connects
+        to them over streamable HTTP via my.pi.mcpServers URL entries. Multiple
+        modules merge additively by server name.
+
+        No secrets here — this value is rendered into
+        ~/.config/pi-mcp/mcp-servers.json and the world-readable Nix store.
+        Credentials belong in sops + the server's own credentials file, never in
+        env.
+      '';
+    };
     options.my.pi.modelTiers = lib.mkOption {
       type = lib.types.attrsOf (lib.types.submodule {
         options = {

@@ -30,6 +30,7 @@
       config.flake.modules.homeManager.pi
       config.flake.modules.homeManager.pi-agents
       config.flake.modules.homeManager.pi-mcp
+      config.flake.modules.homeManager.pi-mcp-proxy
       config.flake.modules.homeManager.pi-policies
       config.flake.modules.homeManager.pi-private
       config.flake.modules.homeManager.google-workspace

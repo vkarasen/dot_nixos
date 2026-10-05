@@ -1,0 +1,31 @@
+diff --git a/src/mcp_proxy/mcp_server.py b/src/mcp_proxy/mcp_server.py
+index ae1c1b5..a8395b5 100644
+--- a/src/mcp_proxy/mcp_server.py
++++ b/src/mcp_proxy/mcp_server.py
+@@ -85,6 +85,26 @@ def create_single_instance_routes(
+     )
+ 
+     sse_transport = SseServerTransport("/messages/")
++
++    # Strip the Resources capability from the initialize reply advertised over
++    # HTTP/SSE. pi cannot handle a proxied server that advertises resources; see
++    # https://github.com/earendil-works/pi/issues/10526. The MCP SDK derives the
++    # advertised capabilities from the registered request handlers, so wrap
++    # create_initialization_options to drop resources while keeping the resource
++    # handlers (and every other capability) intact.
++    original_create_initialization_options = mcp_server_instance.create_initialization_options
++
++    def create_initialization_options_without_resources(
++        *args: Any,
++        **kwargs: Any,
++    ) -> Any:
++        options = original_create_initialization_options(*args, **kwargs)
++        if getattr(options, "capabilities", None) is not None:
++            options.capabilities.resources = None
++        return options
++
++    mcp_server_instance.create_initialization_options = create_initialization_options_without_resources
++
+     http_session_manager = StreamableHTTPSessionManager(
+         app=mcp_server_instance,
+         event_store=None,
