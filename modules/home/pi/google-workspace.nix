@@ -126,6 +126,14 @@
       my.pi.mcpServers."google_workspace" = {
         url = "http://127.0.0.1:8799/servers/google-workspace/mcp";
         description = "Google Workspace: Gmail, Drive, Docs, Sheets, Calendar, Contacts, Slides";
+        # Opt-in: only when my.pi.mcpProxy.requireAuth is on does the proxy
+        # enforce a bearer token, so only then does pi send one. `!command`
+        # makes pi run the command when it builds the request and use its stdout
+        # as the whole header value (docs/mcp.md: "the command must make up the
+        # whole value").
+        headers = lib.mkIf (config.my.pi.mcpProxy.requireAuth && config.sops.secrets ? mcp_proxy_auth_token) {
+          Authorization = "!echo Bearer $(cat ${config.sops.secrets.mcp_proxy_auth_token.path})";
+        };
         # `deferred` keeps this server's ~88 tools out of the model context
         # until `tool_search` pulls them in — `direct` would declare every one
         # of them on every turn. Subagent child sessions register the tools

@@ -12,7 +12,12 @@
 #   - ffmpeg is bundled (ffmpeg-static) — no system ffmpeg needed.
 #   - Chrome/Chromium is an optional frame-extraction fallback; not wired here.
 {...}: {
-  flake.modules.homeManager.video-analyzer = {pkgs, ...}: {
+  flake.modules.homeManager.video-analyzer = {
+    config,
+    lib,
+    pkgs,
+    ...
+  }: {
     programs.pi-coding-agent.extraPackages = [
       pkgs.yt-dlp
     ];
@@ -20,6 +25,13 @@
     my.pi.mcpServers."video_analyzer" = {
       url = "http://127.0.0.1:8799/servers/video-analyzer/mcp";
       description = "Video analysis: transcripts, key frames, OCR, and metadata for video URLs and local files";
+      # Opt-in: only when my.pi.mcpProxy.requireAuth is on does the proxy enforce
+      # a bearer token, so only then does pi send one. `!command` makes pi run
+      # the command when it builds the request and use its stdout as the whole
+      # header value (docs/mcp.md: "the command must make up the whole value").
+      headers = lib.mkIf (config.my.pi.mcpProxy.requireAuth && config.sops.secrets ? mcp_proxy_auth_token) {
+        Authorization = "!echo Bearer $(cat ${config.sops.secrets.mcp_proxy_auth_token.path})";
+      };
       # `deferred` keeps the tool set out of the model context until
       # `tool_search` pulls it in — `direct` would declare every tool on every
       # turn. Subagent child sessions register the tools regardless of

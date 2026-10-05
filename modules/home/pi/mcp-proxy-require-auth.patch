@@ -1,0 +1,125 @@
+diff --git a/src/mcp_proxy/__main__.py b/src/mcp_proxy/__main__.py
+index b0c1dac..3032755 100644
+--- a/src/mcp_proxy/__main__.py
++++ b/src/mcp_proxy/__main__.py
+@@ -273,6 +273,17 @@ def _add_arguments_to_parser(parser: argparse.ArgumentParser) -> None:
+             "Defaults to 'Mcp-Session-Id'. Can be used multiple times."
+         ),
+     )
++    mcp_server_group.add_argument(
++        "--auth-bearer-token",
++        type=str,
++        default="",
++        metavar="TOKEN",
++        help=(
++            "Require 'Authorization: Bearer TOKEN' on every HTTP request served by the "
++            "SSE/StreamableHTTP server, answering 401 Unauthorized otherwise. "
++            "Empty (the default) disables authentication."
++        ),
++    )
+ 
+ 
+ def _setup_logging(*, level: str, debug: bool) -> logging.Logger:
+@@ -443,6 +454,7 @@ def _create_mcp_settings(args_parsed: argparse.Namespace) -> MCPServerSettings:
+         allow_origins=args_parsed.allow_origin if len(args_parsed.allow_origin) > 0 else None,
+         expose_headers=expose_headers,
+         log_level="DEBUG" if args_parsed.debug else args_parsed.log_level,
++        auth_bearer_token=args_parsed.auth_bearer_token,
+     )
+ 
+ 
+diff --git a/src/mcp_proxy/mcp_server.py b/src/mcp_proxy/mcp_server.py
+index ae1c1b5..051333f 100644
+--- a/src/mcp_proxy/mcp_server.py
++++ b/src/mcp_proxy/mcp_server.py
+@@ -2,6 +2,7 @@
+ 
+ import contextlib
+ import logging
++import secrets
+ from collections.abc import AsyncIterator, Awaitable, Callable
+ from dataclasses import dataclass, field
+ from datetime import datetime, timezone
+@@ -17,7 +18,7 @@ from starlette.applications import Starlette
+ from starlette.middleware import Middleware
+ from starlette.middleware.cors import CORSMiddleware
+ from starlette.requests import Request
+-from starlette.responses import JSONResponse, Response
++from starlette.responses import JSONResponse, PlainTextResponse, Response
+ from starlette.routing import BaseRoute, Mount, Route
+ from starlette.types import Receive, Scope, Send
+ 
+@@ -42,6 +43,9 @@ class MCPServerSettings:
+     allow_origins: list[str] | None = None
+     expose_headers: list[str] = field(default_factory=_default_expose_headers)
+     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
++    # When non-empty, every HTTP request must carry `Authorization: Bearer <token>`.
++    # Empty (the default) leaves the server unauthenticated.
++    auth_bearer_token: str = ""
+ 
+ 
+ # To store last activity for multiple servers if needed, though status endpoint is global for now.
+@@ -65,6 +69,43 @@ class _ASGIEndpointAdapter:
+         await self._endpoint(scope, receive, send)
+ 
+ 
++class BearerAuthMiddleware:
++    """Reject requests that do not carry ``Authorization: Bearer <token>``.
++
++    Pure ASGI middleware (not ``BaseHTTPMiddleware``) so the streaming responses
++    produced by the MCP transport pass through without buffering. The middleware
++    is only added to the stack when a token is configured, so an empty token
++    leaves the server exactly as unauthenticated as before.
++    """
++
++    def __init__(self, app: Starlette, *, token: str) -> None:
++        self._app = app
++        self._expected = f"Bearer {token}".encode()
++
++    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
++        if scope["type"] != "http":
++            await self._app(scope, receive, send)
++            return
++
++        provided = b""
++        for name, value in scope.get("headers") or []:
++            if name == b"authorization":
++                provided = value
++                break
++
++        # Constant-time comparison so the token cannot be recovered by timing.
++        if not secrets.compare_digest(provided, self._expected):
++            response = PlainTextResponse(
++                "Unauthorized\n",
++                status_code=401,
++                headers={"WWW-Authenticate": "Bearer"},
++            )
++            await response(scope, receive, send)
++            return
++
++        await self._app(scope, receive, send)
++
++
+ HTTP_METHODS = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT", "TRACE"]
+ 
+ 
+@@ -228,6 +269,19 @@ async def run_mcp_server(
+                 ),
+             )
+ 
++        # Opt-in bearer token auth. Appended after CORS so that (when CORS is
++        # enabled) preflight OPTIONS requests are answered by CORSMiddleware
++        # before they reach the auth check — browsers never send credentials on
++        # a preflight. A token of "" disables auth entirely.
++        if mcp_settings.auth_bearer_token:
++            logger.info("Bearer token authentication enabled for all HTTP endpoints")
++            middleware.append(
++                Middleware(
++                    BearerAuthMiddleware,
++                    token=mcp_settings.auth_bearer_token,
++                ),
++            )
++
+         starlette_app = Starlette(
+             debug=(mcp_settings.log_level == "DEBUG"),
+             routes=all_routes,

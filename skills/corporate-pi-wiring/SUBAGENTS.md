@@ -365,7 +365,9 @@ entry with the atlassian bundle; PR handling is `gh` via bash, already on
   Direct MCP tools need explicit `mcp:` entries — a global
   `directTools = true` is not sufficient. Servers are declared in
   `~/.pi/agent/mcp.json` (built-in MCP, no adapter extension); restart pi
-  after adding a server.
+  after adding a server. The singleton serves loopback-unauthenticated by
+  default; on a multi-user host set `my.pi.mcpProxy.requireAuth = true` and add
+  the `mcp_proxy_auth_token` sops key (`openssl rand -hex 32`).
 - **Set the fan-out retry bound.** Wide fan-out contends on a single
   `status.json`; the default retry ladder parks the thread synchronously for
   ~7.9s and presents as a hung process at 0% CPU. The base flake sets

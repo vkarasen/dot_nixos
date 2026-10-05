@@ -22,6 +22,18 @@
     ...
   }: let
     isPrivate = config.my.is_private;
+    # Opt-in bearer auth (see mcp-proxy-require-auth.patch). Only when
+    # my.pi.mcpProxy.requireAuth is enabled does the aspect declare the sops
+    # secret, start the proxy with --auth-bearer-token, and have pi send the
+    # matching Authorization header. With the option off (the default) the
+    # secret is never declared, so nothing changes: sops-nix fails activation on
+    # a declared-but-missing key, and a missing token must mean "no auth".
+    requireAuth = config.my.pi.mcpProxy.requireAuth;
+    authTokenPath =
+      if config.sops.secrets ? mcp_proxy_auth_token
+      then config.sops.secrets.mcp_proxy_auth_token.path
+      else "";
+    authEnabled = requireAuth && authTokenPath != "";
     # mcp-proxy 0.12.0 is patched twice:
     #
     # 1. mcp-proxy-forward-cursor.patch — a real upstream bug fix. Upstream
@@ -36,15 +48,51 @@
     #      https://github.com/earendil-works/pi/issues/10526
     #    RIP OUT once pi fixes #10526: delete the patch file and drop its entry
     #    from the patches list below. Nothing else depends on it.
+    #
+    # 3. mcp-proxy-require-auth.patch — `--auth-bearer-token TOKEN`. When the
+    #    token is non-empty, every request must carry
+    #    `Authorization: Bearer TOKEN` (constant-time compare) or it gets 401.
+    #    An empty token disables auth, so the proxy behaves exactly as before
+    #    until a token is configured. Opt-in wiring lives further down.
     mcpProxy = pkgs.mcp-proxy.overrideAttrs (old: {
       patches =
         (old.patches or [])
         ++ [
           ./mcp-proxy-forward-cursor.patch
           ./mcp-proxy-strip-resources.patch
+          ./mcp-proxy-require-auth.patch
         ];
     });
+
+    # Launcher used only when auth is enabled. systemd's ExecStart is not a
+    # shell, so the token has to be read out of the sops-managed file by a
+    # script. A missing or empty file degrades to "no auth" instead of failing
+    # the unit — the same empty-token ⇒ unauthenticated behaviour the patch
+    # implements.
+    mcpProxyWithAuth = pkgs.writeShellScriptBin "pi-mcp-proxy-auth" ''
+      set -eu
+      token=""
+      if [ -r "${authTokenPath}" ]; then
+        token="$(cat "${authTokenPath}")"
+      fi
+      if [ -n "$token" ]; then
+        exec ${mcpProxy}/bin/mcp-proxy \
+          --named-server-config "$HOME/.config/pi-mcp/mcp-servers.json" \
+          --host 127.0.0.1 --port 8799 \
+          --auth-bearer-token "$token"
+      fi
+      exec ${mcpProxy}/bin/mcp-proxy \
+        --named-server-config "$HOME/.config/pi-mcp/mcp-servers.json" \
+        --host 127.0.0.1 --port 8799
+    '';
   in {
+    # Opt-in secret holding the proxy's bearer token. Declared only when
+    # my.pi.mcpProxy.requireAuth is set, so a checkout that has not added the key
+    # to modules/home/sops/secrets/secrets.yaml still evaluates and activates.
+    sops.secrets = lib.mkIf requireAuth {
+      mcp_proxy_auth_token = {};
+    };
+
     home.file.".config/pi-mcp/mcp-servers.json".text = builtins.toJSON {
       mcpServers = config.my.pi.mcpProxyServers;
     };
@@ -69,7 +117,13 @@
         # Personal-only: wait for the google-workspace OAuth client credentials
         # to be present before starting, mirroring the readiness probe idea.
         ExecStartPre = lib.mkIf isPrivate "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 60); do [ -f \"$HOME/.config/google-workspace-mcp/credentials.json\" ] && exit 0; sleep 1; done; exit 1'";
-        ExecStart = "${mcpProxy}/bin/mcp-proxy --named-server-config %h/.config/pi-mcp/mcp-servers.json --host 127.0.0.1 --port 8799";
+        # systemd performs no command substitution, so when auth is on the token
+        # is read from the sops file by the launcher; otherwise the plain command
+        # line below is used unchanged.
+        ExecStart =
+          if authEnabled
+          then "${mcpProxyWithAuth}/bin/pi-mcp-proxy-auth"
+          else "${mcpProxy}/bin/mcp-proxy --named-server-config %h/.config/pi-mcp/mcp-servers.json --host 127.0.0.1 --port 8799";
         Restart = "on-failure";
         RestartSec = 5;
         TimeoutStopSec = 15;

@@ -333,6 +333,24 @@
         env.
       '';
     };
+    options.my.pi.mcpProxy.requireAuth = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Require bearer-token authentication on the shared mcp-proxy singleton
+        (modules/home/pi/mcp-proxy.nix).
+
+        When enabled, the proxy is patched with `--auth-bearer-token` and started
+        with the value of the sops secret `mcp_proxy_auth_token`, and every URL
+        entry in my.pi.mcpServers that points at the proxy gets a matching
+        `Authorization: Bearer ...` header. The secret must exist in
+        modules/home/sops/secrets/secrets.yaml before the switch that enables
+        this — sops-nix fails activation on a declared-but-missing key.
+
+        Disabled by default: no secret is declared, the proxy keeps serving
+        unauthenticated on loopback, and mcp.json is unchanged.
+      '';
+    };
     options.my.pi.modelTiers = lib.mkOption {
       type = lib.types.attrsOf (lib.types.submodule {
         options = {

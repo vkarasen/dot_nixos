@@ -379,6 +379,9 @@ matches the raw selector. Restart pi after adding a server. The base servers (`g
 service and reached over streamable HTTP, so the per-child `npx` cost no longer
 applies to them; any stdio server added directly to `mcp.json` still spawns
 **per child** via `npx`, so MCP must never land on a fan-out agent for those.
+The singleton serves loopback-unauthenticated by default; on a multi-user host
+set `my.pi.mcpProxy.requireAuth = true` and add the `mcp_proxy_auth_token` sops
+key (`openssl rand -hex 32`).
 
 **`bash` is not gateable by pi-subagents** (`watchdog.md`): "Bash rules are
 rejected rather than parsed, gated, denied, or audited." Non-bash tools do have
