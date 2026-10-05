@@ -60,11 +60,19 @@
       # zram while the active set spills to disk — Chris Down, "zswap vs zram",
       # 2026). zstd + zsmalloc maximise compression (capacity over speed, for a
       # browser-tab-heavy light workload); 25% RAM pool before tiering to disk.
-      "zswap.enabled=1"
-      "zswap.compressor=zstd"
-      "zswap.zpool=zsmalloc"
-      "zswap.max_pool_percent=25"
+      # The zswap configuration now lives in `boot.zswap` below.
     ];
+
+    boot.zswap = {
+      enable = true;
+      compressor = "zstd";
+      maxPoolPercent = 25;
+    };
+
+    boot.kernel.sysctl = {
+      "vm.vfs_cache_pressure" = 50;
+      "vm.page-cluster" = 0;
+    };
 
     # Erase-on-boot: roll the ephemeral root subvolume back to its blank
     # snapshot before sysroot mounts. First boot captures the pristine install
