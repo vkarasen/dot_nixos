@@ -357,8 +357,12 @@ entry with the atlassian bundle; PR handling is `gh` via bash, already on
 
 ## 6. Pitfalls inherited from the base setup
 
-- **Never put MCP on a fan-out agent.** MCP servers spawn **per child** via
-  `npx`. Direct MCP tools need explicit `mcp:` entries — a global
+- **Never put MCP on a fan-out agent.** The base servers (`google_workspace`,
+  `video_analyzer`) are spawned **once** by the `pi-mcp-proxy` systemd user
+  service and reached over streamable HTTP, so the per-child `npx` cost no
+  longer applies to them. Any stdio server added directly to `mcp.json` still
+  spawns **per child** via `npx`, so the fan-out caution holds for those.
+  Direct MCP tools need explicit `mcp:` entries — a global
   `directTools = true` is not sufficient. Servers are declared in
   `~/.pi/agent/mcp.json` (built-in MCP, no adapter extension); restart pi
   after adding a server.

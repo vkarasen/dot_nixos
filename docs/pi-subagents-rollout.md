@@ -374,8 +374,11 @@ fail the child launch.
 select from them, and no adapter extension is needed (`directTools: true` alone
 is still insufficient). Server names use underscores, not hyphens: pi
 normalizes `-` to `_` in tool namespaces, but pi-subagents' built-in resolver
-matches the raw selector. Restart pi after adding a server. Servers spawn
-**per child** via `npx`, so MCP must never land on a fan-out agent.
+matches the raw selector. Restart pi after adding a server. The base servers (`google_workspace`,
+`video_analyzer`) are now spawned **once** by the `pi-mcp-proxy` systemd user
+service and reached over streamable HTTP, so the per-child `npx` cost no longer
+applies to them; any stdio server added directly to `mcp.json` still spawns
+**per child** via `npx`, so MCP must never land on a fan-out agent for those.
 
 **`bash` is not gateable by pi-subagents** (`watchdog.md`): "Bash rules are
 rejected rather than parsed, gated, denied, or audited." Non-bash tools do have
