@@ -47,6 +47,13 @@
           # their own dark UI; Dark Reader above covers the rest.
           "layout.css.prefers-color-scheme.content-override" = 0;
 
+          # Native tab discarding: let Firefox unload background tabs under
+          # memory pressure, and only restore session tabs on demand, instead
+          # of keeping full history/viewer state for every tab.
+          "browser.tabs.unloadOnLowMemory" = true;
+          "browser.sessionstore.restore_on_demand" = true;
+          "browser.sessionhistory.max_total_viewers" = 2;
+
           # firefox-gnome-theme optional contrast prefs (plain prefs, read by
           # the theme CSS Stylix's firefoxGnomeTheme target already imports —
           # see modules/home/stylix.nix).
