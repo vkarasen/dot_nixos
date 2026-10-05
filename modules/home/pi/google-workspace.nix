@@ -118,18 +118,33 @@
     lib.mkIf isPrivate {
       # ── MCP server declaration ─────────────────────────────────────────────
       # Contributed via my.pi.mcpServers; modules/home/pi/mcp.nix is the
-      # single writer of ~/.pi/agent/mcp.json. This entry is static (no
-      # secrets) — credentials live in credentials.json, written below.
+      # single writer of ~/.pi/agent/mcp.json. This is a URL entry pointing at
+      # the shared mcp-proxy singleton (modules/home/pi/mcp-proxy.nix), which
+      # spawns the stdio server exactly once. The stdio definition itself lives
+      # in my.pi.mcpProxyServers below. Credentials live in credentials.json,
+      # written below.
       my.pi.mcpServers."google_workspace" = {
-        type = "stdio";
-        command = "npx";
-        args = ["-y" "@dguido/google-workspace-mcp"];
+        url = "http://127.0.0.1:8799/servers/google-workspace/mcp";
         description = "Google Workspace: Gmail, Drive, Docs, Sheets, Calendar, Contacts, Slides";
-        # Keep the orchestrator's declared tool set clean: these tools stay out
-        # of the model's prompt and are reached through tool_search. Subagent
-        # bundles still get them directly via the `mcp:google_workspace`
-        # selector, which bypasses exposure (docs/agents.md).
+        # `deferred` keeps this server's ~88 tools out of the model context
+        # until `tool_search` pulls them in — `direct` would declare every one
+        # of them on every turn. Subagent child sessions register the tools
+        # regardless of exposure, because the mcp-proxy singleton strips
+        # `resources` from the initialize reply (pi issue
+        # https://github.com/earendil-works/pi/issues/10526) — the earlier
+        # `direct` was a misdiagnosis of that bug, not a requirement of
+        # exposure. The orchestrator's declared tool set still stays clean —
+        # the recon-nudge extension hard-blocks `mcp__*` and `tool_search`.
         exposure = "deferred";
+      };
+
+      # ── Shared mcp-proxy stdio definition ──────────────────────────────────
+      # The proxy service spawns this once and serves it at
+      # /servers/google-workspace/mcp. GOOGLE_WORKSPACE_SERVICES is passed to
+      # the child via the proxy config env map.
+      my.pi.mcpProxyServers."google-workspace" = {
+        command = "npx";
+        args = ["-y" "@dguido/google-workspace-mcp@3.4.4"];
         env = {
           GOOGLE_WORKSPACE_SERVICES = workspaceServices;
           # TOON format is disabled: it strips structuredContent from
