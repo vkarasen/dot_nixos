@@ -1,10 +1,13 @@
 # Dendritic aspect: desktop (home-manager class) — Hyprland config + the
-# Wayland desktop apps (ghostty, waybar, mako, fuzzel) + clipboard/screenshot
-# tools. The compositor itself is enabled in modules/nixos/desktop.nix.
+# Wayland desktop apps (ghostty, waybar, mako, fuzzel, vesktop) +
+# clipboard/screenshot tools. The compositor itself is enabled in
+# modules/nixos/desktop.nix. This aspect also bundles the stylix and vesktop
+# home aspects via `imports` below, so importing desktop brings both.
 {config, ...}: let
   stylixAspect = config.flake.modules.homeManager.stylix;
   tridactylAspect = config.flake.modules.homeManager.tridactyl;
   neovideAspect = config.flake.modules.homeManager.neovide;
+  vesktopAspect = config.flake.modules.homeManager.vesktop;
 in {
   flake.modules.homeManager.desktop = let
     hyprmoncfg = config.flake.modules.homeManager.hyprmoncfg;
@@ -215,7 +218,7 @@ in {
         '';
       };
     in {
-      imports = [stylixAspect hyprmoncfg tridactylAspect neovideAspect];
+      imports = [stylixAspect vesktopAspect hyprmoncfg tridactylAspect neovideAspect];
 
       # Importing this aspect IS the GUI statement: derive the flag that
       # consumers (e.g. the pi GUI-vs-TUI context) read. NOTE: an aspect that

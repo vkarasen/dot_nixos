@@ -75,7 +75,7 @@ measurements to `/run/log/systemd/tpm2-measure.log`.)
 
 - Stack: **Hyprland** (scrolling tiling by default, dwindle on workspace 1) +
   **ghostty** (terminal) + **waybar** (bar) + **mako** (notifications) +
-  **fuzzel** (launcher); wl-clipboard for clipboard, **Flameshot** for
+  **fuzzel** (launcher) + **vesktop** (Discord client, bundled with Vencord); wl-clipboard for clipboard, **Flameshot** for
   interactive region capture, and `grim` only inside the fullscreen/window
   `screenshot` helper. `modules/nixos/desktop.nix` enables the
   compositor (and the screen-share portal); `modules/home/desktop.nix` holds the
