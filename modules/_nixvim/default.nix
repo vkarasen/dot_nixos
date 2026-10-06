@@ -36,6 +36,9 @@
   globals = {
     mapleader = ";";
     maplocalleader = " ";
+    guifont = "NotoMono Nerd Font Mono:h11";
+    neovide_cursor_animation_length = 0;
+    neovide_cursor_trail_size = 0;
   };
 
   diagnostic.settings = {

@@ -3,6 +3,8 @@
 # tools. The compositor itself is enabled in modules/nixos/desktop.nix.
 {config, ...}: let
   stylixAspect = config.flake.modules.homeManager.stylix;
+  tridactylAspect = config.flake.modules.homeManager.tridactyl;
+  neovideAspect = config.flake.modules.homeManager.neovide;
 in {
   flake.modules.homeManager.desktop = let
     hyprmoncfg = config.flake.modules.homeManager.hyprmoncfg;
@@ -213,7 +215,7 @@ in {
         '';
       };
     in {
-      imports = [stylixAspect hyprmoncfg];
+      imports = [stylixAspect hyprmoncfg tridactylAspect neovideAspect];
 
       # Importing this aspect IS the GUI statement: derive the flag that
       # consumers (e.g. the pi GUI-vs-TUI context) read. NOTE: an aspect that
