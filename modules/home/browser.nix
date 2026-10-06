@@ -38,8 +38,7 @@
           "extensions.autoDisableScopes" = 0;
 
           # Intel VA-API hardware video decode (YouTube etc.). The iHD driver
-          # itself is installed system-side in modules/nixos/desktop.nix.
-          "media.ffmpeg.vaapi.enabled" = true;
+          # itself is installed system-side in modules/hosts/troy.nix.
           "media.rdd-ffmpeg.enabled" = true;
 
           # Force `prefers-color-scheme: dark` in web content (plain pref, not
