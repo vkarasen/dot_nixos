@@ -87,7 +87,7 @@ measurements to `/run/log/systemd/tpm2-measure.log`.)
   workspace scrolls.
 - Keybinds: `SUPER+Return` ghostty, `SUPER+Space` fuzzel, `SUPER+Q` close,
   `SUPER+V` float, `SUPER+F` fullscreen, `SUPER+M` exit, `SUPER+ESC` lock,
-  `SUPER+1..5` workspaces (`SUPER+SHIFT+1..5` sends the window). Layout-aware
+  `SUPER+1..5` workspaces (`SUPER+SHIFT+1..5` sends the window); `SUPER+CTRL+Left/Right` steps to the previous/next workspace; `SUPER+A` toggles to the last workspace. Layout-aware
   vim focus `SUPER+h/j/k/l` and move `SUPER+SHIFT+h/j/k/l` (column verbs while
   scrolling, `focus`/`window.move` on dwindle); `SUPER+CTRL+h/j/k/l` swaps
   windows; scrolling-only `SUPER+p` promote, `SUPER+minus`/`SUPER+equal`
@@ -95,6 +95,7 @@ measurements to `/run/log/systemd/tpm2-measure.log`.)
   `SUPER+o` fuzzy window picker; `SUPER+ALT+h/l` focus monitor (`+SHIFT` moves
   the workspace there); PrtSc region capture (Flameshot), `SHIFT+PrtSc`
   fullscreen and `ALT+PrtSc` window (the `screenshot` helper).
+- Gestures: a 3-finger horizontal swipe switches workspace (native `hl.gesture`), and bumping the outermost screen edge switches workspace (the `hypr-edge-switcher` systemd user service).
 - The Hyprland config is **Lua** (`hl.*`: `hl.config`, `hl.bind`, `hl.dsp.*`) —
   the stateVersion 26.05 default `configType`; nothing pins `hyprlang`. The
   generated file is `hyprland.lua`, not `hyprland.conf`.
