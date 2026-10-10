@@ -27,7 +27,7 @@
     # SponsorBlock, ...). Each package exposes `addonId` in passthru, which is
     # what home-manager's programs.firefox extension mechanism consumes.
     firefox-addons = {
-      url = "gitlab:rycee/nur-expressions?dir=pkgs/firefox-addons";
+      url = "git+https://gitlab.com/rycee/nur-expressions.git?ref=master&dir=pkgs/firefox-addons";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
