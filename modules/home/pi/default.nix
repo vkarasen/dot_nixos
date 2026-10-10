@@ -183,6 +183,13 @@
 
       programs.pi-coding-agent = {
         enable = true;
+        # Single-file Bun build of the same 1.0.4 source (overlay entry in
+        # modules/flake/parts.nix, derivation in modules/flake/_pi-bun.nix) in
+        # place of nixpkgs' Node wrapper: same CLI, ~15% lower RSS at idle
+        # (98 vs 116 MB) and ~21% lower on a full-config run (209 vs 266 MB,
+        # also ~0.6s faster); only bare startup is ~+0.10s slower (node's
+        # compile cache is warm).
+        package = pkgs.pi-bun;
         extraPackages = [
           pkgs.nodejs
           pkgs.poppler-utils # pdftoppm/pdftocairo — manual PDF→PNG fallback for visual inspection

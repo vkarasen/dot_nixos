@@ -15,6 +15,14 @@
         (final: prev: {
           stable = import inputs.nixpkgs-stable {inherit system;};
         })
+        # pi as a single-file Bun executable (derivation in flake/_pi-bun.nix).
+        # An overlay rather than only a perSystem package because the
+        # home-manager configs consume this same pkgs instance via
+        # `withSystem`, and `programs.pi-coding-agent.package = pkgs.pi-bun`
+        # has to resolve there.
+        (final: prev: {
+          pi-bun = final.callPackage ./_pi-bun.nix {};
+        })
       ];
     };
 

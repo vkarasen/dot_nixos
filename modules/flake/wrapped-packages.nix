@@ -18,7 +18,7 @@
 
     base = wlib.wrapHomeModule {
       inherit pkgs;
-      mainPackage = pkgs.pi-coding-agent;
+      mainPackage = pkgs.pi-bun;
       homeModules = [config.flake.modules.homeManager.pi];
       home-manager = inputs.home-manager;
     };
@@ -28,11 +28,14 @@
     # ".config/rpiv-web-tools/config.json").
     binds = wlib.mkBinds base.passthru.hmAdapter;
 
-    # programs.pi-coding-agent.extraPackages (nodejs, bun) are wired into
-    # the pi-coding-agent-wrapped makeWrapper PATH by the HM module —
+    # programs.pi-coding-agent.extraPackages is wired into the
+    # pi-coding-agent-wrapped makeWrapper PATH by the HM module —
     # the hm-adapter doesn't capture that, and accessing hmConfig.programs.*
     # forces full HM module evaluation (hits unrelated removed-option errors).
-    # Declare them explicitly so npm is available when pi installs packages.
+    # nodejs is re-declared here because the MCP servers this wrapper starts are
+    # launched through `npx` (google-workspace, video-analyzer; their npx child
+    # is what needs node — see modules/home/pi/mcp-proxy.nix). The Bun
+    # single-file pi itself needs no Node runtime.
     bwrapped = base.wrap ({
       config,
       lib,

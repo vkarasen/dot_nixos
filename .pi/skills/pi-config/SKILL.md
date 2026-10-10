@@ -146,6 +146,20 @@ programs.pi-coding-agent = {
 
 ---
 
+## Swapping the pi binary (Bun single-file build)
+
+`programs.pi-coding-agent.package` (default `pkgs.pi-coding-agent`, run by
+Node) is set to `pkgs.pi-bun` in `modules/home/pi/default.nix` — the same
+version built as a single-file `bun build --compile` executable. Build and
+iterate on it with `nix build .#pi-bun` (overlay entry in
+`modules/flake/parts.nix`, derivation in `modules/flake/_pi-bun.nix`); it
+reuses nixpkgs' already-built `dist/`, so there is no second npm workspace
+build. The standalone wrapped package `packages.pi`
+(`modules/flake/wrapped-packages.nix`) uses pi-bun too, so `nix run .#pi` is
+the Bun build as well.
+
+---
+
 ## Adding or modifying an agent, tier, or bundle
 
 The subagent roster lives in `modules/home/pi/agents.nix` (the
