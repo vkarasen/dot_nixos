@@ -765,7 +765,8 @@
         "nixpkgs-stable": "nixpkgs-stable",
         "nixvim": "nixvim",
         "sops-nix": "sops-nix",
-        "stylix": "stylix"
+        "stylix": "stylix",
+        "tridactyl": "tridactyl"
       }
     },
     "rust-overlay": {
@@ -936,6 +937,22 @@
       "original": {
         "owner": "tinted-theming",
         "repo": "base16-zed",
+        "type": "github"
+      }
+    },
+    "tridactyl": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1790702797,
+        "narHash": "sha256-AnhqB98pz2ir3W929W10ehZsZnbstLo4kH0VSxj+2AA=",
+        "owner": "tridactyl",
+        "repo": "tridactyl",
+        "rev": "6a84f6f4fa71bd0ab84539c619f7b79fa241c63a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "tridactyl",
+        "repo": "tridactyl",
         "type": "github"
       }
     }

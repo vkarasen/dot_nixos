@@ -9,6 +9,11 @@
   # home-manager's built-in pi-coding-agent module — no extra import needed.
   flake.homeModules.pi-module = ../home/pi/_module.nix;
 
+  # The Tridactyl option machinery: programs.tridactyl.
+  # Import this in any flake that wants the programs.tridactyl option set
+  # (settings/binds/extraConfig) wired to the tridactylrc + Firefox extension.
+  flake.homeModules.tridactyl-module = ../home/tridactyl/_module.nix;
+
   # The herdr option machinery: programs.herdr.{enable, settings}.
   # Import this in any flake that wants herdr config wired to
   # xdg.configFile."herdr/config.toml" automatically.

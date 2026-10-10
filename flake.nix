@@ -89,6 +89,13 @@
       url = "github:crmne/hyprmoncfg";
       flake = false;
     };
+
+    # Tridactyl source (plain tree, flake = false): pinned so the generated
+    # `:set` settings index is reproducible at build time.
+    tridactyl = {
+      url = "github:tridactyl/tridactyl";
+      flake = false;
+    };
   };
 
   # Dendritic pattern: every file under ./modules is a flake-parts module,
