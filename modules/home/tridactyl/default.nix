@@ -1,7 +1,8 @@
 # Dendritic aspect: tridactyl (home-manager class) — Vim-like Firefox
 # keybindings. Imports the standalone `programs.tridactyl` module (./_module.nix)
 # and supplies this repo's starter config (settings + binds). Adds the Tridactyl
-# extension to the vkarasen profile (declared in modules/home/browser.nix), the
+# extension to the vkarasen profile (declared in
+# modules/home/browser/default.nix), the
 # tridactyl-native messenger host that lets `:editor` hand a page's text field to
 # the GUI editor, and a starter tridactylrc of Vim-style keybindings.
 #

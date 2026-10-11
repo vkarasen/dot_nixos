@@ -98,7 +98,7 @@
       # (vainfo lists no AV1 profiles), so YouTube AV1 streams fall back to
       # CPU decode and spin the fans. Refuse AV1 in Firefox so YouTube
       # serves VP9/H.264, which the iHD VA-API driver decodes in hardware.
-      # The VA-API prefs themselves live in modules/home/browser.nix.
+      # The VA-API prefs themselves live in modules/home/browser/default.nix.
       programs.firefox.profiles."vkarasen".settings."media.av1.enabled" = false;
 
       # Fn9 = internal panel on/off. Hyprland `code:N` is the XKB keycode

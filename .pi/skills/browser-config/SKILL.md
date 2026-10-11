@@ -6,15 +6,18 @@ description: How to find, change, and understand Firefox and Tridactyl configura
   keys and labels, search keywords (searchurls), editorcmd / edit-in-$EDITOR, vim or
   vimperator-style keys and a leader key in the browser, the Firefox profile
   (profiledir, profiles.ini), Firefox home-manager options (programs.firefox.*),
-  add-ons and extensions, and about:config prefs. Also for "how do I change X in
-  Firefox" and "what does this browser setting, command, or key do".
+  add-ons and extensions, and about:config prefs — including the generated Firefox
+  preference index at ~/.config/ffprefs/index.json, served by the `tv ffpref`
+  channel, to look up a Firefox preference (what does pref X do, its type, default
+  and description; "ffpref", "about:config pref index"). Also for "how do I change
+  X in Firefox" and "what does this browser setting, command, or key do".
 ---
 
 # Browser / Tridactyl config
 
 Tridactyl is Vim-style Firefox keybindings, wired by the `tridactyl` aspect
 (`modules/home/tridactyl/default.nix`, GUI-gated on `my.gui.enable`). Firefox
-itself and its add-ons live in `modules/home/browser.nix`. Do not guess at
+itself and its add-ons live in `modules/home/browser/default.nix`. Do not guess at
 setting names or Firefox prefs — route by kind of question first.
 
 ## When to use
@@ -39,7 +42,8 @@ Load this for (non-exhaustive):
 | What does an ex command (`:restart`, `:bind`, …) do? | same index, `excmd.<command>` (generated from `src/excmds.ts`) | `jq '."excmd.restart"' ~/.config/tridactyl/index.json` |
 | Which Tridactyl keybindings are set here? | `programs.tridactyl.binds`, not the index | `read modules/home/tridactyl/default.nix` (+ `_module.nix`) |
 | Firefox home-manager option (`programs.firefox.*`)? | the `nix-search` skill | `nix-search-tv print --indexes home-manager \| grep -i '<opt>'` |
-| A raw `about:config` pref (`media.*`, `browser.*`, …)? | searchfox.org / MDN — not indexed here | delegate to a `researcher` |
+| A raw `about:config` pref (`media.*`, `browser.*`, …)? | the generated `ffpref` index (see below), then searchfox/MDN for undocumented prefs | `jq '."<pref>"' ~/.config/ffprefs/index.json` |
+| Browse / list every Firefox pref and its default? | the `tv` `ffpref` channel | `tv ffpref` |
 | Browses settings interactively? | `tv` `tridactyl` channel | `tv tridactyl` (`modules/home/television/default.nix`) |
 
 ## Querying the settings index
@@ -101,12 +105,78 @@ nix-search-tv print --indexes home-manager | grep -i 'firefox'
 nix-search-tv preview --indexes home-manager --json 'programs.firefox.profiles'
 ```
 
-This repo attaches add-ons in `modules/home/browser.nix`
+This repo attaches add-ons in `modules/home/browser/default.nix`
 (`programs.firefox.profiles."vkarasen".extensions.packages`, sourced from
 `inputs.firefox-addons`) and the Tridactyl extension + native messenger +
 `profiledir` setting, all wired through the `programs.tridactyl` home-manager
 module (`modules/home/tridactyl/default.nix` supplies the starter
 `settings`/`binds`; `_module.nix` renders the tridactylrc).
+
+## Firefox preference index (`ffpref`)
+
+Every Firefox pref (`name → {type, default, description, source, sources}`) is
+indexed at build time into `~/.config/ffprefs/index.json` — a flat JSON map
+generated from the pinned `firefox-unwrapped` by
+`modules/home/browser/_parse-ffprefs.cjs` (the
+`ffprefs-index` derivation in `modules/home/browser/default.nix`). Nothing is
+committed; the `~/.config` copy is the source of truth.
+
+- **Names / values** come from `StaticPrefList.yaml` (`type:` + `value:`, and
+the `#` doc-comment as the description) merged with the RESOLVED default-pref
+JS inside the `gre` / `browser` `omni.ja` archives (`greprefs.js`,
+`PdfJsDefaultPrefs.js`, `firefox.js`, `firefox-branding.js`, `debugger.js`)
+plus the two unpacked distro files (`channel-prefs.js`,
+`nixos-default-prefs.js`). The resolved JS is the **effective on-system
+default** (all `#ifdef`s already applied by the build), so it overrides the
+C++ static value where both define a pref.
+- **Descriptions** for JS-only prefs come from the `//` blocks in the source
+`all.js` / `firefox.js` (the resolved copies have their comments stripped).
+Priority: StaticPrefList doc-comment → source-JS `//` block → `""`.
+- `default` is **always a string** — `type` disambiguates. `source` is the
+`file:line` that supplied the default; `sources` lists every occurrence.
+
+```bash
+# one pref (the whole pref name is the JSON key)
+jq '."browser.tabs.unloadOnLowMemory"' ~/.config/ffprefs/index.json
+
+# just the names
+jq -r 'keys[]' ~/.config/ffprefs/index.json
+
+# only the description
+jq -r '."media.rdd-ffmpeg.enabled".description' ~/.config/ffprefs/index.json
+```
+
+Interactive browser: `tv ffpref` (channel from
+`modules/home/television/default.nix`; preview shows Description / Type /
+Default / Source).
+
+### Record → `profiles.<name>.settings`
+
+`programs.firefox.profiles."<name>".settings` is the pref name → value, so map
+by the record's `type`:
+
+| `type` | Nix value |
+| --- | --- |
+| `bool` | `true` / `false` |
+| `int` | the integer, e.g. `2` |
+| `string` | a quoted string, e.g. `"Ask Every Time"` |
+| `float` | a JSON **string**, e.g. `"1.5"` |
+| `other` | inspect `source` (a `@TOKEN@` build value or an exotic C++ type) |
+
+### Refresh / fallback
+
+The index is regenerated every build from your nixpkgs Firefox, so there is no
+snapshot to refresh by hand. To move to a newer Firefox, bump the nixpkgs pin
+and rebuild:
+
+```bash
+nix flake lock --update-input nixpkgs
+nh home switch
+```
+
+If a pref has an empty `description`, open its `source` `file:line` on
+searchfox (e.g. `https://searchfox.org/mozilla-central/source/<path>#<line>`),
+or consult arkenfox's `user.js` for hardening prefs.
 
 ## Declarative Firefox config (`programs.firefox.profiles."<name>"`)
 
@@ -227,8 +297,9 @@ Ex commands **are** indexed now (as `excmd.*`) — use
 **not** indexed: keybinding maps and aliases (`:bind` / `:alias`) — read the
 starter rc in `modules/home/tridactyl/default.nix` for those. Offline, the
 `.xpi` from `inputs.firefox-addons` contains `static/docs/`. Raw Firefox
-`about:config` prefs are not indexed anywhere in this repo — look them up on
-searchfox.org / MDN via a `researcher`.
+`about:config` prefs **are** indexed — see the “Firefox preference index
+(`ffpref`)” section above; fall back to searchfox.org / MDN only for a pref the
+index leaves with an empty `description`.
 
 ## Sibling skills
 
