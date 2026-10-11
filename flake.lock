@@ -562,6 +562,26 @@
         "type": "github"
       }
     },
+    "nixdatifier": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1791713450,
+        "narHash": "sha256-7y3aWhEABe9Qf6MrFUyHvxJPLYi83/E4vXFif19s7H0=",
+        "owner": "Muddyblack",
+        "repo": "nixdatifier",
+        "rev": "07bd2e4e8c256876877332a857d66366c3f9410b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Muddyblack",
+        "repo": "nixdatifier",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1768564909,
@@ -740,6 +760,7 @@
         "lanzaboote": "lanzaboote",
         "nix-index-database": "nix-index-database",
         "nix-std": "nix-std",
+        "nixdatifier": "nixdatifier",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-stable": "nixpkgs-stable",
         "nixvim": "nixvim",

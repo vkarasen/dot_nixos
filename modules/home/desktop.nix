@@ -3,7 +3,11 @@
 # clipboard/screenshot tools. The compositor itself is enabled in
 # modules/nixos/desktop.nix. This aspect also bundles the stylix and vesktop
 # home aspects via `imports` below, so importing desktop brings both.
-{config, ...}: let
+{
+  config,
+  inputs,
+  ...
+}: let
   stylixAspect = config.flake.modules.homeManager.stylix;
   tridactylAspect = config.flake.modules.homeManager.tridactyl;
   neovideAspect = config.flake.modules.homeManager.neovide;
@@ -11,6 +15,7 @@
 in {
   flake.modules.homeManager.desktop = let
     hyprmoncfg = config.flake.modules.homeManager.hyprmoncfg;
+    nixdatifier = inputs.nixdatifier;
   in
     {
       pkgs,
@@ -317,6 +322,7 @@ in {
           hypr-window-picker # fuzzy window switcher (fuzzel over `hyprctl clients`)
           hypr-edge-switcher # outer-edge bump = previous/next workspace
           mission-center # CPU/GPU/fan/system monitoring dashboard (GUI)
+          nixdatifier.packages.${pkgs.system}.nixdatifier # NixOS generation tracker (Qt6)
         ];
 
         # Flameshot's tray icon is disabled declaratively, so it applies on any
