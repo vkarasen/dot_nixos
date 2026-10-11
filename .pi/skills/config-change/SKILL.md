@@ -30,6 +30,11 @@ alone.
   `my.is_private`. Two more — `my.gui.enable` and `my.laptop.enable` — are
   *derived*: set true by the `desktop` / `laptop` aspect when it is imported,
   not hand-set at the top level.
+- **`my.configCheckoutPath`** (also in `modules/options.nix`) is the canonical
+  local checkout of this flake — the live git worktree that builds this config.
+  Default `/home/vkarasen/nix/dot_nixos`. Consumers that need the checkout
+  (e.g. nixdatifier's `flakePath`) read it; set to `null` to let a consumer
+  autodetect.
 
 ## The live map (never a frozen inventory)
 

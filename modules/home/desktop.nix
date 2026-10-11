@@ -337,6 +337,20 @@ in {
           force = true;
         };
 
+        # nixdatifier writes standalone.json on settings save (atomic rename-over),
+        # so force = true lets activation overwrite any copy the app writes at
+        # runtime (tradeoff: GUI-set settings revert on next switch — declare
+        # them here instead). flakePath must point at the live checkout or the
+        # app's flake-backed features silently no-op (its autodetect paths don't
+        # exist on this host).
+        xdg.configFile."nixdatifier/standalone.json" = {
+          force = true;
+          text = builtins.toJSON {
+            flakePath = builtins.toString config.my.configCheckoutPath;
+            maxGenerations = 20;
+          };
+        };
+
         # Stylix owns the per-user DE chrome; its targets for these apps live in
         # modules/home/stylix.nix, which THIS aspect imports (bundled above), so
         # importing desktop is what brings the Stylix home module to a host. That

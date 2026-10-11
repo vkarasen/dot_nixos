@@ -56,6 +56,11 @@
         Gates machine-specific global context (e.g. laptop model).
       '';
     };
+    options.my.configCheckoutPath = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = "/home/vkarasen/nix/dot_nixos";
+      description = "Canonical local checkout of this flake (the live git worktree). Set to null to let consumers autodetect.";
+    };
     options.my.git.email = lib.mkOption {
       type = lib.types.nonEmptyStr;
       default = "vkarasen@gmail.com";
