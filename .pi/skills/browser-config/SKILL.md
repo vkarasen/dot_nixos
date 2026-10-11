@@ -108,6 +108,105 @@ This repo attaches add-ons in `modules/home/browser.nix`
 module (`modules/home/tridactyl/default.nix` supplies the starter
 `settings`/`binds`; `_module.nix` renders the tridactylrc).
 
+## Declarative Firefox config (`programs.firefox.profiles."<name>"`)
+
+The interesting config is the profile submodule: `settings`, `bookmarks`, and
+`search`.
+
+### `settings` — `about:config` prefs
+
+`profiles."<name>".settings` maps `about:config` pref names to values
+(`int`/`bool`/`str`, plus attrs/lists/floats as JSON strings). Home-manager
+writes these to the profile's **`user.js`**, which Firefox re-reads at **every
+launch** and which **overrides `prefs.js`** (Firefox's own runtime store). So a
+value here is a *declared default*: it can be overridden at runtime, but a
+runtime override of a declared key **reverts on restart**. Make changes stick by
+declaring them here.
+
+```nix
+programs.firefox.profiles."<name>".settings = {
+  "browser.startup.homepage" = "https://nixos.org";
+  "browser.search.region" = "GB";
+  "media.av1.enabled" = false;
+};
+```
+
+### `bookmarks` — declarative bookmarks
+
+`profiles."<name>".bookmarks.settings` is a list of bookmarks, directories, and
+`"separator"` strings. A bookmark is `{ name, url, tags?, keyword? }`; a
+directory is `{ name, toolbar?, bookmarks = [ … ]; }`. Home-manager generates a
+`bookmarks.html` and sets `browser.bookmarks.file` +
+`browser.places.importBookmarksHTML = true`, so Firefox imports it into
+`places.sqlite` at startup; `bookmarks.force` (default `false`) toggles
+replace-vs-merge.
+
+```nix
+programs.firefox.profiles."<name>".bookmarks.settings = [
+  { name = "wikipedia"; tags = [ "wiki" ]; keyword = "wiki";
+    url = "https://en.wikipedia.org/wiki/Special:Search?search=%s&go=Go"; }
+  "separator"
+  { name = "Nix sites"; toolbar = true; bookmarks = [
+      { name = "homepage"; url = "https://nixos.org/"; }
+      { name = "wiki"; tags = [ "wiki" "nix" ]; url = "https://wiki.nixos.org/"; }
+    ]; }
+];
+```
+
+### `search` — search engines
+
+`profiles."<name>".search = { default, privateDefault, order, engines }`.
+Home-manager writes `search.json.mozlz4`. A custom engine (`engines.<id>`) has
+`name`, `urls` (`{ template, params }`), `icon`, `definedAliases`; for a builtin
+engine set only `metaData` (e.g. `google.metaData.alias = "@g"`).
+
+```nix
+programs.firefox.profiles."<name>".search = {
+  default = "ddg";
+  order = [ "ddg" "google" ];
+  engines = {
+    nix-packages = {
+      name = "Nix Packages";
+      urls = [{ template = "https://search.nixos.org/packages";
+                params = [ { name = "type"; value = "packages"; }
+                           { name = "query"; value = "{searchTerms}"; } ]; }];
+      definedAliases = [ "@np" ];
+    };
+    google.metaData.alias = "@g";
+  };
+};
+```
+
+### Defaults vs runtime (`user.js` vs `prefs.js`)
+
+- `~/.config/mozilla/firefox/<name>/user.js` — home-manager-declared (store
+  symlink), re-applied every launch.
+- `~/.config/mozilla/firefox/<name>/prefs.js` — Firefox's runtime store; holds
+  every pref changed via `about:config`, rewritten by Firefox on exit.
+
+### Factory reset
+
+```bash
+# quit Firefox, then:
+rm -rf ~/.config/mozilla/firefox/<name>/
+nh home switch     # recreates user.js, profiles.ini, .keep, extensions
+# start Firefox   # recreates prefs.js, places.sqlite, cookies, etc. fresh
+```
+
+Declared bookmarks re-import from `bookmarks.html`, and declared search engines
+re-apply from `search.json.mozlz4`, so both survive the reset.
+
+### Reading runtime prefs (and promoting them to the flake)
+
+```bash
+cat ~/.config/mozilla/firefox/<name>/user.js            # declared (enforced)
+grep 'user_pref' ~/.config/mozilla/firefox/<name>/prefs.js   # runtime
+```
+
+A pref in `prefs.js` but NOT in `user.js` is runtime-only — a candidate to
+promote into `programs.firefox.profiles."<name>".settings` so the flake
+enforces it everywhere.
+
 ## What is deliberately NOT in the index
 
 The index covers **`:set` settings** (keys `set.*`) and **ex commands** (keys
