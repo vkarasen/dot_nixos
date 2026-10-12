@@ -6,35 +6,31 @@
 # tridactyl-native messenger host that lets `:editor` hand a page's text field to
 # the GUI editor, and a starter tridactylrc of Vim-style keybindings.
 #
-# GUI-only: the whole block is gated on `my.gui.enable`, which the desktop
-# aspect sets true, so the standalone TUI-only config never pulls it.
-# Selection for this host happens in modules/hosts/troy.nix.
+# Browser-following: Tridactyl is a Firefox extension, so both blocks below are
+# gated on `programs.firefox.enable` (set by the browser aspect,
+# modules/home/browser/default.nix) rather than the separate `my.gui.enable`
+# flag — a host with Firefox disabled does not pull the extension, the native
+# messenger, or the generated index. Selection for this host happens in
+# modules/hosts/troy.nix.
 {inputs, ...}: {
   flake.modules.homeManager.tridactyl = {
     pkgs,
     config,
     lib,
     ...
-  }: let
-    # Generated Tridactyl index: :set settings (from src/lib/config.ts,
-    # namespaced `set.*`) plus ex commands (from src/excmds.ts, namespaced
-    # `excmd.*`), built from the pinned tridactyl flake input by
-    # _parse-config.cjs + _parse-excmds.cjs, merged into one index.json.
-    tridactylIndex =
-      pkgs.runCommand "tridactyl-index" {
-        buildInputs = [pkgs.nodejs pkgs.jq];
-        NODE_PATH = "${pkgs.typescript_5}/lib/node_modules";
-      } ''
-        mkdir -p $out
-        node ${./_parse-config.cjs} ${inputs.tridactyl}/src/lib/config.ts > settings.json
-        node ${./_parse-excmds.cjs} ${inputs.tridactyl}/src/excmds.ts > excmds.json
-        jq -s 'add' settings.json excmds.json > $out/index.json
-      '';
-  in {
-    imports = [./_module.nix];
+  }: {
+    imports = [./_module.nix ./_index-module.nix];
+
+    # Build + materialize the generated Tridactyl index (and its television
+    # channel) from the pinned tridactyl flake input — implementation lives in
+    # ./_index-module.nix.
+    programs.tridactyl-index = {
+      enable = lib.mkIf config.programs.firefox.enable true;
+      source = inputs.tridactyl;
+    };
 
     programs.tridactyl = {
-      enable = true;
+      enable = lib.mkIf config.programs.firefox.enable true;
       firefoxProfile = "vkarasen";
       extensionPackage = inputs.firefox-addons.packages.${pkgs.stdenv.hostPlatform.system}.tridactyl;
 
@@ -60,14 +56,6 @@
         "<BS>" = "back";
         "<S-BS>" = "forward";
       };
-    };
-
-    # The generated Tridactyl index (`set.*` settings + `excmd.*` commands),
-    # consumed by the television `tridactyl` channel
-    # (modules/home/television/default.nix). Built from the pinned tridactyl
-    # flake input at build time (tridactylIndex above).
-    xdg.configFile."tridactyl/index.json" = lib.mkIf config.my.gui.enable {
-      source = "${tridactylIndex}/index.json";
     };
   };
 }

@@ -14,6 +14,19 @@
   # (settings/binds/extraConfig) wired to the tridactylrc + Firefox extension.
   flake.homeModules.tridactyl-module = ../home/tridactyl/_module.nix;
 
+  # The generated Tridactyl index machinery: programs.tridactyl-index.
+  # Import this (with source = <tridactyl source tree>) in any flake that wants
+  # the generated settings/ex-command index materialized at
+  # xdg.configFile."tridactyl/index.json" and wired to the television
+  # `tridactyl` channel. Independent of programs.tridactyl.
+  flake.homeModules.tridactyl-index-module = ../home/tridactyl/_index-module.nix;
+
+  # The generated Firefox-preference index machinery: programs.ffpref.
+  # Import this in any flake that wants the generated pref index materialized
+  # at xdg.configFile."ffprefs/index.json" and wired to the television `ffpref`
+  # channel.
+  flake.homeModules.ffpref-module = ../home/browser/_index-module.nix;
+
   # The herdr option machinery: programs.herdr.{enable, settings}.
   # Import this in any flake that wants herdr config wired to
   # xdg.configFile."herdr/config.toml" automatically.

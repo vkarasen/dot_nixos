@@ -16,7 +16,7 @@ description: How to find, change, and understand Firefox and Tridactyl configura
 # Browser / Tridactyl config
 
 Tridactyl is Vim-style Firefox keybindings, wired by the `tridactyl` aspect
-(`modules/home/tridactyl/default.nix`, GUI-gated on `my.gui.enable`). Firefox
+(`modules/home/tridactyl/default.nix`, gated on `programs.firefox.enable`). Firefox
 itself and its add-ons live in `modules/home/browser/default.nix`. Do not guess at
 setting names or Firefox prefs — route by kind of question first.
 
@@ -44,7 +44,7 @@ Load this for (non-exhaustive):
 | Firefox home-manager option (`programs.firefox.*`)? | the `nix-search` skill | `nix-search-tv print --indexes home-manager \| grep -i '<opt>'` |
 | A raw `about:config` pref (`media.*`, `browser.*`, …)? | the generated `ffpref` index (see below), then searchfox/MDN for undocumented prefs | `jq '."<pref>"' ~/.config/ffprefs/index.json` |
 | Browse / list every Firefox pref and its default? | the `tv` `ffpref` channel | `tv ffpref` |
-| Browses settings interactively? | `tv` `tridactyl` channel | `tv tridactyl` (`modules/home/television/default.nix`) |
+| Browses settings interactively? | `tv` `tridactyl` channel | `tv tridactyl` (`modules/home/tridactyl/_index-module.nix`) |
 
 ## Querying the settings index
 
@@ -57,7 +57,7 @@ prefix is a **namespace marker**, not part of the literal name: the rc for
 It is generated at build time from the pinned `tridactyl` flake input (by
 `_parse-config.cjs`/`_parse-excmds.cjs` in the `tridactyl-index` derivation)
 and materialized by home-manager at `~/.config/tridactyl/index.json`
-(`xdg.configFile."tridactyl/index.json"`, gated on `my.gui.enable`). Nothing
+(`xdg.configFile."tridactyl/index.json"`, gated on `programs.firefox.enable`). Nothing
 is committed; the `~/.config` copy is the source of truth.
 
 ```bash
@@ -90,7 +90,7 @@ nh home switch
 
 The parser `modules/home/tridactyl/_parse-config.cjs` (and `_parse-excmds.cjs`)
 runs inside the `tridactyl-index` derivation (built by
-`modules/home/tridactyl/default.nix`)
+`modules/home/tridactyl/_index-module.nix`)
 using `pkgs.typescript_5` — **not** `pkgs.typescript`, which is the Go-native
 7.x compiler with no JS API.
 
@@ -118,7 +118,7 @@ Every Firefox pref (`name → {type, default, description, source, sources}`) is
 indexed at build time into `~/.config/ffprefs/index.json` — a flat JSON map
 generated from the pinned `firefox-unwrapped` by
 `modules/home/browser/_parse-ffprefs.cjs` (the
-`ffprefs-index` derivation in `modules/home/browser/default.nix`). Nothing is
+`ffprefs-index` derivation in `modules/home/browser/_index-module.nix`). Nothing is
 committed; the `~/.config` copy is the source of truth.
 
 - **Names / values** come from `StaticPrefList.yaml` (`type:` + `value:`, and
@@ -147,7 +147,7 @@ jq -r '."media.rdd-ffmpeg.enabled".description' ~/.config/ffprefs/index.json
 ```
 
 Interactive browser: `tv ffpref` (channel from
-`modules/home/television/default.nix`; preview shows Description / Type /
+`modules/home/browser/_index-module.nix`; preview shows Description / Type /
 Default / Source).
 
 ### Record → `profiles.<name>.settings`
