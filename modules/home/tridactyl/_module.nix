@@ -1,7 +1,8 @@
 # Library module: the `programs.tridactyl` option set and its implementation —
-# writes the tridactylrc and adds the Tridactyl extension + native messenger to
-# Firefox. Imported by default.nix (the aspect); exposed for cross-flake import
-# as flake.homeModules.tridactyl-module. Keep this generic: no opinionated
+# writes the generated tridactylrc, and adds the Tridactyl WebExtension + the
+# tridactyl native-messaging host to a Firefox profile. Imported by default.nix
+# (the aspect); exposed for cross-flake import as
+# flake.homeModules.tridactyl-module. Keep this generic: no opinionated
 # settings/binds here (the aspect supplies the repo's starter config).
 {
   pkgs,
@@ -12,11 +13,21 @@
   cfg = config.programs.tridactyl;
 
   renderValue = v:
-    if lib.isBool v then (if v then "true" else "false")
-    else if lib.isInt v then toString v
-    else if lib.isString v
-    then (if builtins.match "[A-Za-z0-9._/+-]+" v != null then v else builtins.toJSON v)
-    else toString v;
+    if lib.isBool v
+    then
+      (
+        if v
+        then "true"
+        else "false"
+      )
+    else if lib.isInt v
+    then toString v
+    else
+      (
+        if builtins.match "[A-Za-z0-9._/+-]+" v != null
+        then v
+        else builtins.toJSON v
+      );
 
   rcText = let
     setLines = lib.mapAttrsToList (k: v: "set ${k} ${renderValue v}") cfg.settings;
@@ -31,48 +42,108 @@
     ${cfg.extraConfig}
   '';
 in {
+  meta.maintainers = [
+    {
+      name = "Vitali Karasenko";
+      email = "vkarasen@gmail.com";
+      # TODO(upstream): add a github handle and register in nixpkgs' lib.maintainers
+      # before submitting to home-manager, then reference it as lib.maintainers.<handle>.
+    }
+  ];
+
   options.programs.tridactyl = {
-    enable = lib.mkEnableOption "Tridactyl, the Vim-like Firefox keybinding extension";
+    enable = lib.mkEnableOption "the Tridactyl Vim-like keybinding extension for Firefox";
 
     firefoxProfile = lib.mkOption {
-      type = lib.types.str;
+      type = lib.types.nonEmptyStr;
       default = "default";
-      description = "Firefox profile to attach the Tridactyl extension to. Set this to the repo's profile (the profile set cannot be used to derive it, since this module itself writes into the profile's `extensions.packages`).";
+      description = ''
+        Name of the Firefox profile to attach Tridactyl to. Must match an
+        existing `programs.firefox.profiles.<name>` key: this module writes
+        into `programs.firefox.profiles.<name>.extensions.packages`, so the
+        profile must be declared by the consumer (it cannot be derived from
+        the set of profiles, since this module itself contributes to it).
+      '';
+      example = "vkarasen";
     };
 
     extensionPackage = lib.mkOption {
       type = lib.types.package;
-      description = "The Tridactyl WebExtension package (adds its .xpi to the Firefox profile).";
+      description = ''
+        The Tridactyl WebExtension package, appended to the configured
+        profile's `extensions.packages` (its .xpi is installed
+        declaratively). Tridactyl is not packaged in nixpkgs, so supply an
+        .xpi derivation from wherever you source your add-ons.
+      '';
     };
 
     nativeMessengerPackage = lib.mkOption {
-      type = lib.types.package;
+      type = lib.types.nullOr lib.types.package;
       default = pkgs.tridactyl-native;
-      description = "The tridactyl native messenger host (enables `:editor` / native commands).";
+      description = ''
+        The tridactyl native-messaging host, appended to
+        `programs.firefox.nativeMessagingHosts`. This is what lets native
+        commands such as `:editor` hand a page's text field to a GUI editor.
+        Set to `null` to install no native-messaging host.
+      '';
+      example = lib.literalExpression "pkgs.tridactyl-native";
     };
 
     settings = lib.mkOption {
       type = lib.types.attrsOf (lib.types.oneOf [lib.types.bool lib.types.int lib.types.str]);
       default = {};
-      description = "Tridactyl `:set` settings, rendered as `set <key> <value>` lines. Keys are the literal rc names and may be dotted (e.g. `update.nag`).";
+      description = ''
+        Tridactyl `:set` settings, rendered one per line as
+        `set <key> <value>` in the generated tridactylrc. Keys are the literal
+        rc names and may be dotted (e.g. `update.nag`).
+
+        Values must be scalars — bool, int or string. Nested objects and
+        arrays have no `set`-line rendering here; express those in
+        `extraConfig` instead.
+      '';
+      example = lib.literalExpression ''
+        {
+          editorcmd = "neovide";
+          hintfiltermode = "vimperator-reflow";
+          hinthideobscured = true;
+        }
+      '';
     };
 
     binds = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = {};
-      description = "Tridactyl keybindings, rendered as `bind <key> <command>` lines.";
+      description = ''
+        Tridactyl keybindings, rendered one per line as
+        `bind <key> <command>` in the generated tridactylrc. Keys are literal
+        Tridactyl key notation (e.g. `j`, `<BS>`, `<S-BS>`).
+      '';
+      example = lib.literalExpression ''
+        {
+          j = "scrollline 20";
+          k = "scrollline -20";
+          "<BS>" = "back";
+        }
+      '';
     };
 
     extraConfig = lib.mkOption {
       type = lib.types.lines;
       default = "";
-      description = "Raw tridactylrc lines appended after the generated settings and binds.";
+      description = ''
+        Raw tridactylrc lines appended verbatim after the generated settings
+        and binds. Use this for anything `settings`/`binds` cannot express
+        (nested set structures, hooks, source lines, ...).
+      '';
+      example = lib.literalExpression ''
+        "set cmdalias.next_tab tabnext"
+      '';
     };
   };
 
   config = lib.mkIf cfg.enable {
-    programs.firefox.profiles.${cfg.firefoxProfile}.extensions.packages = [cfg.extensionPackage];
-    programs.firefox.nativeMessagingHosts = [cfg.nativeMessengerPackage];
+    programs.firefox.profiles.${cfg.firefoxProfile}.extensions.packages = lib.mkAfter [cfg.extensionPackage];
+    programs.firefox.nativeMessagingHosts = lib.mkAfter (lib.optional (cfg.nativeMessengerPackage != null) cfg.nativeMessengerPackage);
     xdg.configFile."tridactyl/tridactylrc".text = rcText;
   };
 }
