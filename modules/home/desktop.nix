@@ -302,7 +302,13 @@ in {
         done
       '';
     in {
-      imports = [stylixAspect vesktopAspect hyprmoncfg tridactylAspect neovideAspect];
+      imports = [
+        stylixAspect
+        # vesktopAspect
+        hyprmoncfg
+        tridactylAspect
+        neovideAspect
+      ];
 
       # Importing this aspect IS the GUI statement: derive the flag that
       # consumers (e.g. the pi GUI-vs-TUI context) read. NOTE: an aspect that
