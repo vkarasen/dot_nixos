@@ -35,6 +35,9 @@ After the refactor these outputs are available on `inputs.private`:
 | `flake.lib.pi.mkSkills` | Function `{ pkgs, ast-bro } → attrset` | Returns `{ mkAstBroSkill, mkSourceSkill }` — the same derivation builders used by the private config. |
 | `flake.modules.homeManager.*` | Attrset of HM modules | Full dendritic aspect store. Individual aspects can be cherry-picked or the whole set folded in. |
 | `flake.modules.generic.*` | Attrset of HM modules | Class-agnostic modules, notably `my-options` which declares `my.is_private`, `my.git.email`, `my.portable.*`, `my.homeConfigurationName`. |
+| `flake.overlays.pi-bun` | Overlay | Adds `pkgs.pi-bun` (single-file Bun build). Needed because the private `pi` aspect sets `package = pkgs.pi-bun`. |
+| `flake.overlays.stable` | Overlay | Adds `pkgs.stable` (pinned nixpkgs-stable). |
+| `flake.overlays.default` | Overlay | `stable` composed with `pi-bun`. |
 
 **Key invariant:** `my.is_private` defaults to `false`. Private-only
 behaviour in ssh, bash, and sops is still gated behind
@@ -57,9 +60,6 @@ inputs = {
 
   private = {
     url = "github:vkarasen/dot_nixos";   # or path:/path/to/local/clone
-    # inputs.nixpkgs should follow the corporate flake's nixpkgs to avoid
-    # two different nixpkgs closures in the same build.
-    inputs.nixpkgs.follows = "nixpkgs";
   };
 
   # Follow ast-bro from the private flake so skill derivations use the same
@@ -68,9 +68,21 @@ inputs = {
 };
 ```
 
-No other `follows` are required for pi specifically. `agent-stuff` is closed
-over inside the private flake's aspect at flake-parts eval time and never
-surfaces as an `extraSpecialArgs` requirement.
+nixpkgs is not declared as a corporate input. It comes from the private flake
+transitively (`inputs.private.inputs.nixpkgs`), and pi-bun from the overlay.
+Build the configured pkgs once and use it for the home-manager evaluation:
+
+```nix
+pkgs = import inputs.private.inputs.nixpkgs {
+  inherit system;
+  config.allowUnfree = true;
+  overlays = [ inputs.private.overlays.default ];
+};
+```
+
+This must be the same pkgs that evaluates the corporate home-manager config:
+the private `pi` aspect sets `programs.pi-coding-agent.package = pkgs.pi-bun`,
+so without the overlay that reference fails.
 
 ---
 
@@ -221,11 +233,7 @@ No `follows`, no `extraSpecialArgs`, no action required. The catppuccin
 theming, nix-index/comma, nixvim HM module, sops-nix module, and ast-bro
 package all just work when you include `external` in the modules list.
 
-The one `follows` worth adding is `nixpkgs` (to avoid two nixpkgs closures):
-
-```nix
-private.inputs.nixpkgs.follows = "nixpkgs";
-```
+No nixpkgs follows is needed — see Step 1: nixpkgs and pi-bun come from inputs.private.inputs.nixpkgs + inputs.private.overlays.default.
 
 ---
 
@@ -245,7 +253,7 @@ Reference when deciding which private aspects to import:
 | `neovim` | none | clean; needs nixvim HM module → include `external` | — |
 | `sops` | none | clean; needs sops-nix HM module → include `external`; for corporate secrets setup see `modules/home/sops/README-corporate.md` in the private repo | ✓ (secrets file, secret decls) |
 | `external` | none | all inputs pre-closed at flake-parts level | — |
-| `pi` | none | inputs pre-closed; settings are unconditional `mkDefault` — override with `mkForce` or extend lists. Subagent options (`my.pi.*`) use per-field defaults; see SUBAGENTS.md §3 | — |
+| `pi` | none | inputs pre-closed; settings are unconditional `mkDefault` — override with `mkForce` or extend lists. Subagent options (`my.pi.*`) use per-field defaults; see SUBAGENTS.md §3 — and `package = pkgs.pi-bun` requires applying `flake.overlays.pi-bun` (or `default`) to the nixpkgs that evaluates the corporate config (see Step 1). | — |
 
 ---
 

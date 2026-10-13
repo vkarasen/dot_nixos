@@ -34,7 +34,7 @@ standalone portable config opts into the universal `homeManager.core` bundle.
 flake.nix                         # thin: inputs + mkFlake (import-tree ./modules)
 modules/
   flake/                          # flake-level wiring (NOT aspects)
-    parts.nix                     # opt into flake.modules.<class>; systems; shared allowUnfree pkgs + `stable` overlay; formatter
+    parts.nix                     # opt into flake.modules.<class>; systems; allowUnfree pkgs + flake.overlays (stable, pi-bun); formatter
     home-configurations.nix       # portable config = homeManager.core + generic.* (TUI-only)
     nixos-configurations.nix      # per host: modules (nixos.*) + homeModules (homeManager.*) + generic.*
     home-modules.nix              # flake.homeModules.* — standalone HM modules for cross-flake import
