@@ -9,7 +9,6 @@
       stateVersion = "26.05";
       username = "vkarasen";
       homeDirectory = "/home/vkarasen";
-      sessionPath = ["~/.nix-profile/bin"];
     };
 
     xdg.enable = true;
