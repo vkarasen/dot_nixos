@@ -17,7 +17,7 @@ description: How to find, change, and understand Firefox and Tridactyl configura
 
 Tridactyl is Vim-style Firefox keybindings, wired by the `tridactyl` aspect
 (`modules/home/tridactyl/default.nix`, gated on `programs.firefox.enable`). Firefox
-itself and its add-ons live in `modules/home/browser/default.nix`. Do not guess at
+itself and its add-ons live in `modules/home/firefox/default.nix`. Do not guess at
 setting names or Firefox prefs — route by kind of question first.
 
 ## When to use
@@ -105,7 +105,7 @@ nix-search-tv print --indexes home-manager | grep -i 'firefox'
 nix-search-tv preview --indexes home-manager --json 'programs.firefox.profiles'
 ```
 
-This repo attaches add-ons in `modules/home/browser/default.nix`
+This repo attaches add-ons in `modules/home/firefox/default.nix`
 (`programs.firefox.profiles."vkarasen".extensions.packages`, sourced from
 `inputs.firefox-addons`) and the Tridactyl extension + native messenger +
 `profiledir` setting, all wired through the `programs.tridactyl` home-manager
@@ -117,8 +117,8 @@ module (`modules/home/tridactyl/default.nix` supplies the starter
 Every Firefox pref (`name → {type, default, description, source, sources}`) is
 indexed at build time into `~/.config/ffprefs/index.json` — a flat JSON map
 generated from the pinned `firefox-unwrapped` by
-`modules/home/browser/_parse-ffprefs.cjs` (the
-`ffprefs-index` derivation in `modules/home/browser/_index-module.nix`). Nothing is
+`modules/home/firefox/_parse-ffprefs.cjs` (the
+`ffprefs-index` derivation in `modules/home/firefox/_index-module.nix`). Nothing is
 committed; the `~/.config` copy is the source of truth.
 
 - **Names / values** come from `StaticPrefList.yaml` (`type:` + `value:`, and
@@ -147,7 +147,7 @@ jq -r '."media.rdd-ffmpeg.enabled".description' ~/.config/ffprefs/index.json
 ```
 
 Interactive browser: `tv ffpref` (channel from
-`modules/home/browser/_index-module.nix`; preview shows Description / Type /
+`modules/home/firefox/_index-module.nix`; preview shows Description / Type /
 Default / Source).
 
 ### Record → `profiles.<name>.settings`

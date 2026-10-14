@@ -1,7 +1,7 @@
 # Library module: the `programs.ffpref` option set and its implementation —
 # builds the generated Firefox-preference index, materializes it at
 # xdg.configFile."ffprefs/index.json", and wires the television `ffpref`
-# channel that consumes it. Imported by default.nix (the browser aspect);
+# channel that consumes it. Imported by default.nix (the firefox aspect);
 # exposed for cross-flake import as flake.homeModules.ffpref-module. Keep this
 # generic: no repo-specific settings here.
 {

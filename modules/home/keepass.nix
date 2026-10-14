@@ -63,7 +63,7 @@
     };
 
     # The KeePassXC-Browser Firefox extension, attached to the vkarasen profile
-    # (declared in modules/home/browser/default.nix). Kept here — not in that
+    # (declared in modules/home/firefox/default.nix). Kept here — not in that
     # aspect — so
     # the whole KeePass concern (app + service + extension) lives in one aspect
     # that can be ripped out as a unit. Inert unless Firefox is enabled.

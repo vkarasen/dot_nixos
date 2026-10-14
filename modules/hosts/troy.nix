@@ -25,13 +25,13 @@
   # desktop is the GUI (a laptop or a desktop PC alike) — it also bundles the
   # stylix home aspect (see modules/home/desktop.nix), so stylix is deliberately
   # not listed here; laptop is the suspend/idle/battery behaviour specific to a
-  # laptop. browser follows desktop: it is gated on my.gui.enable, so it only
+  # laptop. firefox follows desktop: it is gated on my.gui.enable, so it only
   # activates on GUI hosts. `troy` (defined below) carries this host's own
   # hardware-specific home bits.
   flake.nixosHosts.troy.homeModules = [
     config.flake.modules.homeManager.core
     config.flake.modules.homeManager.desktop
-    config.flake.modules.homeManager.browser
+    config.flake.modules.homeManager.firefox
     config.flake.modules.homeManager.steam
     config.flake.modules.homeManager.laptop
     config.flake.modules.homeManager.troy
@@ -98,7 +98,7 @@
       # (vainfo lists no AV1 profiles), so YouTube AV1 streams fall back to
       # CPU decode and spin the fans. Refuse AV1 in Firefox so YouTube
       # serves VP9/H.264, which the iHD VA-API driver decodes in hardware.
-      # The VA-API prefs themselves live in modules/home/browser/default.nix.
+      # The VA-API prefs themselves live in modules/home/firefox/default.nix.
       programs.firefox.profiles."vkarasen".settings."media.av1.enabled" = false;
 
       # Fn9 = internal panel on/off. Hyprland `code:N` is the XKB keycode

@@ -2,13 +2,13 @@
 # keybindings. Imports the standalone `programs.tridactyl` module (./_module.nix)
 # and supplies this repo's starter config (settings + binds). Adds the Tridactyl
 # extension to the vkarasen profile (declared in
-# modules/home/browser/default.nix), the
+# modules/home/firefox/default.nix), the
 # tridactyl-native messenger host that lets `:editor` hand a page's text field to
 # the GUI editor, and a starter tridactylrc of Vim-style keybindings.
 #
 # Browser-following: Tridactyl is a Firefox extension, so both blocks below are
-# gated on `programs.firefox.enable` (set by the browser aspect,
-# modules/home/browser/default.nix) rather than the separate `my.gui.enable`
+# gated on `programs.firefox.enable` (set by the firefox aspect,
+# modules/home/firefox/default.nix) rather than the separate `my.gui.enable`
 # flag — a host with Firefox disabled does not pull the extension, the native
 # messenger, or the generated index. Selection for this host happens in
 # modules/hosts/troy.nix.

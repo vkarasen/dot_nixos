@@ -1,6 +1,6 @@
 // CommonJS parser: build a flat JSON index of every Firefox pref from the
 // version-pinned Firefox sources (used by the `ffprefs-index` derivation in
-// modules/home/browser/default.nix).
+// modules/home/firefox/default.nix).
 //
 // This runs inside the derivation against the pinned Firefox — not manually.
 // The index is materialized at ~/.config/ffprefs/index.json by home-manager;

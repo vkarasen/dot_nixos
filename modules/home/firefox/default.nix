@@ -1,4 +1,4 @@
-# Dendritic aspect: browser (home-manager class) — Firefox, configured
+# Dendritic aspect: firefox (home-manager class) — Firefox, configured
 # declaratively with pinned add-ons (uBlock Origin + SponsorBlock) and Intel
 # VA-API video-decode prefs. Theming is owned by Stylix (modules/home/stylix.nix),
 # not here.
@@ -13,7 +13,7 @@
 # in flake.nix): pinned .xpi derivations that expose `addonId` in passthru,
 # the contract home-manager's `extensions.packages` reads.
 {inputs, ...}: {
-  flake.modules.homeManager.browser = {
+  flake.modules.homeManager.firefox = {
     pkgs,
     config,
     lib,

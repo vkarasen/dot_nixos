@@ -25,7 +25,7 @@
   # Import this in any flake that wants the generated pref index materialized
   # at xdg.configFile."ffprefs/index.json" and wired to the television `ffpref`
   # channel.
-  flake.homeModules.ffpref-module = ../home/browser/_index-module.nix;
+  flake.homeModules.ffpref-module = ../home/firefox/_index-module.nix;
 
   # The herdr option machinery: programs.herdr.{enable, settings}.
   # Import this in any flake that wants herdr config wired to
