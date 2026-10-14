@@ -227,10 +227,10 @@
             a way to reduce it. "Which files define X" is delegable; "why did
             this build break" is not.
           - **Never delegate when a silently wrong answer would be
-            unrecoverable.** See the three failure modes below.
+            unrecoverable.** See the failure modes below.
           - Do not delegate what is already in your context.
 
-          ## Three observed failure modes — design around them
+          ## Observed failure modes — design around them
 
           **A child may decline to escalate.** Children have
           `contact_supervisor` and it works end to end: the child blocks, you
@@ -277,6 +277,17 @@
           single `read` of the cited `file:line` (or, for upstream/web claims,
           one delegated researcher check). One cheap check beats a
           careful-sounding paragraph.
+
+          **A child may die at its run deadline — inspect why before
+          surfacing it.** Children have a run-level lifetime deadline
+          (default ~1h). A child that hits it is soft-interrupted, keeps its
+          partial output, and reports a timeout, and its session file stays
+          intact. When a child fails, check the failure reason instead of
+          reporting a generic death: if it timed out, `resume` it once —
+          resuming re-bills cheaply and carries the session forward. A
+          second timeout on the same child means the task is too long for a
+          single run; segment it into resume passes or surface it to the
+          user.
 
           ## The brief
 
