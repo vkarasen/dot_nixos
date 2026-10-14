@@ -13,6 +13,25 @@
 }: let
   cfg = config.programs.tridactyl-index;
 
+  # Self-contained channel helper scripts: jq + coreutils are baked onto the
+  # script's PATH by writeShellApplication, so a consumer needs no jq of their
+  # own for the channel commands.
+  tridactyl-source = pkgs.writeShellApplication {
+    name = "tridactyl-source";
+    runtimeInputs = [pkgs.jq pkgs.coreutils];
+    text = ''
+      test -f ~/.config/tridactyl/index.json && jq -r 'keys[]' ~/.config/tridactyl/index.json || true
+    '';
+  };
+
+  tridactyl-preview = pkgs.writeShellApplication {
+    name = "tridactyl-preview";
+    runtimeInputs = [pkgs.jq pkgs.coreutils];
+    text = ''
+      jq -r --arg k "$1" '.[$k] as $o | $o.description, "", (if $o.kind == "excmd" then ("Params: " + ([($o.params // [])[] | .name] | join(", "))) + "   Mode: " + ($o.mode // "") else ("Type: " + (if ($o.type // "") == "" then "n/a" else $o.type end)) + "   Default: " + $o.default end), ("Source: " + $o.source)' ~/.config/tridactyl/index.json | fold -s -w 80
+    '';
+  };
+
   # Generated Tridactyl index: :set settings (from src/lib/config.ts,
   # namespaced `set.*`) plus ex commands (from src/excmds.ts, namespaced
   # `excmd.*`), built from the configured source tree by
@@ -54,10 +73,8 @@ in {
         name = "tridactyl";
         description = "Tridactyl settings + ex commands (generated index)";
       };
-      source.command = ''
-        test -f ~/.config/tridactyl/index.json && jq -r 'keys[]' ~/.config/tridactyl/index.json || true
-      '';
-      preview.command = ''jq -r --arg k '{}' '.[$k] as $o | $o.description, "", (if $o.kind == "excmd" then ("Params: " + ([($o.params // [])[] | .name] | join(", "))) + "   Mode: " + ($o.mode // "") else ("Type: " + (if ($o.type // "") == "" then "n/a" else $o.type end)) + "   Default: " + $o.default end), ("Source: " + $o.source)' ~/.config/tridactyl/index.json | fold -s -w 80'';
+      source.command = lib.mkDefault "${tridactyl-source}/bin/tridactyl-source";
+      preview.command = lib.mkDefault "${tridactyl-preview}/bin/tridactyl-preview '{}'";
     };
   };
 }

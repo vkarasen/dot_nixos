@@ -12,6 +12,25 @@
 }: let
   cfg = config.programs.ffpref;
 
+  # Self-contained channel helper scripts: jq + coreutils are baked onto the
+  # script's PATH by writeShellApplication, so a consumer needs no jq of their
+  # own for the channel commands.
+  ffpref-source = pkgs.writeShellApplication {
+    name = "ffpref-source";
+    runtimeInputs = [pkgs.jq pkgs.coreutils];
+    text = ''
+      test -f ~/.config/ffprefs/index.json && jq -r 'keys[]' ~/.config/ffprefs/index.json || true
+    '';
+  };
+
+  ffpref-preview = pkgs.writeShellApplication {
+    name = "ffpref-preview";
+    runtimeInputs = [pkgs.jq pkgs.coreutils];
+    text = ''
+      jq -r --arg k "$1" '.[$k] as $o | $o.description, "", ("Type: " + $o.type) + "   Default: " + $o.default, ("Source: " + $o.source)' ~/.config/ffprefs/index.json | fold -s -w 80
+    '';
+  };
+
   # Generated Firefox-preference index: every pref name from the pinned
   # `firefox-unwrapped`, merged into one flat JSON map by _parse-ffprefs.cjs.
   # Sources: StaticPrefList.yaml (from firefox-unwrapped.src — explicit C++
@@ -73,10 +92,8 @@ in {
         name = "ffpref";
         description = "Firefox prefs: type / default / description (generated index)";
       };
-      source.command = ''
-        test -f ~/.config/ffprefs/index.json && jq -r 'keys[]' ~/.config/ffprefs/index.json || true
-      '';
-      preview.command = ''jq -r --arg k '{}' '.[$k] as $o | $o.description, "", ("Type: " + $o.type) + "   Default: " + $o.default, ("Source: " + $o.source)' ~/.config/ffprefs/index.json | fold -s -w 80'';
+      source.command = lib.mkDefault "${ffpref-source}/bin/ffpref-source";
+      preview.command = lib.mkDefault "${ffpref-preview}/bin/ffpref-preview '{}'";
     };
   };
 }
