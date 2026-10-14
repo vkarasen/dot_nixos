@@ -46,6 +46,13 @@ Follow install instructions for [nix-portable](https://github.com/DavHau/nix-por
 
 For home config, a new option is provided at `options.my.portable` Override in config to get access to a `nix_activate` bash function that will activate a nixified virtual environment
 
+# Reusable for other flakes
+
+Standalone home-manager modules other flakes can import directly — no dependency on this repo's dendritic aspect store or its `my.*` options:
+
+- [docs/tridactyl-module.md](docs/tridactyl-module.md) — declarative Tridactyl config for home-manager
+- [docs/tv-channels.md](docs/tv-channels.md) — tv channels to look up Firefox preferences and Tridactyl settings
+
 # TODO
 
 - Autocompletion, maybe [nvim-cmp](https://nix-community.github.io/nixvim/plugins/cmp/index.html) or [blink.cmp](https://github.com/Saghen/blink.cmp) or [coq](https://nix-community.github.io/nixvim/plugins/coq-nvim/index.html#coq-nvim)
