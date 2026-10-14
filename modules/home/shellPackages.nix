@@ -27,7 +27,6 @@
           tabiew
           wl-clipboard
           tig
-          btop
         ]
         ++ [
           pkgs.stable.patool
