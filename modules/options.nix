@@ -75,6 +75,19 @@
         default = "~/nix/nix-portable";
       };
     };
+    options.my.scratchArea = lib.mkOption {
+      type = lib.types.nonEmptyStr;
+      default = "/tmp/scratch";
+      description = ''
+        Canonical scratch area for agents and scripts — temporary checkouts,
+        clones, scratch files, and build artifacts that should not clutter the
+        repo or the user's home. Exported as the SCRATCH_AREA env var by
+        modules/home/scratch.nix. Defaults to /tmp/scratch; on machines with a
+        small /tmp or /home, point this at a larger partition (e.g. a corporate
+        data volume). A leading ~/ is expanded to the home directory at export
+        time.
+      '';
+    };
     options.my.rclone = {
       mounts = lib.mkOption {
         type = lib.types.attrsOf (lib.types.submodule ({name, ...}: {

@@ -326,7 +326,7 @@
       # orchestrator must ALWAYS pass worktree: true when launching the
       # investigator — unconditionally, not just for repo-touching tasks.
       # The prompt below covers two disposability mechanisms (worktree for
-      # repo files, /tmp for live-system scratch); a live-system-only task
+      # repo files, $SCRATCH_AREA for live-system scratch); a live-system-only task
       # simply won't exercise the repo half, but if worktree:false is passed
       # and the investigation turns out to need repo experimentation, there
       # is no fallback — the agent has real write/edit access to the live
@@ -347,7 +347,7 @@
           working on a repo and want to try things out, use the disposable
           worktree you were launched in — write throwaway code, run it,
           iterate, and do not propose keeping the changes; it is discarded.
-          If you are working on a live system instead, use /tmp for scratch
+          If you are working on a live system instead, use `$SCRATCH_AREA` (the configured scratch area) for scratch
           scripts and files. If a live probe requires mutating real state
           rather than just reading it (a service restart, a database write,
           a config toggle), keep it reversible and report exactly what

@@ -19,6 +19,7 @@
       config.flake.modules.homeManager.television
       config.flake.modules.homeManager.tickrs
       config.flake.modules.homeManager.worktrunk
+      config.flake.modules.homeManager.scratch
       config.flake.modules.homeManager.tmux
       config.flake.modules.homeManager.lf
       config.flake.modules.homeManager.monitoring

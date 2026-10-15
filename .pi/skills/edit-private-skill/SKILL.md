@@ -88,16 +88,19 @@ Edit, save, exit. Done. Stage with `git add`.
 Use sops decrypt → edit → encrypt pipeline:
 
 ```bash
-# 1. Decrypt to a temp file
-sops decrypt --output /tmp/skill-edit.md modules/home/pi/skills-private/<name>.md
+# 1. Ensure the scratch area exists
+mkdir -p "$SCRATCH_AREA"
 
-# 2. Edit /tmp/skill-edit.md using the edit tool or write tool
+# 2. Decrypt to a scratch file
+sops decrypt --output "$SCRATCH_AREA/skill-edit.md" modules/home/pi/skills-private/<name>.md
 
-# 3. Re-encrypt back
-sops encrypt --output modules/home/pi/skills-private/<name>.md /tmp/skill-edit.md
+# 3. Edit "$SCRATCH_AREA/skill-edit.md" using the edit tool or write tool
 
-# 4. Clean up
-rm /tmp/skill-edit.md
+# 4. Re-encrypt back
+sops encrypt --output modules/home/pi/skills-private/<name>.md "$SCRATCH_AREA/skill-edit.md"
+
+# 5. Clean up
+rm "$SCRATCH_AREA/skill-edit.md"
 ```
 
 ### Verifying the encrypted file is valid

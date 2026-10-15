@@ -390,23 +390,26 @@ entry with the atlassian bundle; PR handling is `gh` via bash, already on
 
 ## 7. Verification
 
+`SCRATCH_AREA` is exported by this repo's `my.scratchArea` option (default `/tmp/scratch`).
+
 ```bash
+mkdir -p "$SCRATCH_AREA"
 git add -NA                     # pitfall #1
 nix flake check                 # NOT just nix build — see §1
-nix build .#homeConfigurations.<name>.activationPackage --out-link /tmp/hm
+nix build .#homeConfigurations.<name>.activationPackage --out-link "$SCRATCH_AREA/hm"
 
 # Every agent rendered, and nothing vanished:
-ls /tmp/hm/home-files/.pi/agent/agents/
+ls "$SCRATCH_AREA/hm/home-files/.pi/agent/agents/"
 
 # Tiers resolved as intended:
-for f in /tmp/hm/home-files/.pi/agent/agents/*.md; do
+for f in "$SCRATCH_AREA/hm/home-files/.pi/agent/agents/"*.md; do
   printf '%-16s ' "$(basename "$f" .md)"
   awk '/^---$/{n++;next} n==1 && /^(model|thinking):/{printf "%s ", $2}' "$f"; echo
 done
 
 # Session default followed the orchestrator tier:
-node -e 'const s=require("/tmp/hm/home-files/.pi/agent/settings.json");
-  console.log(s.defaultProvider, s.defaultModel, s.defaultThinkingLevel)'
+node -e "const s=require(\"$SCRATCH_AREA/hm/home-files/.pi/agent/settings.json\");
+  console.log(s.defaultProvider, s.defaultModel, s.defaultThinkingLevel)"
 ```
 
 The count check is the important one. If adding an agent reduced the total,

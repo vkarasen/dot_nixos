@@ -52,6 +52,10 @@
       in "| `${name}` | ${tier.model or spec.tier} | ${spec.description} | ${lib.concatStringsSep ", " flags} |";
     in
       lib.concatStringsSep "\n" (lib.mapAttrsToList row enabled);
+    scratchDir =
+      if lib.hasPrefix "~/" config.my.scratchArea
+      then config.home.homeDirectory + lib.removePrefix "~" config.my.scratchArea
+      else config.my.scratchArea;
   in {
     # -----------------------------------------------------------------------
     # Invariants — the floor every agent gets
@@ -325,7 +329,7 @@
             worktree: true   REQUIRED for `investigator`, unconditionally —
                              its frontmatter cannot set this, and it covers
                              repo experiments; live-system-only tasks use
-                             /tmp instead and just won't need the repo half
+                             `$SCRATCH_AREA` instead and just won't need the repo half
             context: "fork"  fork is available but unused by default
                              (defaultSubagentContext is fresh); reserve it
                              for any future agent that must inherit parent
@@ -653,6 +657,11 @@
           # Scripting runtime policy
 
           Follow this decision tree in order — stop at the first match.
+
+          Scratch: put temporary checkouts, clones, and scratch files under
+          `$SCRATCH_AREA` — `mkdir -p "$SCRATCH_AREA"` first if it does not exist
+          (currently `${scratchDir}` on this machine). Do not scatter them across
+          `/tmp` or inside the repo.
 
           ## 0. Check for an active devshell first
           A devshell may already provide project-specific tools and runtimes.
