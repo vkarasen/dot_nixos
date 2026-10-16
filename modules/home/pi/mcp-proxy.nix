@@ -104,7 +104,9 @@
         # npx resolves its command via PATH, and HM's sessionPath does not reach
         # systemd user units — put nodejs (+ yt-dlp for video-analyzer, +
         # coreutils for the readiness probe) on PATH.
-        Environment = ["PATH=${pkgs.nodejs}/bin:${pkgs.yt-dlp}/bin:${pkgs.coreutils}/bin:${pkgs.bash}/bin"];
+        Environment =
+          ["PATH=${pkgs.nodejs}/bin:${pkgs.yt-dlp}/bin:${pkgs.coreutils}/bin:${pkgs.bash}/bin"]
+          ++ lib.mapAttrsToList (name: value: "${name}=${value}") config.my.pi.mcpProxy.environment;
         # Personal-only: wait for the google-workspace OAuth client credentials
         # to be present before starting, mirroring the readiness probe idea.
         ExecStartPre = lib.mkIf isPrivate "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 60); do [ -f \"$HOME/.config/google-workspace-mcp/credentials.json\" ] && exit 0; sleep 1; done; exit 1'";

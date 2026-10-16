@@ -369,6 +369,15 @@
         unauthenticated on loopback, and mcp.json is unchanged.
       '';
     };
+    options.my.pi.mcpProxy.environment = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = {};
+      description = ''
+        Extra environment variables for the pi-mcp-proxy systemd user service,
+        inherited by every child MCP server it spawns. No secrets here — use
+        sops for credentials, never this option.
+      '';
+    };
     options.my.pi.modelTiers = lib.mkOption {
       type = lib.types.attrsOf (lib.types.submodule {
         options = {
