@@ -83,9 +83,11 @@ export default function (pi: ExtensionAPI) {
 
     const text =
       "⚑ Herdr label check: does the workspace (when this session lives in a" +
-      " worktree sub-workspace) or tab (otherwise) still carry a label that" +
-      " matches what this conversation is actually about now? If the topic has" +
-      " moved on, call rename_herdr_context with a fresh 2–4 word label.";
+      " worktree sub-workspace) or tab (otherwise) still name the SUBJECT this" +
+      " conversation is about — not its current phase? Rename only if the subject" +
+      " itself changed; advancing from plan to code to review is not a change." +
+      " If it changed, call rename_herdr_context with a fresh 2–4 word subject" +
+      " label.";
 
     return {
       messages: [
@@ -107,14 +109,16 @@ export default function (pi: ExtensionAPI) {
     promptSnippet: "Rename the workspace/tab this session lives in",
     promptGuidelines: [
       "Use rename_herdr_context as the first tool call each session to label the" +
-        " task. Also call it whenever the session topic shifts significantly.",
+        " task's subject. Also call it when the subject changes — not when the" +
+        " same work advances to a new phase (plan, code, review, commit).",
     ],
     parameters: Type.Object({
       label: Type.String({
         description:
-          'Short label: 2–4 words, lowercase noun phrase' +
-          ' (e.g. "nixvim config", "flake inputs bump", "pr review").' +
-          ' Avoid generics like "chat", "session", "work", or the bare repo name.',
+          'Short label: 2–4 words, lowercase noun phrase naming the subject' +
+          ' (e.g. "nixvim config", "flake inputs bump", "vaultwarden setup").' +
+          ' Name the thing, not the phase: never a bare activity like "review"' +
+          ' or "commit merge"; avoid "chat", "session", "work", or the repo name.',
       }),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {

@@ -775,16 +775,30 @@
             WORKSPACE (the task-scoped unit) and its TAB; otherwise it renames
             just the TAB. The TAB is always prefixed `pi: `. The first prompt of
             each session injects an instruction to call it before starting work;
-            also call it whenever the topic shifts.
+            also call it whenever the subject changes, not when the same work
+            merely advances a step.
           - `relocate_herdr_tab` moves this session's pane into another herdr
             workspace (opening a new tab there) and can rename that workspace
             to the task name in the same call. Use it to move a session onto
             its worktree workspace (existing or new) and name it after the task.
 
           ## Label style
-          - 2–4 words, lowercase noun phrase
-          - Concrete and specific: `nixvim config`, `flake inputs bump`, `pr review`
-          - Avoid generics like `chat`, `session`, `work`, or the bare repo name
+          The label is how you find this session again among all the others, so it
+          must name the *subject* of the work — the thing being worked on — not the
+          activity currently in progress.
+
+          - 2–4 words, lowercase noun phrase naming the subject or goal:
+            `vaultwarden setup`, `nixvim config`, `flake inputs bump`, `tavily provider`
+          - Keep the subject, drop the phase. Planning, coding, reviewing, and
+            committing the same thing is one topic — label the thing, not the step.
+            `commit merge` and `code review` say nothing by themselves; if the phase
+            matters, subordinate it: `vaultwarden review`, never `review` alone.
+          - Rename only when the *subject* changes — a different thing is now being
+            worked on — not when the same work advances a step.
+          - Distinguishability test: if another one of your sessions could honestly
+            carry the same label, it is too generic — add the thing it applies to.
+          - Avoid generics like `chat`, `session`, `work`, `refactor`, or the bare
+            repo name.
         '';
 
         "18-documentation-drift" = ''
