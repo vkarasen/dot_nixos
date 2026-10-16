@@ -5,7 +5,7 @@
 #     including headless machines that can reach the vault over Nextcloud.
 #   * GUI app + browser integration on private GUI hosts only.
 #
-# The vault file is /home/vkarasen/sync/private/bishoppasswords.kdbx (inside the
+# The vault file is /home/vkarasen/sync/private/vkarasen.kdbx (inside the
 # Nextcloud-synced ~/sync folder, NOT the rclone FUSE mounts /mnt/gdrive and
 # /mnt/nextcloud). programs.keepassxc.enable auto-installs KeePassXC's
 # native-messaging manifest, which lets the KeePassXC-Browser extension (declared
