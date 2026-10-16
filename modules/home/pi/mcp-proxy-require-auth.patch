@@ -9,7 +9,7 @@ index b0c1dac..3032755 100644
 +    mcp_server_group.add_argument(
 +        "--auth-bearer-token",
 +        type=str,
-+        default="",
++        default=os.environ.get("MCP_PROXY_AUTH_TOKEN", ""),
 +        metavar="TOKEN",
 +        help=(
 +            "Require 'Authorization: Bearer TOKEN' on every HTTP request served by the "

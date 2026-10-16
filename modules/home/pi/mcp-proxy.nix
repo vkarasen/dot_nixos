@@ -39,15 +39,7 @@
     # 1. mcp-proxy-forward-cursor.patch — a real upstream bug fix. Upstream
     #    0.12.0 drops the request cursor in its list handlers, so a client that
     #    paginates loops forever on page 1. Forward the cursor (upstream PR
-    #    #239) until the fix lands in nixpkgs. Keep this one.
-    #
-    # 2. mcp-proxy-strip-resources.patch — TEMPORARY workaround. It deletes
-    #    `resources` from the capabilities advertised in the `initialize` reply
-    #    on the HTTP/SSE serving path (mcp_server.py), because pi misbehaves
-    #    against a proxied server that advertises resources:
-    #      https://github.com/earendil-works/pi/issues/10526
-    #    RIP OUT once pi fixes #10526: delete the patch file and drop its entry
-    #    from the patches list below. Nothing else depends on it.
+    #    #254, issue #253) until the fix lands in nixpkgs. Keep this one.
     #
     # 3. mcp-proxy-require-auth.patch — `--auth-bearer-token TOKEN`. When the
     #    token is non-empty, every request must carry
@@ -59,7 +51,6 @@
         (old.patches or [])
         ++ [
           ./mcp-proxy-forward-cursor.patch
-          ./mcp-proxy-strip-resources.patch
           ./mcp-proxy-require-auth.patch
         ];
     });
@@ -76,10 +67,10 @@
         token="$(cat "${authTokenPath}")"
       fi
       if [ -n "$token" ]; then
+        export MCP_PROXY_AUTH_TOKEN="$token"
         exec ${mcpProxy}/bin/mcp-proxy \
           --named-server-config "$HOME/.config/pi-mcp/mcp-servers.json" \
-          --host 127.0.0.1 --port 8799 \
-          --auth-bearer-token "$token"
+          --host 127.0.0.1 --port 8799
       fi
       exec ${mcpProxy}/bin/mcp-proxy \
         --named-server-config "$HOME/.config/pi-mcp/mcp-servers.json" \
