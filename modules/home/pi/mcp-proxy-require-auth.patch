@@ -1,8 +1,8 @@
 diff --git a/src/mcp_proxy/__main__.py b/src/mcp_proxy/__main__.py
-index b0c1dac..3032755 100644
+index d725ce2..aff99bf 100644
 --- a/src/mcp_proxy/__main__.py
 +++ b/src/mcp_proxy/__main__.py
-@@ -273,6 +273,17 @@ def _add_arguments_to_parser(parser: argparse.ArgumentParser) -> None:
+@@ -291,6 +291,17 @@ def _add_arguments_to_parser(parser: argparse.ArgumentParser) -> None:
              "Defaults to 'Mcp-Session-Id'. Can be used multiple times."
          ),
      )
@@ -20,7 +20,7 @@ index b0c1dac..3032755 100644
  
  
  def _setup_logging(*, level: str, debug: bool) -> logging.Logger:
-@@ -443,6 +454,7 @@ def _create_mcp_settings(args_parsed: argparse.Namespace) -> MCPServerSettings:
+@@ -469,6 +480,7 @@ def _create_mcp_settings(args_parsed: argparse.Namespace) -> MCPServerSettings:
          allow_origins=args_parsed.allow_origin if len(args_parsed.allow_origin) > 0 else None,
          expose_headers=expose_headers,
          log_level="DEBUG" if args_parsed.debug else args_parsed.log_level,
@@ -29,7 +29,7 @@ index b0c1dac..3032755 100644
  
  
 diff --git a/src/mcp_proxy/mcp_server.py b/src/mcp_proxy/mcp_server.py
-index ae1c1b5..051333f 100644
+index 67f0fcb..4ee8642 100644
 --- a/src/mcp_proxy/mcp_server.py
 +++ b/src/mcp_proxy/mcp_server.py
 @@ -2,6 +2,7 @@
@@ -37,10 +37,10 @@ index ae1c1b5..051333f 100644
  import contextlib
  import logging
 +import secrets
+ import sys
  from collections.abc import AsyncIterator, Awaitable, Callable
  from dataclasses import dataclass, field
- from datetime import datetime, timezone
-@@ -17,7 +18,7 @@ from starlette.applications import Starlette
+@@ -19,7 +20,7 @@ from starlette.applications import Starlette
  from starlette.middleware import Middleware
  from starlette.middleware.cors import CORSMiddleware
  from starlette.requests import Request
@@ -49,7 +49,7 @@ index ae1c1b5..051333f 100644
  from starlette.routing import BaseRoute, Mount, Route
  from starlette.types import Receive, Scope, Send
  
-@@ -42,6 +43,9 @@ class MCPServerSettings:
+@@ -44,6 +45,9 @@ class MCPServerSettings:
      allow_origins: list[str] | None = None
      expose_headers: list[str] = field(default_factory=_default_expose_headers)
      log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
@@ -59,7 +59,7 @@ index ae1c1b5..051333f 100644
  
  
  # To store last activity for multiple servers if needed, though status endpoint is global for now.
-@@ -65,6 +69,43 @@ class _ASGIEndpointAdapter:
+@@ -68,6 +72,43 @@ class _ASGIEndpointAdapter:
          await self._endpoint(scope, receive, send)
  
  
@@ -103,7 +103,7 @@ index ae1c1b5..051333f 100644
  HTTP_METHODS = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT", "TRACE"]
  
  
-@@ -228,6 +269,19 @@ async def run_mcp_server(
+@@ -303,6 +344,19 @@ async def run_mcp_server(
                  ),
              )
  

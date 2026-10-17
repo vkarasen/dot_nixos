@@ -34,30 +34,36 @@
       then config.sops.secrets.mcp_proxy_auth_token.path
       else "";
     authEnabled = requireAuth && authTokenPath != "";
-    # mcp-proxy 0.12.0 is patched three times:
+    # mcp-proxy is pinned to upstream main (commit 701a0453487d) because 0.13.0
+    # is not in the pinned nixpkgs yet. It carries two patches:
     #
-    # 1. mcp-proxy-forward-cursor.patch — a real upstream bug fix. Upstream
-    #    0.12.0 drops the request cursor in its list handlers, so a client that
-    #    paginates loops forever on page 1. Forward the cursor (upstream PR
-    #    #254, issue #253) until the fix lands in nixpkgs. Keep this one.
-    #
-    # 2. mcp-proxy-degraded-startup.patch — make startup resilient to a single
+    # 1. mcp-proxy-degraded-startup.patch — make startup resilient to a single
     #    broken named server. Upstream connects every server in one loop with no
     #    per-server error handling, so one failing stdio server (bad command,
     #    missing credentials, ...) aborts the whole proxy. Wrap each server's
     #    setup in try/except and skip the failures instead of dying; the routes
     #    for a skipped server are never created.
     #
-    # 3. mcp-proxy-require-auth.patch — `--auth-bearer-token TOKEN`. When the
+    # 2. mcp-proxy-require-auth.patch — `--auth-bearer-token TOKEN`. When the
     #    token is non-empty, every request must carry
     #    `Authorization: Bearer TOKEN` (constant-time compare) or it gets 401.
     #    An empty token disables auth, so the proxy behaves exactly as before
     #    until a token is configured. Opt-in wiring lives further down.
+    #
+    # The forward-cursor fix (upstream PR #254, issue #253) is now upstream in
+    # main, so its patch has been dropped. This pin can go away once the
+    # degraded-startup fix is released upstream.
     mcpProxy = pkgs.mcp-proxy.overrideAttrs (old: {
+      version = "0.13.0";
+      src = pkgs.fetchFromGitHub {
+        owner = "sparfenyuk";
+        repo = "mcp-proxy";
+        rev = "701a0453487d1b28c8f9806ee4863674c70210dd";
+        hash = "sha256-dChbKePHfI3IdJRBw/XoKTeadcnHeJByblOSQ8jG/yA=";
+      };
       patches =
         (old.patches or [])
         ++ [
-          ./mcp-proxy-forward-cursor.patch
           ./mcp-proxy-degraded-startup.patch
           ./mcp-proxy-require-auth.patch
         ];
