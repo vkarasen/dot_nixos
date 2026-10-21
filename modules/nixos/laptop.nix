@@ -23,9 +23,13 @@
       description = "Apply power profile from AC state";
       wants = ["power-profiles-daemon.service"];
       after = ["power-profiles-daemon.service"];
-      # Run once at boot too (not only on udev AC transitions), so a cold
-      # battery boot starts in power-saver immediately.
-      wantedBy = ["multi-user.target"];
+      # Ordering constraint: this must still run once at boot to apply the
+      # power profile, but ppd 0.30 starts at graphical.target (it ships
+      # After=multi-user.target display-manager.target), and this unit is
+      # ordered After=ppd — so it cannot be Before multi-user.target (that
+      # would form an ordering cycle). graphical.target keeps boot-time
+      # application without the cycle.
+      wantedBy = ["graphical.target"];
       serviceConfig.Type = "oneshot";
       script = ''
         ac=""
