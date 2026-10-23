@@ -1,0 +1,23 @@
+# Worktrunk project config for this template (https://worktrunk.dev/config/).
+#
+# When a new worktree is created or switched to, copy gitignored build state
+# (target/, …) in from the worktree we came from, so a fresh worktree starts
+# warm instead of rebuilding every dependency. `{{ base }}` is the branch being
+# switched away from; `post-switch` fires on every switch result — create,
+# switch-to-existing, and stay-on-current.
+[post-switch]
+copy-ignored = "wt step copy-ignored --from {{ base }}"
+
+# Local per-worktree artefacts that must NOT be copied. Gitignore-style, and
+# combined with any excludes in the user config. Deliberately excludes only
+# cheap-to-regenerate or machine-local state: `.direnv/` (nix-direnv cache) and
+# the nix `result` build symlinks, which would arrive pointing into a store
+# path that has nothing to do with the new worktree.
+#
+# `.direnv/` is a per-directory cache of absolute store paths for THIS source
+# tree; copying it across worktrees would serve a stale env. The devshell
+# derivation itself is already shared via the Nix store + pinned flake.lock.
+#
+# `target/` is NOT excluded — reusing it via reflink is the whole point.
+[step.copy-ignored]
+exclude = [".direnv/", "result", "result-*"]

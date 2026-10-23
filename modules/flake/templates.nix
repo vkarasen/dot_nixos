@@ -10,7 +10,7 @@
     };
     rust = {
       path = ../../templates/rust;
-      description = "rust template using naersk";
+      description = "Rust workspace template — flake-parts + crane + fenix (checks, static musl, devshell)";
     };
     jekyll = {
       path = ../../templates/jekyll;

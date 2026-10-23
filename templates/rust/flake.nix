@@ -1,29 +1,17 @@
 {
+  description = "Rust workspace template — flake-parts + crane + fenix";
+
   inputs = {
-    naersk.url = "github:nix-community/naersk/master";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    utils.url = "github:numtide/flake-utils";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    import-tree.url = "github:vic/import-tree";
+    crane.url = "github:ipetkov/crane";
+    fenix.url = "github:nix-community/fenix";
+    advisory-db = {
+      url = "github:rustsec/advisory-db";
+      flake = false;
+    };
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    utils,
-    naersk,
-  }:
-    utils.lib.eachDefaultSystem (
-      system: let
-        pkgs = import nixpkgs {inherit system;};
-        naersk-lib = pkgs.callPackage naersk {};
-      in {
-        defaultPackage = naersk-lib.buildPackage {
-          src = ./.;
-        };
-        devShell = with pkgs;
-          mkShell {
-            buildInputs = [cargo rustc rustfmt rustPackages.clippy];
-            RUST_SRC_PATH = rustPlatform.rustLibSrc;
-          };
-      }
-    );
+  outputs = inputs: inputs.flake-parts.lib.mkFlake {inherit inputs;} (inputs.import-tree ./nix);
 }
