@@ -674,5 +674,16 @@
         `ls -l /dev/disk/by-id/`.
       '';
     };
+    options.my.disks.persistDevice = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        Whole disk for a separate persistent LUKS device holding /persist and
+        /home, so reinstalling mainDevice leaves them intact. Also a stable
+        by-id path (/dev/disk/by-id/...); verify at install time with
+        `ls -l /dev/disk/by-id/`. null = keep /persist and /home as btrfs
+        subvolumes of the main cryptroot (single-disk hosts, e.g. troy).
+      '';
+    };
   };
 }

@@ -48,6 +48,11 @@
     # VERIFY this by-id path at install time (ls -l /dev/disk/by-id/): the
     # 2 TB WD_BLACK SN770, NOT the 256 GB WD SN730 (the other NVMe).
     my.disks.mainDevice = "/dev/disk/by-id/nvme-WD_BLACK_SN770_2TB_E823_8FA6_BF53_0001_001B_444A_414D_7FB8";
+    # Second persistent disk for /persist + /home, so reinstalling the SN770
+    # leaves user data intact. VERIFY this by-id path at install time
+    # (ls -l /dev/disk/by-id/): the 256 GB WD SN730, NOT the 2 TB SN770
+    # targeted by mainDevice above.
+    my.disks.persistDevice = "/dev/disk/by-id/nvme-WDC_PC_SN730_SDBQNTY-256G-1001_001B_448B_4886_AE3B";
 
     # --- GPU: AMD Radeon RX 6750 XT (RDNA2 / VCN 3.0) ---
     # VA-API decode is provided by mesa (radeonsi), which the shared

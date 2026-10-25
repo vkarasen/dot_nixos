@@ -49,6 +49,8 @@
     my.boot.mode = "uefi";
     my.boot.resumeOffset = 533760;
     my.disks.mainDevice = "/dev/nvme0n1";
+    # Single-disk host: /persist and /home stay on cryptroot (no second disk).
+    my.disks.persistDevice = null;
 
     # Troy's iGPU is Intel UHD Graphics (Comet Lake, PCI 8086:9b41); the
     # Intel VA-API driver (iHD) enables Firefox hardware video decode, and
