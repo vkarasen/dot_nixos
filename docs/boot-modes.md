@@ -52,6 +52,7 @@ host file** — `modules/hosts/<name>.nix`, inside that host's
 | `my.boot.resumeOffset` | `nullOr int`, default `null` | Physical offset of the btrfs swapfile → `boot.kernelParams`' `resume_offset=` for hibernation. `null` = hibernation not wired yet on this host. Compute after install: `btrfs inspect-internal map-swapfile -r /swap/swapfile`. |
 | `my.disks.mainDevice` | `str`, **no default** | Whole system disk for disko (and, in legacy mode, the GRUB target). Use a stable `/dev/disk/by-id/...` path. No default on purpose: a host that imports the disks aspect must name its disk, so a default can never silently wipe the wrong device. Verify at install time with `ls -l /dev/disk/by-id/`. |
 | `my.disks.persistDevice` | `nullOr str`, default `null` | Whole second disk holding `/persist` + `/home` as a separate LUKS2 `cryptpersist`. `null` = they stay subvolumes of `cryptroot` (single-disk hosts). Also a by-id path; disko formats it, so verify at install time too. |
+| `my.disks.skipPersist` | `bool`, default `false` | `true` = keep `persistDevice` **out of disko** while still declaring its LUKS device + `/persist`/`/home` mounts. The only safe way to reinstall the system disk without formatting the persistent one (the legacy → uefi flip); set it **temporarily** and revert afterwards. |
 
 ## Current hosts
 
@@ -66,6 +67,27 @@ left untouched. Its *second* NVMe (the SN730) is not a Windows disk any more —
 it was one empty NTFS data volume (`G:`), and it is now the persistent disk
 targeted by `my.disks.persistDevice`. See `modules/hosts/sarasti.nix`.
 
+## Disk numbering (one definition, used everywhere)
+
+The install runbook and this migration doc refer to disks by **number**. The
+numbers are position-independent identities, anchored on `/dev/disk/by-id/`
+paths — never on `nvme0n1`/`sda`, which reorder between boots and BIOS changes:
+
+| # | model | size | role | by-id anchor |
+|---|---|---|---|---|
+| 0 | Crucial M4 (SATA SSD) | 128 GB | **Windows 10**, MBR-partitioned, **3 partitions** (`C:` = label `System` + recovery). Must never be touched. | `ata-<MODEL>_<SERIAL>` |
+| 1 | Samsung (SATA SSD) | 250 GB | NTFS data volume `E:`, single partition | `ata-<MODEL>_<SERIAL>` |
+| 2 | Crucial MX500 (SATA SSD) | 500 GB | NTFS data volume `F:`, single partition | `ata-<MODEL>_<SERIAL>` |
+| 3 | WD_BLACK SN770 (NVMe) | 2 TB | **system disk** — `my.disks.mainDevice`; reformatted by every install/flip | `/dev/disk/by-id/nvme-WD_BLACK_SN770_2TB_E823_8FA6_BF53_0001_001B_444A_414D_7FB8` |
+| 4 | WDC PC SN730 (NVMe) | 256 GB | **persist disk** — `my.disks.persistDevice`; `cryptpersist` holding `/persist` + `/home` | `/dev/disk/by-id/nvme-WDC_PC_SN730_SDBQNTY-256G-1001_001B_448B_4886_AE3B` |
+
+Only disks 3 and 4 have their exact by-id string committed (in
+`modules/hosts/sarasti.nix`); for 0–2 read the real one with
+`ls -l /dev/disk/by-id/` and match on `MODEL` from
+`lsblk -o NAME,SIZE,MODEL,PTTYPE,LABEL`. **Disks 0–2 are never written by this
+config** — disks 0–2 appear in no `my.disks.*` option, and only 3 + 4 are in
+`my.disks.mainDevice` / `my.disks.persistDevice`.
+
 ## Migrating legacy → uefi (sarasti, once Windows is retired)
 
 This is a **REINSTALL, not a `nixos-rebuild`** — switching `my.boot.mode` to
@@ -79,7 +101,8 @@ unencrypted `/boot`). Throughout this section:
   `/games` are gone and recreated.
 - **"disk 4" is the 256 GB WD SN730** — the *persistent* disk named by
   `my.disks.persistDevice`, carrying `cryptpersist` with `/persist` and
-  `/home`. It is **not** part of the flip and its contents survive.
+  `/home`. It is **not** part of the flip and its contents survive — but only
+  if you take the step below that makes disko ignore it.
 
 1. **Update the BIOS first**: A.30 (2020) → current via M-Flash, *before*
    flipping firmware to UEFI. A 2020 firmware cannot be trusted with a modern
@@ -109,27 +132,66 @@ unencrypted `/boot`). Throughout this section:
    ISO fails only after the install (see the mode-match rule in
    `docs/nixos-install.md` §1). Verify in the live ISO:
    `[ -d /sys/firmware/efi ] && echo UEFI` must print `UEFI`.
-5. **Reinstall** with the same command as the runbook (§8 step 3), run after the
-   `my.boot.mode` edit is committed:
-   ```bash
-   nix run github:nix-community/nixos-anywhere -- \
-     --flake '.#sarasti' \
-     --disk-encryption-keys /tmp/secret.key /tmp/secret.key \
-     --target-host root@<ip>
-   ```
-   The legacy layout has no ESP, so the new GPT (1 GiB vfat ESP at `/boot`, LUKS
-   `cryptroot` now at **partition p2**) replaces it. The same
-   `--disk-encryption-keys` file supplies the passphrase for **both**
-   `cryptroot` and `cryptpersist` — one passphrase, no second prompt to set up.
+5. **Reinstall with the persist disk held out of disko.** The plain command
+   from the runbook (§8 step 3) **would wipe disk 4** — see the warning below.
 
-   > **Disk 4 must be left alone.** disko's create phase formats every disk the
-   > config declares, and `nixos-anywhere` runs it. Before running the flip,
-   > make sure the persist disk is *not* re-created: its `cryptpersist` already
-   > holds the `/home` + `/persist` this split exists to preserve. Re-creating
-   > it would silently wipe exactly the data the whole layout is protecting.
-   > The initial (legacy) install was the opposite case — disk 4 was then an
-   > empty NTFS `G:` and was deliberately formatted (see
-   > `docs/nixos-install.md` §8 step 3).
+   > **Why not the obvious alternatives** (checked against
+   > `nixos-anywhere 1.13.0` / `disko 1.13.0`): **`--no-disko` does not
+   > exist.** `--phases` (`kexec,disko,install,reboot`) can be shortened, but
+   > the disko phase is what formats *and* mounts, so dropping it leaves `/mnt`
+   > empty and the install fails. `--disko-mode format` cannot help either —
+   > disko's `format` mode is idempotent by design (it skips existing
+   > filesystems), so it would *also* skip rebuilding the new ESP on disk 3.
+   > And disko itself has **no per-disk filter**: `--mode destroy,format,mount`
+   > formats every disk the NixOS config declares. The only reliable way to
+   > leave disk 4 alone is therefore to **stop declaring it to disko** — the
+   > `my.disks.skipPersist` option (`modules/options.nix`), which omits it from
+   > `disko.devices.disk` while still declaring `boot.initrd.luks.devices`
+   > and the `/persist` + `/home` mountpoints (`modules/nixos/disks.nix`), so
+   > the *existing* `cryptpersist` is opened and mounted unmodified.
+
+   a. **Before anything else, record the disk-4 fingerprint** [SARASTI, from the
+      running system]:
+      ```bash
+      cryptsetup luksUUID /dev/disk/by-partlabel/disk-persist-cryptpersist
+      btrfs subvolume list /persist
+      sudo btrfs filesystem show /dev/mapper/cryptpersist
+      ```
+      Save the output somewhere off-machine. The **LUKS UUID**, the
+      **partlabel** `disk-persist-cryptpersist`, the btrfs UUID and the
+      **subvolume list** are the four things the flip must leave untouched —
+      compare them after step d.
+   b. **Set `my.disks.skipPersist = true;`** in `modules/hosts/sarasti.nix`
+      (next to the other `my.disks.*` lines), commit, and confirm disko can no
+      longer see disk 4 before booting the installer:
+      ```bash
+      nix eval --json .#nixosConfigurations.sarasti.config.disko.devices.disk \
+        --apply builtins.attrNames    # must print exactly: ["main"]
+      ```
+      If it still lists `persist`, the edit is uncommitted (git flake — see
+      the pitfall in `AGENTS.md`) and disko **will** format disk 4.
+   c. **Run the same install command as the runbook** (§8 step 3) — unchanged:
+      ```bash
+      nix run github:nix-community/nixos-anywhere -- \
+        --flake '.#sarasti' \
+        --disk-encryption-keys /tmp/secret.key /tmp/secret.key \
+        --target-host root@<ip>
+      ```
+      The legacy layout has no ESP, so the new GPT (1 GiB vfat ESP at `/boot`,
+      LUKS `cryptroot` now at **partition p2**) replaces it on disk 3. The key
+      file still supplies the passphrase for both containers — but only
+      `cryptroot` is *created*; `cryptpersist` is merely opened.
+   d. **Verify the guard, then restore disko ownership.** After the first boot:
+      ```bash
+      cryptsetup luksUUID /dev/disk/by-partlabel/disk-persist-cryptpersist
+      btrfs subvolume list /persist
+      findmnt /persist /home     # both must be /dev/mapper/cryptpersist
+      ```
+      The UUID, partlabel and subvolume list must match step a **exactly**. If
+      they do not, disk 4 was touched — stop, do not proceed to any further
+      rebuild, and restore from the backup taken in step 2. Once verified, set
+      `my.disks.skipPersist = false;` (or delete the line) and commit, so
+      ordinary installs/repairs regain full disko ownership of disk 4.
 6. **No TPM to migrate**: sarasti has no TPM (fTPM disabled), so there is
    nothing to re-enroll and nothing to carry over. Secure Boot / lanzaboote do
    **not** need a TPM. Enable fTPM later only if TPM-backed LUKS unlock is

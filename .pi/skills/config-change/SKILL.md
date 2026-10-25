@@ -218,8 +218,12 @@ toggle. See `docs/boot-modes.md` for the migration.
 
 - **Disk is a by-id path, not `/dev/nvme0n1`**: the system disk is the **2 TB
   WD_BLACK SN770** (`/dev/disk/by-id/nvme-WD_BLACK_SN770_2TB_…`), *not* the
-  256 GB WD SN730 that holds Windows. Never assume `nvme0n1` here — verify with
-  `ls -l /dev/disk/by-id/` or you repartition Windows.
+  256 GB WD SN730. The SN730 is **not** a Windows disk — Windows lives on a
+  **separate MBR disk** (disk 0, the 128 GB Crucial M4; 3 partitions, `C:`).
+  The SN730 is the **persist disk** (`my.disks.persistDevice`), holding
+  `cryptpersist` with `/persist` + `/home`. Never assume `nvme0n1` here —
+  verify with `ls -l /dev/disk/by-id/` or you repartition the wrong drive.
+  Disk numbering table: `docs/boot-modes.md` "Disk numbering".
 - **`my.boot.resumeOffset` is `null`** (no `resume_offset=` kernel param), so
   hibernation is not wired yet. After first boot compute
   `btrfs inspect-internal map-swapfile -r /swap/swapfile` and set it in
