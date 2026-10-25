@@ -85,6 +85,19 @@
       '';
     };
 
+    # Force an immediate vault bisync run from the shell (same unit the timer
+    # starts). `start` on a oneshot service blocks until the run finishes.
+    vaultSync = pkgs.writeShellApplication {
+      name = "vault-sync";
+      runtimeInputs = [pkgs.systemd];
+      text = ''
+        # Force an immediate two-way sync of the Obsidian vault with gdrive.
+        # `start` on a oneshot service blocks until the run finishes.
+        systemctl --user start rclone-vault.service
+        systemctl --user status rclone-vault.service --no-pager --lines=5
+      '';
+    };
+
     # Canonical local path of the environment-global Obsidian vault.
     vaultLocalDir =
       if config.my.obsidian.globalVault.dir == null
@@ -117,7 +130,7 @@
         type = "bisync";
         remote = "gdrive:obsidian/${config.my.obsidian.globalVault.name}";
         path = vaultLocalDir;
-        interval = "*:0/15";
+        interval = "*:0/1"; # keep both machines ~1m fresh; incremental bisync is cheap
         extraArgs = ["--resilient" "--recover" "--max-lock" "2m"];
       };
       # Two-way offline copy of the Nextcloud private folder.
@@ -126,7 +139,7 @@
         type = "bisync";
         remote = "nextcloud:private";
         path = "${config.home.homeDirectory}/sync/private";
-        interval = "*:0/15";
+        interval = "*:0/1"; # match vault: ~1m fresh; WebDAV has no changes API so each run is a full listing, negligible for a small folder
         extraArgs = ["--resilient" "--recover" "--max-lock" "2m"];
       };
     };
@@ -220,7 +233,7 @@
     lib.mkIf config.my.is_private {
       my.rclone.mounts = targets;
 
-      home.packages = [pkgs.rclone];
+      home.packages = [pkgs.rclone vaultSync];
 
       # Materialize the merged rclone.conf from the per-remote sops blobs.
       home.activation.writeRcloneConfig = lib.hm.dag.entryAfter ["writeBoundary" "sops-nix"] ''
