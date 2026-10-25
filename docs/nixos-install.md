@@ -257,8 +257,11 @@ step 0 **must** be recorded in the private vault note
 (`inbox/2026-09-04-nixos-migration-session.md`); there is no recovery path if
 it is lost, because nothing else can unlock `cryptroot` **or** `cryptpersist`
 — and losing `cryptpersist` loses `/home` and `/persist` (every secret,
-including the sops host key). One passphrase, both containers, one copy in the
-vault.
+including the sops host key). One passphrase, both containers — and **two
+copies**: the vault note *and* a second, independently reachable offline copy
+(password manager entry, printed paper in a drawer — anywhere that does not
+depend on the machine being installed). A vault note that is only readable
+from the machine you are about to wipe is not a copy.
 
 ### Step 0 — prepare on troy [TROY]
 
@@ -271,11 +274,29 @@ vault.
    This only *evaluates and builds* — no disk is touched.
 2. **LUKS passphrase** (per-host — do **not** reuse troy's). Write it to the
    temporary key file nixos-anywhere uploads, and record it in the private
-   vault note at the same time:
+   vault note at the same time — **and** in a second, independently reachable
+   copy (offline: password-manager entry or paper), not only the vault note:
    ```bash
    printf '%s' '<sarasti-LUKS-passphrase-from-vault>' > /tmp/secret.key
    ```
-3. **Flash the graphical NixOS ISO** (GNOME or Plasma — the minimal ISO has no
+   Two copies matter because the vault note is only reachable from a machine
+   that is already online; if `/tmp/secret.key` is deleted and the only copy
+   lives on the box whose disks you just encrypted, a single mistyped
+   character becomes unrecoverable disks.
+3. **[SARASTI, in Windows — before any install work starts]** Turn hibernation
+   and fast startup off on the Windows side:
+   ```
+   powercfg /h off
+   ```
+   (Admin `cmd`/PowerShell.) Fast startup is part of hibernation, so this also
+   disables it — confirm in *Control Panel → Power Options → Choose what the
+   power buttons do* that "Turn on fast startup" is gone (uncheck + save if it
+   is still listed). This has to happen **now**, while Windows still boots
+   normally: step 8 mounts `C:` read-only and `E:`/`F:` read-write, and a
+   **hibernated** NTFS volume carries a live journal — mounting one read-write
+   corrupts it. This is the only Windows-side prerequisite in the runbook;
+   after the install there is no Windows left to run it from.
+4. **Flash the graphical NixOS ISO** (GNOME or Plasma — the minimal ISO has no
    `passwd`/`sshd`). Any **recent** stable graphical ISO works: the live
    environment only has to boot and run `sshd`, because the system itself is
    built from this flake (and, on troy, offloaded to the remote builder) — the
@@ -339,7 +360,8 @@ this line is what lets the reused key — and an agent driving from troy via
 1. **Verify BOTH target disks** [SARASTI]: `ls -l /dev/disk/by-id/` must show
    - `nvme-WD_BLACK_SN770_2TB_…` — the **2 TB system disk** (`my.disks.mainDevice`);
    - `nvme-WDC_PC_SN730_…` (256 GB) — the **second NVMe, the persistent disk**
-     (`my.disks.persistDevice`). Its only content is an empty NTFS volume (`G:`).
+     (`my.disks.persistDevice`). Its only content is an empty NTFS volume
+     (the former `G:` — it is the persist disk now, not a data disk).
 
    Compare each exact string with `my.disks.mainDevice` / `my.disks.persistDevice`
    in `modules/hosts/sarasti.nix`. If either differs, edit the file and
@@ -354,7 +376,16 @@ this line is what lets the reused key — and an agent driving from troy via
      --target-host root@<ip>
    ```
    nixos-anywhere kexecs into its own environment, runs disko (partition + LUKS
-   + btrfs), installs the system, and reboots.
+   + btrfs), installs the system, and **reboots it itself**.
+
+   > **What boots after that reboot.** The deploy ends with a reboot the driver
+   > does not control, and F11 is a **one-time** boot menu — so that reboot
+   > falls back to the firmware's default boot order, which is still
+   > **Windows**. Either set the SN770 first in firmware **before** deploying
+   > (Step 1.2 is the moment, or DEL → Settings → Boot), or stand ready to press
+   > F11 at the reboot and pick the SN770. **If Windows starts, that is the old
+   > boot order — not a failed install.** Nothing was written to the Windows
+   > disk; power off and boot the SN770.
 
    - `github:nix-community/nixos-anywhere` is **unpinned** (no `?rev=`): pin a
      rev for a reproducible run, or accept that HEAD may behave differently.
@@ -376,7 +407,9 @@ this line is what lets the reused key — and an agent driving from troy via
      NTFS volume, `G:`, and it is reformatted at install. Anything on `G:` must
      be copied off first.
    - The **Windows MBR boot disk** is a different drive and stays untouched.
-3. Remove the key file (on troy, where step 0 wrote it): `rm /tmp/secret.key`
+3. **Do NOT delete `/tmp/secret.key` yet** — it stays on troy until step 4 has
+   proved the passphrase in it is the one that actually unlocks both
+   containers. See step 4.7.
 
 ### Step 4 — first boot [SARASTI]
 
@@ -429,6 +462,18 @@ this line is what lets the reused key — and an agent driving from troy via
    scp ~/.ssh/id_ed25519 vkarasen@<ip>:~/.ssh/id_ed25519
    ssh vkarasen@<ip> 'chmod 600 ~/.ssh/id_ed25519'
    ```
+7. **Only now delete the key file** — on troy, where step 0 wrote it:
+   ```bash
+   rm /tmp/secret.key
+   ```
+   Do this **only after** the unlock in item 1 actually succeeded with the
+   *typed* vault passphrase (not a paste, and not a boot that skipped the
+   prompt). That typed unlock is the verification that the recorded passphrase
+   has no typo. Delete it earlier — as an earlier revision of this runbook did,
+   at the end of step 3 — and a typo in the recorded passphrase becomes
+   **unrecoverable disks**: both `cryptroot` and `cryptpersist` were created
+   from that exact key file, and there is no TPM, no recovery key, and no other
+   copy that could open them.
 
 ### Step 5 — hardware capture + rebuild [SARASTI or DRIVER]
 
@@ -439,7 +484,18 @@ this line is what lets the reused key — and an agent driving from troy via
    ```bash
    sudo nixos-generate-config --no-filesystems --show-hardware-config
    ```
-2. Fold the relevant lines (kernel modules, cpu governor, firmware) into
+2. **Mount `C:` read-only before the rebuild** — os-prober can only find a
+   Windows install that is mounted when `update-grub` runs, and the rebuild is
+   what regenerates `/boot/grub/grub.cfg`:
+   ```bash
+   sudo mkdir -p /mnt/windows-c
+   sudo mount -t ntfs3 -o ro,uid=1000,gid=1000 /dev/disk/by-label/System /mnt/windows-c
+   ```
+   Keep it mounted **through** the rebuild and through every later rebuild in
+   step 6 (6d and 6f regenerate `grub.cfg` too). The mount does not survive a
+   reboot, so remount before each rebuild — otherwise the menu silently loses
+   its Windows entry. Read-only always: `C:` is a live Windows system volume.
+3. Fold the relevant lines (kernel modules, cpu governor, firmware) into
    `modules/hosts/sarasti.nix`, commit, and rebuild — from the driving machine:
    ```bash
    nixos-rebuild switch --flake '.#sarasti' --target-host vkarasen@<ip> --use-remote-sudo
@@ -533,16 +589,32 @@ e. **[SARASTI]** Now the **home-manager** age key — a *different* key from the
    > the home-manager rules do not list.
 f. **[SARASTI]** Verify the home-manager path, confirm password login works
    (log out at the TTY and back in as `vkarasen` with the vault password), then
-   close the sudo window:
+   close the sudo window.
+   **The repo checkout has to exist on sarasti first** — a fresh install does
+   not create one, so the literal `cd <repo>` from earlier revisions of this
+   runbook has no referent. Clone it using the SSH key copied in step 4.6 (`git`
+   is in `environment.systemPackages` in `modules/nixos/base.nix`, so no
+   install is needed; `/home` is persistent, so this clone survives every later
+   reinstall and flip):
    ```bash
-   cd <repo> && sops decrypt modules/home/sops/secrets/secrets.yaml > /dev/null \
+   git clone git@github.com:vkarasen/dot_nixos.git ~/src/dot_nixos
+   cd ~/src/dot_nixos && sops decrypt modules/home/sops/secrets/secrets.yaml > /dev/null \
      && echo home-ok
+   ```
+   (`sops` is not in `environment.systemPackages` — if `command -v sops` finds
+   nothing, use `nix run nixpkgs#sops -- -d modules/home/sops/secrets/secrets.yaml`.)
+   Equivalent check driven from troy, so the prompt lands on the terminal you
+   are already sitting at (the decrypt still runs **on sarasti**, against
+   sarasti's `~/.config/sops/age/keys.txt` — remoteness does not change whose
+   key is used):
+   ```bash
+   ssh -t vkarasen@<ip> 'cd ~/src/dot_nixos && nix run nixpkgs#sops -- -d modules/home/sops/secrets/secrets.yaml > /dev/null && echo home-ok'
    ```
    **Then remove** the temporary `security.sudo.wheelNeedsPassword = false;`
    line added in step 3, commit, and run the **final rebuild** — this one is
    the first rebuild that requires a password, so the flag must be gone:
-   - **[SARASTI]**, from a repo checkout on the machine itself:
-     `sudo nixos-rebuild switch --flake .#sarasti`
+   - **[SARASTI]**, from a repo checkout on the machine itself (the clone from
+     item f): `cd ~/src/dot_nixos && sudo nixos-rebuild switch --flake .#sarasti`
    - **[DRIVER]**, from troy:
      `nixos-rebuild switch --flake '.#sarasti' --target-host vkarasen@<ip> --ask-sudo-password`
      (`--use-remote-sudo` will **not** work: it needs a passwordless sudo on the
@@ -556,12 +628,22 @@ f. **[SARASTI]** Verify the home-manager path, confirm password login works
 1. `grep -i windows /boot/grub/grub.cfg` must show a Windows entry — GRUB
    chainloads it via os-prober (`boot.loader.grub.useOSProber = true` in
    `modules/nixos/boot.nix`) from the MBR Windows disk.
+   **The entry only appears if `C:` was mounted when that `grub.cfg` was
+   generated.** os-prober does not scan unpartitioned guesswork: it reads the
+   mounted filesystems, so a `grub.cfg` built with `/mnt/windows-c` unmounted has
+   no Windows menuentry no matter how many times you rebuild — that is the whole
+   of gap R1, and it is why step 5.2 mounts `/dev/disk/by-label/System` read-only
+   and keeps it mounted through every rebuild. Fix it by remounting `C:`
+   read-only and running one more rebuild, then re-grepping.
 2. Confirm GRUB was installed to the **SN770**, not the Windows disk (disko
    auto-sets `grub.devices` from `my.disks.mainDevice`; `lsblk -o NAME,SIZE,MODEL`
    and the `bios_grub` partition must be on the SN770).
-3. If Windows is absent from the menu, add an explicit entry via
-   `boot.loader.grub.extraEntries` in `modules/hosts/sarasti.nix`
-   (`flake.modules.nixos.sarasti`). The Windows boot disk is a **separate MBR
+3. If Windows is absent from the menu **even after a rebuild with `C:` mounted**,
+   fall back to an explicit entry via `boot.loader.grub.extraEntries` in
+   `modules/hosts/sarasti.nix` (`flake.modules.nixos.sarasti`). This is the
+   **guaranteed** path: it does not depend on os-prober discovering anything, so
+   it can never silently disappear on a later rebuild the way an os-prober
+   entry does. The Windows boot disk is a **separate MBR
    disk** (disk 0) that GRUB sees as `hd0` or `hd1` depending on boot order —
    check `sudo fdisk -l` / `lsblk -o NAME,SIZE,PTTYPE,MODEL` first and use the
    `(hdN,…)` that actually holds the MBR. Shape (substitute the real `hdN` and,
@@ -592,9 +674,10 @@ f. **[SARASTI]** Verify the home-manager path, confirm password login works
 
 The NTFS data disks are **not yet declared** in `fileSystems`; mount them by
 hand until they are (they become declarative `fileSystems` entries in M2, once
-the disks are repurposed). First run `powercfg /h off` on the
-Windows side (plus fast startup off) — mounting hibernated NTFS read-write
-corrupts it.
+the disks are repurposed). These mounts assume the Windows-side preparation
+from **step 0.3** (`powercfg /h off`, fast startup off) is already done — a
+hibernated NTFS volume mounted read-write is corrupted by the first write, so
+if you skipped that step, go back and do it before mounting `E:`/`F:`.
 
 **Find the real labels — do not trust the names below.** Identify every volume
 before mounting anything:

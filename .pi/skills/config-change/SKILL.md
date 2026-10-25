@@ -234,9 +234,10 @@ toggle. See `docs/boot-modes.md` for the migration.
   `hardware.graphics.enable`; `libva-utils` (`vainfo`) is added to verify it.
   Hardware AV1 decode exists here, so unlike troy `media.av1.enabled = false`
   is **not** set. No NVIDIA considerations.
-- **NTFS data disks** (`E:`/`F:`/`G:`, `C:` read-only) are mounted from NixOS
+- **NTFS data disks** (`E:`/`F:`, plus `C:` read-only) are mounted from NixOS
   and require `powercfg /h off` on the Windows side first — mounting hibernated
-  NTFS read-write corrupts it.
+  NTFS read-write corrupts it. There is no `G:` any more: that volume was the
+  SN730, which disko reformatted into `cryptpersist` (the persist disk).
 - **GRUB chainloads Windows** via os-prober (`useOSProber = true`); the
   previous generation is picked from the GRUB menu, not systemd-boot.
 

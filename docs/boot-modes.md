@@ -115,10 +115,40 @@ unencrypted `/boot`). Throughout this section:
    - **brick risk**: cutting power or pulling the USB mid-flash can leave the
      board unbootable. Do this **before touching any data**, while the machine
      is still a working Windows box, and do not combine it with any other step.
-2. **Back up what lives on disk 3** — the ephemeral `/`, `/nix`, `/var/log`,
-   `/swap`, and `/games` are recreated from scratch. `/home` and `/persist` are
-   on disk 4 and survive, but back them up anyway: they are one passphrase away
-   from loss, and a botched flip should cost nothing.
+2. **Back up `/home` + `/persist` — before the flip touches anything.** This
+   is the step that makes the rest of the flip free: `/home` and `/persist` sit
+   on disk 4 and are supposed to survive, but "supposed to" is exactly what the
+   fingerprint check in 5d exists to verify, and a verification that fails is
+   only survivable if there is an archive. Run this on sarasti, from the
+   **running legacy system**, with an external disk or NAS mounted:
+   ```bash
+   sudo mkdir -p /mnt/backup
+   sudo mount /dev/sdX1 /mnt/backup          # external/NAS target — verify with lsblk
+   sudo tar -C / -cpf /mnt/backup/sarasti-home-persist-$(date +%F).tar home persist
+   sudo tar -tf /mnt/backup/sarasti-home-persist-$(date +%F).tar | head   # VERIFY
+   ```
+   - `-c -p -f` writes one archive; `--one-file-system` is **not** wanted here
+     (`/home` and `/persist` are separate subvolumes and must be followed).
+   - **Verify before trusting it**: `tar -tf … | head` must list names, and the
+     size must look like the data (`ls -lh`) — an empty or truncated archive is
+     the classic silent backup failure. Write down **where** it landed (host,
+     path, date) and **that you verified it**, e.g. next to the vault note, so a
+     later recovery attempt does not have to guess.
+   - **`btrfs send` alternative** (near-instant, no re-read): snapshot the two
+     subvolumes read-only, then send them to the same target —
+     `sudo btrfs subvolume snapshot -r /home /home/.backup-$(date +%F)` (and
+     likewise `/persist`), then
+     `sudo btrfs send /home/.backup-<date> | sudo tee /mnt/backup/home.btrfs > /dev/null`
+     and the same for `/persist`; verify with `ls -lh` against
+     `sudo btrfs filesystem du -s /home`.
+   - **Disk 3 needs no backup.** Its contents (`/`, `/nix`, `/var/log`,
+     `/swap`, `/games`) are disposable by design — recreated from the flake by
+     the reinstall. Copying them would only preserve data the config already
+     regenerates.
+   - The **two non-negotiables** before flipping firmware are therefore: the
+     LUKS passphrase in a **second, independently reachable copy** (see
+     `docs/nixos-install.md` §8 step 0), and this **`/home` + `/persist`
+     archive**. Everything else on the machine is reproducible.
 3. Set `my.boot.mode = "uefi"` in `modules/hosts/sarasti.nix` (drop
    `useOSProber` relevance; lanzaboote takes over) and **enter firmware Setup
    Mode *before* the first post-install boot** — Security → Secure Boot →
@@ -127,6 +157,16 @@ unencrypted `/boot`). Throughout this section:
    requires the firmware to already be in Setup Mode; without it the keys never
    enroll and later boots fail verification. In the same firmware session, set
    the SN770 as the first **UEFI** boot device (not the legacy/CSM entry).
+
+   > **This is also the point where Windows stops being bootable.** Pointing the
+   > firmware at the SN770's *UEFI* entry — and turning CSM/legacy boot off to
+   > do it — removes the legacy boot path that the MBR Windows install on disk 0
+   > needs to start. From here on, "Windows remains bootable throughout" no
+   > longer holds: its **data** is untouched and nothing writes to disk 0, but
+   > there is no firmware path left to boot it from. That is fine if Windows is
+   > being retired (the premise of this flip). To reverse it, re-enable CSM /
+   > legacy boot in firmware and select the MBR disk again — nothing on the disk
+   > changed, so this is a firmware toggle, not a reinstall.
 4. **Boot the installer in UEFI mode this time.** The live environment's mode is
    inherited by nixos-anywhere, so a UEFI config installed from a legacy-booted
    ISO fails only after the install (see the mode-match rule in
@@ -181,6 +221,21 @@ unencrypted `/boot`). Throughout this section:
       LUKS `cryptroot` now at **partition p2**) replaces it on disk 3. The key
       file still supplies the passphrase for both containers — but only
       `cryptroot` is *created*; `cryptpersist` is merely opened.
+
+      > **`/tmp/secret.key` must hold the EXISTING `cryptpersist` passphrase** —
+      > the one already on disk 4 and recorded in the vault — **not a new one.**
+      > Do not "rotate while you are in here": that one file plays two roles at
+      > once — it is the *new* passphrase for the `cryptroot` this install
+      > creates, and it must simultaneously be the *existing* passphrase that
+      > opens the untouched `cryptpersist`. Put a new passphrase in it and the two
+      > containers end up with different passphrases — two
+      > prompts at every single boot (`password-cache=yes` cannot help, the keys
+      > differ), and a mistyped second one drops you into an emergency shell with
+      > `/persist` and `/home` unmounted. Rotate *afterwards*, once the flip has
+      > booted clean and both keys are known in-session:
+      > `sudo cryptsetup luksChangeKey /dev/disk/by-partlabel/disk-main-cryptroot`
+      > and the same for `disk-persist-cryptpersist`, changing both to the same
+      > new passphrase and updating **both** vault copies in the same minute.
    d. **Verify the guard, then restore disko ownership.** After the first boot:
       ```bash
       cryptsetup luksUUID /dev/disk/by-partlabel/disk-persist-cryptpersist
