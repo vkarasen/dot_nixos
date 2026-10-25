@@ -26,20 +26,42 @@ There is no Secure Boot and no UKI in this branch.
 
 ## Storage (btrfs inside LUKS)
 
+**Single-disk** hosts (`my.disks.persistDevice = null` — troy):
+
 - LUKS: the partition on **the device named by `my.disks.mainDevice`** (`p2`
   on troy's `/dev/nvme0n1`) → `/dev/mapper/cryptroot` (argon2id,
   `allowDiscards`).
 - Subvolumes: `root` (ephemeral), `home` (persistent), `nix`, `persist`, `log`,
   `swap` (32G hibernation swapfile), `games` (Steam library), `root-blank`
   (read-only pristine snapshot).
-- The `games` subvolume is created automatically by disko on a fresh install
-  (nixos-anywhere runs disko's create phase, which makes every declared
-  subvolume). On an *already-installed* host, adding it only regenerates the
-  mount via `nixos-rebuild switch`, so create it once manually (`btrfs
-  subvolume create` at the pool top level, `subvol=/`).
 - Impermanence: only `root` is erased each boot; `/home`, `/nix`, `/persist`,
-  `/var/log`, `/swap`, `/games` survive. `/persist` holds the opt-in state (SSH host keys, sops,
-  Secure Boot keys, machine-id, …).
+  `/var/log`, `/swap`, `/games` survive. `/persist` holds the opt-in state (SSH
+  host keys, sops, Secure Boot keys, machine-id, …).
+
+**Two-disk** hosts (`my.disks.persistDevice` set — sarasti): the same system
+side, plus a **second** LUKS2 container for the data that must outlive a
+reinstall.
+
+- `/dev/mapper/cryptroot` — on the **2 TB WD_BLACK SN770** (sarasti's
+  `my.disks.mainDevice`): `root` (ephemeral), `nix`, `log`, `swap`, `games`,
+  `root-blank`. This disk is disposable: reinstalling it costs only re-download
+  time.
+- `/dev/mapper/cryptpersist` — on the **256 GB WD SN730** (sarasti's
+  `my.disks.persistDevice`): its own btrfs pool with just `persist` and `home`.
+  This is the disk that matters.
+- One LUKS passphrase covers both containers (the same
+  `--disk-encryption-keys` file is disko's `passwordFile` for both), and both
+  are unlocked from the initrd.
+- Consequence: reinstalling the *system* disk leaves `/home` and `/persist`
+  alone — the SSH host key, the sops age key derived from it, and the lanzaboote
+  key bundle all survive, so there is no age-key rotation and no
+  `secrets.yaml` re-encryption. See `docs/boot-modes.md` (migration section).
+
+The `games` subvolume is created automatically by disko on a fresh install
+(nixos-anywhere runs disko's create phase, which makes every declared
+subvolume). On an *already-installed* host, adding it only regenerates the
+mount via `nixos-rebuild switch`, so create it once manually (`btrfs
+subvolume create` at the pool top level, `subvol=/`).
 
 ## Secrets & credentials — where they live
 
@@ -47,12 +69,13 @@ There is no Secure Boot and no UKI in this branch.
 |---|---|---|
 | LUKS passphrase | private vault note (`inbox/2026-09-04-nixos-migration-session.md`) | typed at the prompt; the universal fallback |
 | user password | sops `user-password` secret → `hashedPasswordFile` | sops decrypts at boot (host age key) |
-| Secure Boot keys (PK/KEK/db) | `/persist/etc/secureboot/keys/` | **NOT in git** (db.key is a private signing key) |
+| Secure Boot keys (PK/KEK/db) | `/persist/etc/secureboot/keys/` (on sarasti: disk 4) | **NOT in git** (db.key is a private signing key) |
 | sops age key | derived from `/persist/etc/ssh/ssh_host_ed25519_key` | survives with the host keys |
 | SSH authorized key | declarative in `modules/nixos/base.nix` | always present (key auth) |
 
-The **LUKS passphrase is the root of all recovery**: it unlocks the disk, which
-holds every other persistent secret (`/persist`).
+The **LUKS passphrase is the root of all recovery**: it unlocks `cryptroot`
+(and, on a two-disk host, `cryptpersist`), which together hold every other
+persistent secret (`/persist`).
 
 ## Secure Boot (Lanzaboote)
 

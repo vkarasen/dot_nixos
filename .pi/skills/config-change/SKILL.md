@@ -212,6 +212,10 @@ dual-boots Windows (legacy on its own MBR disk, untouched) until that is
 retired; it then flips to `uefi` + Secure Boot, which is a re-partition, not a
 toggle. See `docs/boot-modes.md` for the migration.
 
+> **Install / operate:** see `docs/nixos-install.md` (sarasti runbook, §8) —
+> self-contained numbered steps 0–9, including the sops/age enrollment and the
+> temporary `security.sudo.wheelNeedsPassword = false` window.
+
 - **Disk is a by-id path, not `/dev/nvme0n1`**: the system disk is the **2 TB
   WD_BLACK SN770** (`/dev/disk/by-id/nvme-WD_BLACK_SN770_2TB_…`), *not* the
   256 GB WD SN730 that holds Windows. Never assume `nvme0n1` here — verify with
