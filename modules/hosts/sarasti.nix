@@ -24,8 +24,9 @@
 
   # No laptop (wired desktop). Wifi via a USB dongle is optional — the wifi
   # aspect wires NetworkManager + the bishopNet profile — but ethernet is
-  # primary. The Windows boot disk and the NTFS data disks (E:/F:/G:) stay
-  # untouched and are mounted from NixOS, not selected as aspects.
+  # primary. The Windows boot disk and the NTFS data disks (E:/F: — `G:` was
+  # the SN730, now the persist disk) stay untouched and are mounted from
+  # NixOS, not selected as aspects.
   flake.nixosHosts.sarasti.homeModules = [
     config.flake.modules.homeManager.core
     config.flake.modules.homeManager.desktop
@@ -34,9 +35,37 @@
     config.flake.modules.homeManager.sarasti
   ];
 
-  flake.modules.nixos.sarasti = {pkgs, ...}: {
+  flake.modules.nixos.sarasti = {
+    pkgs,
+    lib,
+    config,
+    ...
+  }: {
     networking.hostName = "sarasti";
     system.stateVersion = "26.05";
+
+    # --- Guard: only NVMe by-id disks, and only two distinct ones ---
+    # disko formats every disk named in `my.disks.*`. The Windows MBR boot disk
+    # is a SATA disk 0 that must never be referenced here, so a typo'd
+    # /dev/sdX path (or the same NVMe named twice) is caught at eval time
+    # instead of at `nixos-anywhere` time, where it is unrecoverable.
+    assertions = [
+      {
+        assertion = lib.hasPrefix "/dev/disk/by-id/nvme-" config.my.disks.mainDevice;
+        message = "sarasti's disks must be distinct NVMe by-id paths; the Windows MBR disk must never be referenced.";
+      }
+      {
+        assertion =
+          config.my.disks.persistDevice
+          != null
+          && lib.hasPrefix "/dev/disk/by-id/nvme-" config.my.disks.persistDevice;
+        message = "sarasti's disks must be distinct NVMe by-id paths; the Windows MBR disk must never be referenced.";
+      }
+      {
+        assertion = config.my.disks.mainDevice != config.my.disks.persistDevice;
+        message = "sarasti's disks must be distinct NVMe by-id paths; the Windows MBR disk must never be referenced.";
+      }
+    ];
 
     # --- Machine identity for the shared boot/disks aspects ---
     # Legacy BIOS/CSM for the dual-boot phase (Windows is legacy on its own
