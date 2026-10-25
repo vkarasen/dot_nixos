@@ -2,7 +2,7 @@
 # suspend/hibernate: lid/clamshell behaviour (with a grace period before
 # sleeping), suspend-then-hibernate, and conservative battery charging. The
 # user-space idle listeners live in modules/home/laptop.nix. Imported only by
-# the laptop host (modules/hosts/troy.nix); without the battery/lid hardware
+# laptop hosts (currently modules/hosts/troy.nix); without the battery/lid hardware
 # the units no-op gracefully.
 {...}: {
   flake.modules.nixos.laptop = {pkgs, ...}: {

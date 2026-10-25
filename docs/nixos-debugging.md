@@ -180,7 +180,8 @@ bisection isolates `PrivateTmp=yes` → manual `mount -t tmpfs` works but
 ## 9. Deterministic vs. generation-specific failures
 
 To tell whether a failure is a config change or an environmental/boot issue,
-reboot and pick the **previous generation** from the systemd-boot menu. If
+reboot and pick the **previous generation** from the boot menu (systemd-boot on
+uefi hosts, GRUB on legacy). If
 *both* generations fail identically, it is not a config regression — look at
 what the two boots share (the wipe/rollback, a kernel issue, hardware).
 

@@ -46,7 +46,8 @@ modules/
     laptop.nix                    # system-side suspend/hibernate: lid, HibernateDelaySec, battery thresholds
     desktop.nix lock.nix ...      # compositor / lock greeter / boot / disks / etc.
   hosts/
-    troy.nix                      # host manifest: `modules` (nixos.*) + `homeModules` (homeManager.*)
+    troy.nix                      # host manifest: `modules` (nixos.*) + `homeModules` (homeManager.*) — UEFI laptop
+    sarasti.nix                   # same shape — legacy-BIOS desktop (dual-boots Windows; see docs/boot-modes.md)
   home/                           # one aspect per file/dir: flake.modules.homeManager.<name>
     core.nix                      # universal baseline: imports every always-on aspect below
     desktop.nix                   # GUI (laptop or not): apps, waybar, hyprlock — sets my.gui.enable
@@ -284,6 +285,14 @@ See `modules/home/pi/private.nix` for the full implementation.
 wants); `modules/flake/nixos-configurations.nix` folds them into a NixOS system
 with the home aspects nested under `users.vkarasen`. Keep shared logic in
 `generic` aspects to avoid repetition across classes.
+
+A new host must also set its own boot/storage facts in its
+`flake.modules.nixos.<name>`: `my.boot.mode` (`"uefi"` | `"legacy"`),
+`my.disks.mainDevice` (the whole system disk — use a stable
+`/dev/disk/by-id/...` path; there is no default on purpose), and
+`my.boot.resumeOffset` (`null` until the hibernation swapfile offset is
+computed). `modules/nixos/boot.nix` and `modules/nixos/disks.nix` branch on
+these; see `docs/boot-modes.md`.
 
 ## Pitfalls (these will bite you)
 

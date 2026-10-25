@@ -6,6 +6,9 @@ how to recover it when something breaks. Read alongside `docs/nixos-install.md`
 
 ## Boot chain (power-on → login)
 
+`my.boot.mode` selects one of two chains (see `docs/boot-modes.md`). The steps
+below are the **uefi** branch (`my.boot.mode == "uefi"`, troy):
+
 1. UEFI firmware loads **systemd-boot**, signed by Lanzaboote (Secure Boot).
 2. systemd-boot loads a signed **UKI** (kernel + initrd + cmdline) from the ESP.
 3. The initrd (systemd) **TPM2-unlocks** the LUKS root bound to **PCR 7**
@@ -15,9 +18,17 @@ how to recover it when something breaks. Read alongside `docs/nixos-install.md`
    (skipped on a resume-from-hibernate boot).
 5. Boot continues: dbus → NetworkManager → sshd → home-manager.
 
+**Legacy branch** (`my.boot.mode == "legacy"`, sarasti): BIOS/CSM firmware loads
+**GRUB** from the disk's 1 MiB EF02 `bios_grub` partition; GRUB reads kernel +
+initrd from the unencrypted ext4 `/boot`, and the **initrd** unlocks LUKS —
+identical from step 3 onward. GRUB also chainloads Windows via os-prober.
+There is no Secure Boot and no UKI in this branch.
+
 ## Storage (btrfs inside LUKS)
 
-- LUKS: `/dev/nvme0n1p2` → `/dev/mapper/cryptroot` (argon2id, `allowDiscards`).
+- LUKS: the partition on **the device named by `my.disks.mainDevice`** (`p2`
+  on troy's `/dev/nvme0n1`) → `/dev/mapper/cryptroot` (argon2id,
+  `allowDiscards`).
 - Subvolumes: `root` (ephemeral), `home` (persistent), `nix`, `persist`, `log`,
   `swap` (32G hibernation swapfile), `games` (Steam library), `root-blank`
   (read-only pristine snapshot).
@@ -44,6 +55,9 @@ The **LUKS passphrase is the root of all recovery**: it unlocks the disk, which
 holds every other persistent secret (`/persist`).
 
 ## Secure Boot (Lanzaboote)
+
+**uefi only** (`my.boot.mode == "uefi"`); `legacy` hosts run GRUB with no
+Secure Boot.
 
 - Configured in `modules/nixos/boot.nix`: `boot.lanzaboote.enable`, `pkiBundle =
   /persist/etc/secureboot`, `autoGenerateKeys` + `autoEnrollKeys`; systemd-boot
@@ -122,7 +136,7 @@ measurements to `/run/log/systemd/tpm2-measure.log`.)
 | TPM unlock broke after a Secure Boot key change | re-enroll the TPM (below) |
 | TPM unlock broke right after a systemd ≥261 update (no key change) | expected once — the new `systemd-pcrosseparator.service` measured `os-separator` into PCR 7; re-enroll the TPM (below) |
 | Secure Boot keys lost / firmware reset | regenerate keys (or re-enroll) + re-enroll the TPM |
-| Boot entry broken / bad generation | pick an older generation in the systemd-boot menu |
+| Boot entry broken / bad generation | pick an older generation in the systemd-boot (uefi) / GRUB (legacy) menu |
 | SSH / networking down | see `docs/nixos-debugging.md` |
 
 ### Re-enroll the TPM (PCR 7)
@@ -130,7 +144,7 @@ measurements to `/run/log/systemd/tpm2-measure.log`.)
 ```sh
 printf '%s' '<LUKS passphrase>' > /tmp/k
 sudo systemd-cryptenroll --wipe-slot=tpm2 --tpm2-device=auto --tpm2-pcrs=7 \
-  --unlock-key-file=/tmp/k /dev/nvme0n1p2
+  --unlock-key-file=/tmp/k <mainDevice>p2
 rm /tmp/k
 ```
 

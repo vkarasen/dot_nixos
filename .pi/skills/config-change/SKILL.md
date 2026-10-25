@@ -27,7 +27,11 @@ alone.
   `homeManager.core` bundle.
 - **Discriminators** (declared in `modules/options.nix`) describe the
   deployment context many aspects react to: `my.is_nixos`, `my.host`,
-  `my.is_private`. Two more — `my.gui.enable` and `my.laptop.enable` — are
+  `my.is_private`. Three are **HOST-level hardware/install** facts, set in the
+  host file (never in `modules/nixos/`): `my.boot.mode` (`uefi` | `legacy`),
+  `my.disks.mainDevice` (the whole system disk, by-id preferred), and
+  `my.boot.resumeOffset` (hibernation swapfile offset, `null` = not wired).
+  Two more — `my.gui.enable` and `my.laptop.enable` — are
   *derived*: set true by the `desktop` / `laptop` aspect when it is imported,
   not hand-set at the top level.
 - **`my.configCheckoutPath`** (also in `modules/options.nix`) is the canonical
@@ -56,6 +60,13 @@ alone.
    - shared home concern → `modules/home/<name>.nix`
    - system concern (boot, disks, power, services, network) → `modules/nixos/<name>.nix`
    - this machine only → `modules/hosts/<name>.nix`
+
+   But **boot mode, disk device, and resume offset are HOST-level values**, not
+   aspect code: `my.boot.mode` / `my.disks.mainDevice` / `my.boot.resumeOffset`
+   live in `modules/hosts/<name>.nix` inside `flake.modules.nixos.<name>`. The
+   aspects in `modules/nixos/` only *branch* on them (`boot.nix`, `disks.nix`).
+   Changing what a host installs for is an edit to the host file, not to the
+   aspects. Model reference: `docs/boot-modes.md`.
 3. **Read** the aspect (`module_report` / `read_symbol` / plain read).
 4. **Verify** every option and package name with the `nix-search` skill — never
    guess (the repo `AGENTS.md` "Looking up options & packages" mandates this).
@@ -86,15 +97,20 @@ trust this summary.
   `/persist` is the opt-in persistence location; never treat an arbitrary
   non-subvolume path as durable. Disks are disko-declared LUKS+btrfs
   (`modules/nixos/disks.nix`) — never hand-edit `/etc/fstab`.
-- **Secure Boot via Lanzaboote** (`modules/nixos/boot.nix`): the boot chain is
+- **Secure Boot via Lanzaboote** (`modules/nixos/boot.nix`): **uefi only**
+  (`my.boot.mode`); legacy hosts use GRUB + bios_grub + an unencrypted `/boot`
+  and have no Secure Boot. On a uefi host the boot chain is
   signed; key enrollment is manual (no surprise reboot — the user enters BIOS
   Setup Mode first). Any bootloader/TPM/enrollment change is a reviewer-gate
-  change.
+  change. See `docs/boot-modes.md`.
 - **Heavy builds offload to a remote builder** (`modules/nixos/remote-builder.nix`):
   route `nixos-rebuild`, large `nix build`, and `nixos-test` there, not the
   laptop CPU.
 
 ### Host `troy` (`my.host == "troy"`)
+
+Laptop, **uefi** (`my.boot.mode = "uefi"`, `/dev/nvme0n1`,
+`my.boot.resumeOffset = 533760`).
 
 - **The lid does not suspend** (`modules/nixos/laptop.nix`): logind ignores the
   lid switch; a `lid-grace-watch` timer schedules `suspend-then-hibernate` only
@@ -187,6 +203,34 @@ narrows where the key is lost:
    `/run/user/1000/hypr/<sig>` directory name.
 
 The evdev→xkb offset is **+8** (Fn9 444→`code:452`; Fn12 156→`code:164`).
+
+### Host `sarasti` (`my.host == "sarasti"`)
+
+Desktop (MSI B550-A PRO, Ryzen 5 3600, RX 6750 XT, all-SSD), **legacy** boot
+(`my.boot.mode = "legacy"`) — the machine was a Windows 10 desktop and still
+dual-boots Windows (legacy on its own MBR disk, untouched) until that is
+retired; it then flips to `uefi` + Secure Boot, which is a re-partition, not a
+toggle. See `docs/boot-modes.md` for the migration.
+
+- **Disk is a by-id path, not `/dev/nvme0n1`**: the system disk is the **2 TB
+  WD_BLACK SN770** (`/dev/disk/by-id/nvme-WD_BLACK_SN770_2TB_…`), *not* the
+  256 GB WD SN730 that holds Windows. Never assume `nvme0n1` here — verify with
+  `ls -l /dev/disk/by-id/` or you repartition Windows.
+- **`my.boot.resumeOffset` is `null`** (no `resume_offset=` kernel param), so
+  hibernation is not wired yet. After first boot compute
+  `btrfs inspect-internal map-swapfile -r /swap/swapfile` and set it in
+  `modules/hosts/sarasti.nix`.
+- **No laptop aspect, no wifi**: wired desktop — there is no lid, battery, or
+  `hypridle` idle-suspend wiring; all of that is troy-only.
+- **GPU is AMD RDNA2 (RX 6750 XT)**: VA-API comes from mesa (`radeonsi`) via
+  `hardware.graphics.enable`; `libva-utils` (`vainfo`) is added to verify it.
+  Hardware AV1 decode exists here, so unlike troy `media.av1.enabled = false`
+  is **not** set. No NVIDIA considerations.
+- **NTFS data disks** (`E:`/`F:`/`G:`, `C:` read-only) are mounted from NixOS
+  and require `powercfg /h off` on the Windows side first — mounting hibernated
+  NTFS read-write corrupts it.
+- **GRUB chainloads Windows** via os-prober (`useOSProber = true`); the
+  previous generation is picked from the GRUB menu, not systemd-boot.
 
 ## Reusable recipes
 
