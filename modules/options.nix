@@ -685,5 +685,21 @@
         subvolumes of the main cryptroot (single-disk hosts, e.g. troy).
       '';
     };
+    options.my.disks.skipPersist = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Keep the persistDevice OUT of disko while still declaring its LUKS
+        device and the /persist + /home mountpoints. Use this for a reinstall
+        of the system disk that must not touch the persistent disk (e.g. the
+        legacy → uefi flip on sarasti, see docs/boot-modes.md): disko's create
+        phase formats every disk the config declares, so the only safe way to
+        leave cryptpersist alone is to stop declaring it.
+
+        Set it *temporarily* — flip to true for the reinstall, back to false
+        afterwards, so a normal install/repair keeps full disko ownership of
+        the persist disk. false (the default) = disko owns and formats it.
+      '';
+    };
   };
 }

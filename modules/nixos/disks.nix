@@ -8,7 +8,13 @@
 # on a SEPARATE LUKS-encrypted btrfs disk (cryptpersist) instead of as
 # subvolumes of the main cryptroot, so reinstalling the system disk leaves
 # user data intact. When it is null, the layout is exactly the single-disk one
-# (both stay on cryptroot) — troy's evaluated config is unchanged.
+# (both stay on cryptroot) — troy's disk layout is unchanged.
+#
+# `my.disks.skipPersist = true` is the boot-mode-flip safety valve: the persist
+# disk is omitted from `disko.devices.disk` so disko can never destroy it, while
+# its LUKS device and the /persist + /home mountpoints are still declared (below)
+# so the already-existing cryptpersist is opened and mounted. See
+# docs/boot-modes.md "Migrating legacy → uefi".
 {inputs, ...}: {
   flake.modules.nixos.disks = {
     config,
@@ -18,6 +24,9 @@
     uefi = config.my.boot.mode == "uefi";
     persistDevice = config.my.disks.persistDevice;
     separatePersist = persistDevice != null;
+    # Keep cryptpersist out of disko but keep it mounted (flip / reinstall of
+    # the system disk only).
+    unmanagedPersist = separatePersist && config.my.disks.skipPersist;
   in {
     imports = [inputs.disko.nixosModules.disko];
 
@@ -69,6 +78,13 @@
                     passwordFile = "/tmp/secret.key";
                     settings = {
                       allowDiscards = true;
+                      # disko spreads `settings` into
+                      # boot.initrd.luks.devices.<name> (lib/types/luks.nix:
+                      # `// config.settings`), so this is where the crypttab
+                      # option lives. Cache the passphrase so a second container
+                      # (cryptpersist) sharing it unlocks without a second
+                      # prompt at boot.
+                      crypttabExtraOpts = ["password-cache=yes"];
                     };
                     extraFormatArgs = ["--pbkdf" "argon2id"];
                     content = {
@@ -130,7 +146,7 @@
           };
         };
       }
-      // lib.optionalAttrs separatePersist {
+      // lib.optionalAttrs (separatePersist && !unmanagedPersist) {
         # Separate persistent disk: survives a mainDevice reinstall. disko
         # generates the boot.initrd.luks.devices entry for `cryptpersist` from
         # the LUKS declaration below — boot.nix does not declare it.
@@ -149,6 +165,10 @@
                   passwordFile = "/tmp/secret.key";
                   settings = {
                     allowDiscards = true;
+                    # Same passphrase as cryptroot: reuse the cached key from the
+                    # cryptroot unlock instead of prompting again (disko spreads
+                    # `settings` into boot.initrd.luks.devices.<name>).
+                    crypttabExtraOpts = ["password-cache=yes"];
                   };
                   extraFormatArgs = ["--pbkdf" "argon2id"];
                   content = {
@@ -171,5 +191,38 @@
           };
         };
       };
+
+    # `my.disks.skipPersist`: disko does not see the persist disk at all, so
+    # declare what disko would otherwise generate — the initrd unlock of the
+    # EXISTING cryptpersist container and its two mountpoints. Nothing here
+    # creates or formats anything: the container and its btrfs subvolumes
+    # already exist and must be preserved verbatim.
+    #
+    # These are `lib.mkIf` definitions (not a `lib.optionalAttrs` on the
+    # module's own attrset) on purpose: gating the module's *shape* on a
+    # `config` read makes every option here depend on `config` before the
+    # fixpoint is resolved — infinite recursion. `mkIf` defers the decision.
+    boot.initrd.luks.devices = lib.mkIf unmanagedPersist {
+      cryptpersist = {
+        device = "/dev/disk/by-partlabel/disk-persist-cryptpersist";
+        allowDiscards = true;
+        crypttabExtraOpts = ["password-cache=yes"];
+      };
+    };
+    # `neededForBoot` (== disko's `x-initrd.mount`) because the secrets under
+    # /persist are consumed by sops-nix during activation — it must be up early.
+    fileSystems = lib.mkIf unmanagedPersist {
+      "/persist" = {
+        device = "/dev/mapper/cryptpersist";
+        fsType = "btrfs";
+        neededForBoot = true;
+        options = ["compress=zstd" "noatime" "subvol=/persist"];
+      };
+      "/home" = {
+        device = "/dev/mapper/cryptpersist";
+        fsType = "btrfs";
+        options = ["compress=zstd" "noatime" "subvol=/home"];
+      };
+    };
   };
 }
