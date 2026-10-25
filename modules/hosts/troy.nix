@@ -42,6 +42,14 @@
 
     system.stateVersion = "26.05";
 
+    # --- Machine identity for the shared boot/disks aspects ---
+    # These were previously hardcoded inside boot.nix/disks.nix; moved here so
+    # the shared aspects are per-host-parameterized. troy's evaluated config
+    # is unchanged by the move.
+    my.boot.mode = "uefi";
+    my.boot.resumeOffset = 533760;
+    my.disks.mainDevice = "/dev/nvme0n1";
+
     # Troy's iGPU is Intel UHD Graphics (Comet Lake, PCI 8086:9b41); the
     # Intel VA-API driver (iHD) enables Firefox hardware video decode, and
     # libva auto-detects iHD. Host-specific hardware belongs here rather than

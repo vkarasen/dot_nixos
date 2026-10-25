@@ -1,17 +1,25 @@
 # Dendritic aspect: bootloader, swap, and the impermanence erase-on-boot
 # rollback service.
-{inputs, lib, ...}: {
+{
+  inputs,
+  lib,
+  ...
+}: {
   flake.modules.nixos.boot = {
     config,
     pkgs,
     ...
-  }: {
+  }: let
+    cfg = config.my.boot;
+    uefi = cfg.mode == "uefi";
+  in {
     imports = [inputs.lanzaboote.nixosModules.lanzaboote];
 
     # Lanzaboote (Secure Boot): signs the boot chain and replaces the
     # systemd-boot install. Keys live in /persist so they survive the
-    # erase-on-boot rollback.
-    boot.lanzaboote = {
+    # erase-on-boot rollback. UEFI only — the legacy branch below installs
+    # GRUB instead.
+    boot.lanzaboote = lib.mkIf uefi {
       enable = true;
       # Keep at most 10 generations on the ESP (each is a signed UKI + kernel
       # + initrd); older ones are pruned from the boot menu and the ESP.
@@ -28,7 +36,21 @@
     };
 
     boot.loader.systemd-boot.enable = false;
-    boot.loader.efi.canTouchEfiVariables = true;
+    boot.loader.efi.canTouchEfiVariables = lib.mkIf uefi true;
+
+    # Legacy BIOS/CSM: GRUB on the system disk's bios_grub partition,
+    # chainloading Windows (on the Windows boot disk) via os-prober. /boot is
+    # an unencrypted ext4 partition (disko), so GRUB never has to unlock LUKS2
+    # — the initrd does that, exactly as in the uefi layout.
+    boot.loader.grub = lib.mkIf (!uefi) {
+      enable = true;
+      # device: disko auto-sets boot.loader.grub.devices from
+      # my.disks.mainDevice when the GPT has an EF02 (bios_grub) partition —
+      # declaring `device` here again would duplicate it (mirroredBoots assert).
+      efiSupport = false;
+      useOSProber = true;
+      configurationLimit = 10;
+    };
 
     # systemd in stage-1: required for the rollback service and the TPM2
     # systemd-cryptenroll unlock. Default on nixos-unstable; kept explicit.
@@ -49,19 +71,18 @@
     ];
 
     # Hibernate: resume from the LUKS-encrypted btrfs swapfile. resume_offset
-    # is the physical location of /swap/swapfile on the btrfs device —
-    # recompute with `btrfs inspect-internal map-swapfile -r /swap/swapfile`
-    # if the swapfile is ever recreated (e.g. size change).
+    # is per-host (my.boot.resumeOffset) — recompute with
+    # `btrfs inspect-internal map-swapfile -r /swap/swapfile` if the swapfile
+    # is ever recreated (e.g. size change).
     boot.resumeDevice = "/dev/mapper/cryptroot";
-    boot.kernelParams = [
-      "resume_offset=533760"
-      # zswap: compressed RAM cache in front of the swapfile. Chosen over zram
-      # because zram + disk swap causes LRU inversion (cold pages calcify in
-      # zram while the active set spills to disk — Chris Down, "zswap vs zram",
-      # 2026). zstd + zsmalloc maximise compression (capacity over speed, for a
-      # browser-tab-heavy light workload); 25% RAM pool before tiering to disk.
-      # The zswap configuration now lives in `boot.zswap` below.
-    ];
+    boot.kernelParams = lib.optionals (cfg.resumeOffset != null) ["resume_offset=${toString cfg.resumeOffset}"];
+
+    # zswap: compressed RAM cache in front of the swapfile. Chosen over zram
+    # because zram + disk swap causes LRU inversion (cold pages calcify in
+    # zram while the active set spills to disk — Chris Down, "zswap vs zram",
+    # 2026). zstd + zsmalloc maximise compression (capacity over speed, for a
+    # browser-tab-heavy light workload); 25% RAM pool before tiering to disk.
+    # The zswap configuration now lives in `boot.zswap` below.
 
     boot.zswap = {
       enable = true;
@@ -117,6 +138,5 @@
         umount /mnt
       '';
     };
-
   };
 }

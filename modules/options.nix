@@ -637,5 +637,42 @@
         else "vkarasen";
       description = "Name of the home configuration to use for LSP settings";
     };
+
+    # Boot-mode + storage target for the shared boot/disks aspects. A host
+    # chooses legacy (BIOS/CSM + GRUB) or uefi (lanzaboote + systemd-boot);
+    # the boot and disks aspects branch on this. Migration path: docs/boot-modes.md.
+    options.my.boot = {
+      mode = lib.mkOption {
+        type = lib.types.enum ["uefi" "legacy"];
+        default = "uefi";
+        description = ''
+          Firmware boot mode this host installs for. "uefi" = lanzaboote +
+          systemd-boot + a disko ESP; "legacy" = GRUB in BIOS/CSM mode + a
+          disko bios_grub partition and an unencrypted /boot. troy is uefi;
+          sarasti starts legacy and flips to uefi when Windows is retired.
+        '';
+      };
+      resumeOffset = lib.mkOption {
+        type = lib.types.nullOr lib.types.int;
+        default = null;
+        description = ''
+          Physical offset of the btrfs swapfile for hibernation
+          (boot.kernelParams resume_offset=). Per-host: compute after install
+          with `btrfs inspect-internal map-swapfile -r /swap/swapfile`.
+          null = hibernation not wired for this host yet.
+        '';
+      };
+    };
+    options.my.disks.mainDevice = lib.mkOption {
+      type = lib.types.str;
+      description = ''
+        Whole system disk for this host, as a stable by-id path
+        (/dev/disk/by-id/...), targeted by disko and (in legacy mode) by
+        boot.loader.grub.device. No default on purpose: every host that
+        imports the disks aspect must name its disk explicitly, so a default
+        can never silently wipe the wrong device. Verify at install time with
+        `ls -l /dev/disk/by-id/`.
+      '';
+    };
   };
 }
