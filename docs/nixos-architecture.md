@@ -67,10 +67,10 @@ subvolume create` at the pool top level, `subvol=/`).
 
 | secret | location | recovery |
 |---|---|---|
-| LUKS passphrase | private vault note (`inbox/2026-09-04-nixos-migration-session.md`) | typed at the prompt; the universal fallback |
+| LUKS passphrase | KeePassXC entry in `~/sync/private/vkarasen.kdbx` (per host; paper copy of the kdbx master password offline) | typed at the prompt; the universal fallback |
 | user password | sops `user-password` secret → `hashedPasswordFile` | sops decrypts at boot (host age key) |
 | Secure Boot keys (PK/KEK/db) | `/persist/etc/secureboot/keys/` (on sarasti: disk 4) | **NOT in git** (db.key is a private signing key) |
-| sops age key | derived from `/persist/etc/ssh/ssh_host_ed25519_key` | survives with the host keys |
+| sops age key | derived from `/persist/etc/ssh/ssh_host_ed25519_key` (its private half is a kdbx attachment) | survives with the host keys |
 | SSH authorized key | declarative in `modules/nixos/base.nix` | always present (key auth) |
 
 The **LUKS passphrase is the root of all recovery**: it unlocks `cryptroot`

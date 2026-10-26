@@ -213,8 +213,10 @@ retired; it then flips to `uefi` + Secure Boot, which is a re-partition, not a
 toggle. See `docs/boot-modes.md` for the migration.
 
 > **Install / operate:** see `docs/nixos-install.md` (sarasti runbook, §8) —
-> self-contained numbered steps 0–9, including the sops/age enrollment and the
-> temporary `security.sudo.wheelNeedsPassword = false` window.
+> self-contained numbered steps 0–9. The sops host key is pre-seeded and its age
+> recipient enrolled *before* the deploy (§8 step 0.5), so there is no temporary
+> `security.sudo.wheelNeedsPassword = false` window and no expected
+> `setupSecrets` failure to tolerate.
 
 - **Disk is a by-id path, not `/dev/nvme0n1`**: the system disk is the **2 TB
   WD_BLACK SN770** (`/dev/disk/by-id/nvme-WD_BLACK_SN770_2TB_…`), *not* the

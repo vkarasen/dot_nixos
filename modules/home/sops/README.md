@@ -1,117 +1,133 @@
 # Secrets Management with sops-nix
 
-This configuration now uses [sops-nix](https://github.com/Mic92/sops-nix) for secure secrets management instead of the previous custom implementation.
+This directory holds the **sops aspect pair** for this flake: the home-manager
+aspect (`modules/home/sops/default.nix`) and — separately — the NixOS-level
+aspect (`modules/nixos/sops.nix`). Both read the **same** encrypted file,
+`modules/home/sops/secrets/secrets.yaml`, but they decrypt it with different
+keys and expose the result in different places.
 
-## Why sops-nix?
+## Two layers
 
-sops-nix provides significant advantages over storing plain text secrets:
+| | NixOS layer (`modules/nixos/sops.nix`, `modules/nixos/wifi.nix`) | home-manager layer (`modules/home/sops/default.nix`) |
+| --- | --- | --- |
+| decryption key | the **host** key `/persist/etc/ssh/ssh_host_ed25519_key` (`sops.age.sshKeyPaths`) | `~/.config/sops/age/keys.txt` — the age private key **derived from that same host key** |
+| when | boot / activation, before any user session exists | user session, via the `sops-nix` user service |
+| output | `/run/secrets-for-users/` (`neededForUsers`), `/run/secrets/`, rendered env files under `/run/secrets/rendered/` | `$XDG_RUNTIME_DIR/secrets/` |
+| secrets declared | `user-password` (with `neededForUsers`, so it decrypts before login and `users.users.vkarasen.hashedPasswordFile` resolves), `wifi-home-psk` (+ `sops.templates."wifi-home-psk-env"` feeding `networking.networkmanager.ensureProfiles`) | `tavily_api_key`, `anthropic_api_key`, `deepseek_api_key`, `google_oauth_client_id`, `google_oauth_client_secret`, `linkedin_api_key`, `rclone_gdrive_conf`, `rclone_nextcloud_conf` — all inside `lib.mkIf config.my.is_private` |
 
-- ✅ **Encrypted at rest** - secrets are encrypted and safe to commit to git
-- ✅ **Declarative configuration** - secrets defined in Nix configuration
-- ✅ **Multiple encryption methods** - supports age, GPG, SSH keys
-- ✅ **Team collaboration** - supports multiple keys and key rotation
-- ✅ **Template support** - embed secrets in configuration files safely
-- ✅ **Proper systemd integration** - uses systemd user services
-- ✅ **Battle-tested** - used by nix-community infrastructure
+A secret that is **declared in Nix but missing from `secrets.yaml`** makes the
+corresponding layer fail at activation: sops-nix refuses to start rather than
+expose a partially populated secret set. (`mcp_proxy_auth_token` is declared
+only when `my.pi.mcpProxy.requireAuth` is enabled, which is off by default.)
 
 ## Setup Instructions
 
-### 1. Generate an age key
+### 1. Recipients are machine host keys
+
+This config does **not** use a personal/user age key. Every recipient in
+`.sops.yaml` is a **NixOS host's** ed25519 SSH host key, converted to an age
+recipient with `ssh-to-age`. Secrets are then decryptable on that host (and
+only there) without any user-held key, and adding a machine is the only way the
+recipient list grows:
 
 ```bash
-# Create the age key directory
-mkdir -p ~/.config/sops/age
-
-# Generate a new age key
-age-keygen -o ~/.config/sops/age/keys.txt
-
-# Get your public key (you'll need this for .sops.yaml)
-age-keygen -y ~/.config/sops/age/keys.txt
+# on the host (or on the staged key before first install):
+ssh-to-age < /persist/etc/ssh/ssh_host_ed25519_key.pub   # → age1… recipient
 ```
 
-Alternatively, convert an existing SSH Ed25519 key:
+The private half **never** leaves the machine's `/persist` (plus an offline
+copy in the KeePassXC database as an attachment — it is the only thing that can
+decrypt `secrets.yaml`).
+
+For the home-manager sops module, `~/.config/sops/age/keys.txt` must hold the
+age **private** key derived from that same host key — not from
+`~/.ssh/id_ed25519`, which is not a recipient at all:
 
 ```bash
+(umask 077; sudo ssh-to-age -private-key -i /persist/etc/ssh/ssh_host_ed25519_key > /tmp/keys.txt)
 mkdir -p ~/.config/sops/age
-nix-shell -p ssh-to-age --run "ssh-to-age -private-key -i ~/.ssh/id_ed25519 > ~/.config/sops/age/keys.txt"
+install -m 600 /tmp/keys.txt ~/.config/sops/age/keys.txt && rm /tmp/keys.txt
 ```
 
 ### 2. Configure .sops.yaml
 
-Edit `.sops.yaml` and replace the placeholder with your actual age public key:
+Add the host's recipient as an anchor under `keys:` **and** reference it in
+**every** `creation_rules` entry — a recipient enrolled in only one rule leaves
+the other path family undecryptable on that host. Real shape of this repo's
+file (`modules/home/sops/secrets/*` + `modules/home/pi/skills-private/*.md`):
 
 ```yaml
 keys:
-  - &user_key age1your_actual_public_key_here
+  - &troy age1…       # derived from troy's /persist/etc/ssh/ssh_host_ed25519_key
+  - &sarasti age1…    # derived from sarasti's, pre-seeded before install
 
 creation_rules:
-  - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
+  - path_regex: modules/home/sops/secrets/[^/]+\.(yaml|json|env|ini)$
     key_groups:
-    - age:
-      - *user_key
+      - age: [*troy, *sarasti]
+  - path_regex: modules/home/pi/skills-private/[^/]+\.md$
+    key_groups:
+      - age: [*troy, *sarasti]
 ```
 
-### 3. Create your first secret file
+Then re-encrypt every covered file (`sops updatekeys -y <file>`, one file at a
+time) and commit — the flake only sees the git tree. The full enrolment
+procedure, including pre-seeding the host key before a fresh install, is in
+`docs/nixos-install.md` §8 **Step 0.5**.
+
+### 3. Add or edit a secret
+
+The file already exists and is encrypted — edit it in place (never delete and
+recreate it; a fresh file would come back with the current `.sops.yaml`
+recipients and no other content):
 
 ```bash
-# Install sops if not available
-nix-shell -p sops
-
-# Create and edit your secrets file (this will create a new encrypted file)
-sops secrets.yaml
+sops modules/home/sops/secrets/secrets.yaml
 ```
 
-Add your secrets in YAML format:
+`sops` decrypts to a temp file, opens `$EDITOR`, and re-encrypts on save. Add
+plain YAML entries, e.g. `my_new_secret: <value>`.
 
-```yaml
-tavily_api_key: your_actual_api_key_here
-openai_api_key: your_actual_openai_key_here
-github_token: your_actual_github_token_here
-```
+### 4. Declare the secret in Nix
 
-When you save and exit, the file will be encrypted automatically.
+A key that exists only in `secrets.yaml` is never decrypted; it also has to be
+declared by the layer that consumes it.
 
-**Important**: The file must not exist before running `sops`, or if it exists, it must already be a properly encrypted sops file. If you get a "sops metadata not found" error, delete the file and try again.
-
-### 4. Configure secrets in your Nix configuration
-
-Edit `modules/home/sops/default.nix` and add the secrets you need inside the
-`lib.mkIf config.my.is_private { ... }` block:
+**home-manager layer** — inside the existing `sops.secrets = lib.mkIf
+config.my.is_private { … }` block in `modules/home/sops/default.nix`:
 
 ```nix
-{
-  sops = {
-    age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
-    defaultSopsFile = ../secrets/example.yaml;
-
-    # Define your secrets
-    secrets.tavily_api_key = {};
-    secrets.openai_api_key = {};
-    secrets.github_token = {};
-  };
-
-  # Expose as environment variables
-  home.sessionVariables = lib.mkMerge [
-    (lib.mkIf (config.sops.secrets ? tavily_api_key) {
-      TAVILY_API_KEY = "$(cat ${config.sops.secrets.tavily_api_key.path})";
-    })
-    (lib.mkIf (config.sops.secrets ? openai_api_key) {
-      OPENAI_API_KEY = "$(cat ${config.sops.secrets.openai_api_key.path})";
-    })
-    (lib.mkIf (config.sops.secrets ? github_token) {
-      GITHUB_TOKEN = "$(cat ${config.sops.secrets.github_token.path})";
-    })
-  ];
-}
+secrets = lib.mkIf config.my.is_private {
+  # … existing entries …
+  my_new_secret = {};
+};
 ```
+
+If something needs it as an environment variable, follow the pattern already
+used there (one `lib.mkIf` entry inside `home.sessionVariables`):
+
+```nix
+(lib.mkIf (config.my.is_private && config.sops.secrets ? my_new_secret) {
+  MY_NEW_SECRET = "$(cat ${config.sops.secrets.my_new_secret.path})";
+})
+```
+
+**NixOS layer** — inside `sops.secrets` in `modules/nixos/sops.nix` (secrets
+that must exist before login) or, if only some hosts need it, in the aspect
+that consumes it (see `modules/nixos/wifi.nix`, which declares
+`wifi-home-psk` itself so it decrypts only on hosts that opt into wifi).
 
 ### 5. Apply the configuration
 
 ```bash
-home-manager switch
+git add modules/home/sops/secrets/secrets.yaml   # the flake only sees git-tracked files
+nh os switch .                                   # NixOS host (system layer)
+nh home switch                                   # portable home-manager config
 ```
 
-The secrets will be decrypted by the `sops-nix.service` systemd user service and made available as environment variables in new shell sessions.
+The home-manager layer is decrypted by the `sops-nix` user service into
+`$XDG_RUNTIME_DIR/secrets/` at login; the NixOS layer is decrypted during
+activation (`sops-install-secrets`).
 
 ## Usage Examples
 
@@ -185,68 +201,90 @@ sed -n '/\[nextcloud\]/,$p' ~/.config/rclone/rclone.conf
 
 At activation every `rclone_*_conf` blob is concatenated into the single
 `~/.config/rclone/rclone.conf`, so all mounts and syncs share one config file.
-
 ## Managing Secrets
 
 ### Edit existing secrets
 
 ```bash
-sops secrets/example.yaml
+sops modules/home/sops/secrets/secrets.yaml
 ```
 
-### Add new secrets
+### Add a new secret
 
-1. Edit the secrets file: `sops secrets/example.yaml`
-2. Add the new secret to your Nix configuration
-3. Run `home-manager switch`
+1. Add the value: `sops modules/home/sops/secrets/secrets.yaml`
+2. Declare it in the layer that consumes it (see §4 above)
+3. `git add` the re-encrypted file — an unstaged edit is invisible to the flake
+4. `nh os switch .` / `nh home switch`
 
-### Add team members
+### Add a host
 
-1. Get their age public key
-2. Add it to `.sops.yaml`
-3. Update existing secrets: `sops updatekeys secrets/example.yaml`
+A host is added as a **recipient** by enrolling its ed25519 SSH host key: add
+the `age1…` anchor to `.sops.yaml` **and reference it in every
+`creation_rules` entry** (shape in §2), then re-encrypt every covered file.
+The full procedure — including pre-seeding the host key for a fresh install —
+is `docs/nixos-install.md` §8 **Step 0.5**.
 
-### Rotate keys
+### Rotate keys / re-encrypt for a new recipient list
 
 ```bash
-# Update all secrets with new keys
-sops updatekeys secrets/example.yaml
+nix run nixpkgs#sops -- updatekeys -y modules/home/sops/secrets/secrets.yaml
+# each encrypted private skill/policy is its own file — repeat per file:
+nix run nixpkgs#sops -- updatekeys -y modules/home/pi/skills-private/<name>.md
 ```
 
-## Migration from Old System
-
-If you were using the previous custom secrets system:
-
-1. **Backup existing secrets**: Copy values from `~/.secrets/variables/`
-2. **Remove old files**: `rm -rf ~/.secrets/`
-3. **Setup sops-nix**: Follow the setup instructions above
-4. **Add secrets to sops**: Use `sops secrets/example.yaml` to add your
-   backed up values
-5. **Update git ignore**: Remove `.secrets/` from `.gitignore` if it was there
-6. **Clean up**: Remove the old activation script from your configuration
+`updatekeys` has to **decrypt** the data key first, so it must run on a machine
+that already holds an enrolled recipient's private key — i.e. **troy** or
+**sarasti** (their `/persist/etc/ssh/ssh_host_ed25519_key`), never on a host
+whose key is not yet enrolled and never on a checkout that only has git access.
+Commit the re-encrypted files; the flake only sees git-tracked content.
 
 ## Security Notes
 
-- Age keys in `~/.config/sops/age/keys.txt` must be kept secure
-- Encrypted `.sops` files are safe to commit to version control
-- Secrets are decrypted to `$XDG_RUNTIME_DIR/secrets` (memory-backed on most systems)
-- The `sops-nix.service` handles secure decryption at login time
+- The **root of trust is the host key**: `/persist/etc/ssh/ssh_host_ed25519_key`
+  on each host, whose private half also lives in the KeePassXC database
+  (`~/sync/private/vkarasen.kdbx`) as an attachment. Lose both host keys and
+  `secrets.yaml` is unreadable — there is no user key and no recovery path.
+- `~/.config/sops/age/keys.txt` is a derived copy of that identity (mode 600).
+  It must never be created from `~/.ssh/id_ed25519` — that key is not a
+  recipient.
+- Encrypted `.sops` files are safe to commit to version control; plaintext is
+  never written to the nix store.
+- home-manager secrets land in `$XDG_RUNTIME_DIR/secrets/` (memory-backed);
+  NixOS-level secrets land under `/run/secrets*` — the wifi PSK additionally
+  renders into `/run/secrets/rendered/wifi-home-psk-env` (0400, root).
 
 ## Troubleshooting
 
-### Secrets not available
+### Secrets not available (home-manager layer)
 
-- Check that `sops-nix.service` is running: `systemctl --user status sops-nix`
-- Verify age key exists: `ls -la ~/.config/sops/age/keys.txt`
-- Check service logs: `journalctl --user -u sops-nix`
+- Check the user service: `systemctl --user status sops-nix`
+- Logs: `journalctl --user -u sops-nix`
+- **First thing to check is the key identity.** `~/.config/sops/age/keys.txt`
+  must be derived from the **host** key, and its public half must equal a
+  recipient in `.sops.yaml`:
+  ```bash
+  age-keygen -y ~/.config/sops/age/keys.txt   # compare with the age1… anchors
+  ```
+  No match = the file was derived from the wrong key (e.g. `~/.ssh/id_ed25519`)
+  or copied from another machine. Re-derive it on the host:
+  `(umask 077; sudo ssh-to-age -private-key -i /persist/etc/ssh/ssh_host_ed25519_key > /tmp/keys.txt)`
+  then `install -m 600 /tmp/keys.txt ~/.config/sops/age/keys.txt && rm /tmp/keys.txt`.
+
+### System secrets not available (NixOS layer)
+
+- `systemctl status sops-install-secrets` — a failed unit here means the host
+  key cannot decrypt: either it is not the enrolled key or the `.sops.yaml` /
+  `updatekeys` commit was not the one deployed (the flake only sees git).
+- `sudo test -s /run/secrets-for-users/user-password && echo system-ok` is the
+  canonical check (`neededForUsers` puts it there).
 
 ### Permission denied
 
-- Ensure age key file has correct permissions: `chmod 600 ~/.config/sops/age/keys.txt`
-- Check that the key directory is not world-readable
+- `chmod 600 ~/.config/sops/age/keys.txt`; the directory must not be
+  world-readable.
 
 ### Can't edit secrets
 
-- Make sure `sops` is available: `nix-shell -p sops`
-- Verify `.sops.yaml` is correctly configured
-- Check that your age key can decrypt: `sops -d secrets/example.yaml`
+- `sops` is in `home.packages`; otherwise `nix run nixpkgs#sops -- …`.
+- Verify `.sops.yaml` still lists this host's recipient, and that it can decrypt:
+  `nix run nixpkgs#sops -- -d modules/home/sops/secrets/secrets.yaml > /dev/null`.

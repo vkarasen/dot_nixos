@@ -132,8 +132,8 @@ unencrypted `/boot`). Throughout this section:
    - **Verify before trusting it**: `tar -tf … | head` must list names, and the
      size must look like the data (`ls -lh`) — an empty or truncated archive is
      the classic silent backup failure. Write down **where** it landed (host,
-     path, date) and **that you verified it**, e.g. next to the vault note, so a
-     later recovery attempt does not have to guess.
+     path, date) and **that you verified it**, e.g. in the notes of the kdbx
+     entry, so a later recovery attempt does not have to guess.
    - **`btrfs send` alternative** (near-instant, no re-read): snapshot the two
      subvolumes read-only, then send them to the same target —
      `sudo btrfs subvolume snapshot -r /home /home/.backup-$(date +%F)` (and
@@ -210,9 +210,11 @@ unencrypted `/boot`). Throughout this section:
       ```
       If it still lists `persist`, the edit is uncommitted (git flake — see
       the pitfall in `AGENTS.md`) and disko **will** format disk 4.
-   c. **Run the same install command as the runbook** (§8 step 3) — unchanged:
+   c. **Run the install command from the runbook** (§8 step 3), with the same
+      pinned nixos-anywhere rev — but **without `--extra-files`**: the host key
+      already exists on the surviving `/persist`:
       ```bash
-      nix run github:nix-community/nixos-anywhere -- \
+      nix run github:nix-community/nixos-anywhere/bad98b0685cf47eaeadcaf6787da8b51cf025693 -- \
         --flake '.#sarasti' \
         --disk-encryption-keys /tmp/secret.key /tmp/secret.key \
         --target-host root@<ip>
@@ -223,7 +225,8 @@ unencrypted `/boot`). Throughout this section:
       `cryptroot` is *created*; `cryptpersist` is merely opened.
 
       > **`/tmp/secret.key` must hold the EXISTING `cryptpersist` passphrase** —
-      > the one already on disk 4 and recorded in the vault — **not a new one.**
+      > the one already on disk 4 and recorded in the kdbx entry — **not a new
+      > one.**
       > Do not "rotate while you are in here": that one file plays two roles at
       > once — it is the *new* passphrase for the `cryptroot` this install
       > creates, and it must simultaneously be the *existing* passphrase that
@@ -235,7 +238,8 @@ unencrypted `/boot`). Throughout this section:
       > booted clean and both keys are known in-session:
       > `sudo cryptsetup luksChangeKey /dev/disk/by-partlabel/disk-main-cryptroot`
       > and the same for `disk-persist-cryptpersist`, changing both to the same
-      > new passphrase and updating **both** vault copies in the same minute.
+      > new passphrase and updating the kdbx entry (and its offline copy) in the
+      > same minute.
    d. **Verify the guard, then restore disko ownership.** After the first boot:
       ```bash
       cryptsetup luksUUID /dev/disk/by-partlabel/disk-persist-cryptpersist
@@ -260,12 +264,15 @@ unencrypted `/boot`). Throughout this section:
    disk 3.
 8. **Nothing is re-keyed — no age-key rotation, no `secrets.yaml`
    re-encryption.** Because `/persist` and `/home` survive on disk 4, the SSH
-   host key, machine-id, and the sops age key derived from
-   `/persist/etc/ssh/ssh_host_ed25519_key` are all **unchanged**. The `&sarasti`
-   anchor in `.sops.yaml` stays valid, and there is no `sops updatekeys` step.
+   host key `/persist/etc/ssh/ssh_host_ed25519_key` (inside the encrypted
+   `cryptpersist`), machine-id, and the sops age key derived from that host key
+   are all **unchanged**. The `&sarasti` anchor in `.sops.yaml` therefore stays
+   valid, and there is no `sops updatekeys` step: the surviving host key *is*
+   the recipient.
    (Key rotation is the *fresh-install* story, where `/persist` is wiped — the
-   legacy install of sarasti went through it, see `docs/nixos-install.md` §8
-   step 6. Re-run that procedure only if you ever deliberately wipe disk 4.)
+   legacy install of sarasti went through it, see `docs/nixos-install.md`
+   §8 step 0.5 + step 6. Re-run that procedure only if you ever deliberately
+   wipe disk 4.)
 9. **Recompute `my.boot.resumeOffset`** after the reinstall — the `/swap`
    subvolume lives on disk 3 and is recreated, so the old offset is invalid:
    `sudo btrfs inspect-internal map-swapfile -r /swap/swapfile`, then set it in

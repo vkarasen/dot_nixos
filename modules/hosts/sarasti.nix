@@ -90,9 +90,9 @@
     # adds `vainfo` to verify hardware decode after install. RDNA2 has
     # hardware AV1 decode, so unlike troy we do NOT disable media.av1.
     # `ssh-to-age` is needed on the host itself for sops/age enrollment
-    # (derive the host pubkey from /persist/etc/ssh/ssh_host_ed25519_key and
-    # the home-manager age key from ~/.ssh/id_ed25519) — see
-    # docs/nixos-install.md §8 step 6.
+    # (derive the host pubkey, and the home-manager age key, from
+    # /persist/etc/ssh/ssh_host_ed25519_key) — see
+    # docs/nixos-install.md §8 steps 0.5 and 6.
     environment.systemPackages = [pkgs.libva-utils pkgs.ssh-to-age];
     # Optional GPU monitoring after first boot: pkgs.radeontop / pkgs.nvtop.
 
