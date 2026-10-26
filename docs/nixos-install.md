@@ -400,6 +400,10 @@ step 3.
    `my.boot.mode = "legacy"`, and nixos-anywhere inherits the live
    environment's mode.
 
+   On this board (MSI B550-A PRO) the F11 menu lists each USB **twice** —
+   pick the entry **without** the `UEFI:` prefix; the `UEFI:` one boots the
+   installer in UEFI mode (observed).
+
    **If the USB entry is missing, or boots UEFI, fix CSM first** (BIOS setup,
    DEL at power-on): **Settings → Advanced → Windows OS Configuration → enable
    CSM**; set **Storage Boot Option Control = Legacy**; disable **Windows 10
@@ -434,13 +438,22 @@ the first boot and sudo prompts for it as usual. There is therefore no
 expected `setupSecrets` failure to tolerate (step 4.2).
 
 1. **Verify BOTH target disks** [SARASTI]: `ls -l /dev/disk/by-id/` must show
-   - `nvme-WD_BLACK_SN770_2TB_…` — the **2 TB system disk** (`my.disks.mainDevice`);
-   - `nvme-WDC_PC_SN730_…` (256 GB) — the **second NVMe, the persistent disk**
-     (`my.disks.persistDevice`). Its only content is an empty NTFS volume
-     (the former `G:` — it is the persist disk now, not a data disk).
+   - `nvme-WD_BLACK_SN770_2TB_23426M405177` — the **2 TB system disk**
+     (`my.disks.mainDevice`);
+   - `nvme-WDC_PC_SN730_SDBQNTY-256G-1001_21022B801581` (256 GB) — the
+     **second NVMe, the persistent disk** (`my.disks.persistDevice`). Its
+     only content is an NTFS volume labelled `New Volume` (the former `G:`,
+     empty — it is the persist disk now, not a data disk). The 2 TB SN770
+     likewise holds only the NTFS volume labelled `Big Boi` (the former `D:`,
+     Steam library); both are wiped by this install.
 
-   Compare each exact string with `my.disks.mainDevice` / `my.disks.persistDevice`
-   in `modules/hosts/sarasti.nix`. If either differs, edit the file and
+   The by-id form is `nvme-<model>_<serial>` — **not** model + EUI, and not
+   the auto-generated `…_1` namespace twin. These strings were **corrected on
+   2026-10-26 after the first live-ISO check**: the previous values were hand
+   assembled from model + EUI and never existed on the machine. Compare
+   `ls -l /dev/disk/by-id/ | grep nvme` exactly against
+   `modules/hosts/sarasti.nix`; **do not hand-assemble the string.**
+   If either differs, edit the file and
    `git add` + commit — **the flake only sees the git tree**, so an uncommitted
    edit is silently ignored. Getting this wrong wipes the wrong disk (the
    Windows MBR boot disk is the one that must **not** appear here).

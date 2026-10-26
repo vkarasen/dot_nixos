@@ -78,8 +78,8 @@ paths — never on `nvme0n1`/`sda`, which reorder between boots and BIOS changes
 | 0 | Crucial M4 (SATA SSD) | 128 GB | **Windows 10**, MBR-partitioned, **3 partitions** (`C:` = label `System` + recovery). Must never be touched. | `ata-<MODEL>_<SERIAL>` |
 | 1 | Samsung (SATA SSD) | 250 GB | NTFS data volume `E:`, single partition | `ata-<MODEL>_<SERIAL>` |
 | 2 | Crucial MX500 (SATA SSD) | 500 GB | NTFS data volume `F:`, single partition | `ata-<MODEL>_<SERIAL>` |
-| 3 | WD_BLACK SN770 (NVMe) | 2 TB | **system disk** — `my.disks.mainDevice`; reformatted by every install/flip | `/dev/disk/by-id/nvme-WD_BLACK_SN770_2TB_E823_8FA6_BF53_0001_001B_444A_414D_7FB8` |
-| 4 | WDC PC SN730 (NVMe) | 256 GB | **persist disk** — `my.disks.persistDevice`; `cryptpersist` holding `/persist` + `/home` | `/dev/disk/by-id/nvme-WDC_PC_SN730_SDBQNTY-256G-1001_001B_448B_4886_AE3B` |
+| 3 | WD_BLACK SN770 (NVMe) | 2 TB | **system disk** — `my.disks.mainDevice`; reformatted by every install/flip | `/dev/disk/by-id/nvme-WD_BLACK_SN770_2TB_23426M405177` |
+| 4 | WDC PC SN730 (NVMe) | 256 GB | **persist disk** — `my.disks.persistDevice`; `cryptpersist` holding `/persist` + `/home` | `/dev/disk/by-id/nvme-WDC_PC_SN730_SDBQNTY-256G-1001_21022B801581` |
 
 Only disks 3 and 4 have their exact by-id string committed (in
 `modules/hosts/sarasti.nix`); for 0–2 read the real one with
