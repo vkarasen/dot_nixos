@@ -1,36 +1,31 @@
 # SOPS configuration file
-# This file defines which keys can decrypt which secrets
-
-# Replace these with your actual keys:
-# - For age: run `age-keygen` and use the public key
-# - For GPG: use your GPG fingerprint
-# - For SSH: convert with `ssh-to-age < ~/.ssh/id_ed25519.pub`
+# This file defines which keys can decrypt which secrets.
+#
+# The only recipients are machine host keys: each NixOS host's ed25519 SSH host
+# key is enrolled as an age recipient, so secrets can be decrypted on that host
+# without any user-held key. The age public key is derived from the host's
+# OpenSSH public key with `ssh-to-age < /persist/etc/ssh/ssh_host_ed25519_key.pub`.
+#
+# Adding a host: pre-generate /persist/etc/ssh/ssh_host_ed25519_key, derive its
+# age recipient with ssh-to-age, add it to `keys` and to both creation rules
+# below, then re-encrypt every covered file with `sops updatekeys -y <file>`.
 
 keys:
-  # Your personal key (replace with your actual key)
-  - &user_key age1f948vk9ek354n4k4kfgwx2fdd2my5m5l5gkdqc9nct970u7q9g5savtl7w
-
-  # Machine keys (add as needed)
+  # Machine host keys
   - &troy age1rvvnm79598hhtepm3lm3y2rvfkpp4v33mzlzzkky3urajqc925vs56zruh # Troy (derived from /persist/etc/ssh/ssh_host_ed25519_key)
+  - &sarasti age1j3cqugcgnsyldrdx7l7wxg93yx0g6kldusvg5pg3jqkw6y7t6uyqv4ce5l # sarasti (derived from /persist/etc/ssh/ssh_host_ed25519_key, pre-generated for nixos-anywhere --extra-files)
 
 creation_rules:
   # Rules for secrets in the modules/home/sops/secrets/ directory
   - path_regex: modules/home/sops/secrets/[^/]+\.(yaml|json|env|ini)$
     key_groups:
       - age:
-          - *user_key
           - *troy
+          - *sarasti
 
   # Rules for private pi skills and policies (sops-encrypted markdown)
   - path_regex: modules/home/pi/skills-private/[^/]+\.md$
     key_groups:
       - age:
-          - *user_key
           - *troy
-
-# To get started:
-# 1. Generate an age key: age-keygen -o ~/.config/sops/age/keys.txt
-# 2. Get your public key: age-keygen -y ~/.config/sops/age/keys.txt
-# 3. Replace the placeholder key above with your actual public key
-# 4. Create/edit secrets: sops secrets/example.yaml
-
+          - *sarasti
