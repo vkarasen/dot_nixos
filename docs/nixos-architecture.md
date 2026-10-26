@@ -149,6 +149,12 @@ measurements to `/run/log/systemd/tpm2-measure.log`.)
 - LUKS **key slot 2** is bound to **PCR 7** (Secure Boot state).
 - The TPM releases the key only to a boot chain in the same Secure Boot state —
   a live USB or a changed key set cannot unseal the disk.
+- **This is a UEFI/Secure Boot property, not a property of having a TPM.**
+  sarasti (legacy/CSM today) has a working AMD fTPM, but with Secure Boot off and
+  an unencrypted `/boot` PCR 7 is *constant*: there the token only guards against
+  the drives leaving the machine. The binding above starts to hold on sarasti
+  only after the uefi flip (M4) — and both containers' tokens are re-enrolled
+  then (see `docs/boot-modes.md`).
 - The **passphrase** (key slot 0) is always the fallback. It is never removed.
 
 ## Recovery procedures

@@ -65,8 +65,10 @@
       "usb_storage"
       "sd_mod"
       "thunderbolt"
-      # TPM2 (STM TPM over LPC/SPI on this ThinkPad) — needed in the initrd so
-      # systemd-cryptsetup can auto-unlock the LUKS root via the TPM2 token.
+      # TPM2 — needed in the initrd so systemd-cryptsetup can auto-unlock the
+      # LUKS root via the TPM2 token. `tpm_tis` is the LPC/SPI TPM driver for
+      # troy's ThinkPad; sarasti's AMD fTPM is driven by `tpm_crb`, which is
+      # built into the kernel (CONFIG_TCG_CRB=y) and needs no module here.
       "tpm_tis"
     ];
 

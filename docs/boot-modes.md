@@ -251,10 +251,24 @@ unencrypted `/boot`). Throughout this section:
       rebuild, and restore from the backup taken in step 2. Once verified, set
       `my.disks.skipPersist = false;` (or delete the line) and commit, so
       ordinary installs/repairs regain full disko ownership of disk 4.
-6. **No TPM to migrate**: sarasti has no TPM (fTPM disabled), so there is
-   nothing to re-enroll and nothing to carry over. Secure Boot / lanzaboote do
-   **not** need a TPM. Enable fTPM later only if TPM-backed LUKS unlock is
-   wanted.
+6. **TPM2 tokens must be re-enrolled after the flip** (they are not migrated — they
+   are recreated). sarasti's AMD fTPM **works** (`/dev/tpm0`, `/dev/tpmrm0`,
+   `tpm_crb`; `TCG_CRB=y` built in), and **both** containers carry a PCR-7 bound
+   token that was enrolled while the host was still legacy. The flip invalidates
+   both: `cryptroot` is **recreated** from the passphrase, and `cryptpersist`'s
+   PCR policy changes with the boot chain. So after the flip, for each of
+   `cryptroot` (p3) and `cryptpersist` (p1):
+   ```bash
+   sudo systemd-cryptenroll --wipe-slot=tpm2 <device>   # drop the stale token
+   sudo systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 <device>
+   ```
+   Until then, unlock with the **passphrase** — it is a permanent fallback slot
+   on both containers, so skipping this step is a lost convenience, not a lockout.
+   Secure Boot / lanzaboote do **not** need a TPM. Also note what the *legacy*
+   token did and did not buy: under legacy/CSM with an unencrypted `/boot` and
+   Secure Boot off, PCR 7 is constant, so it only guarded against the drives
+   leaving the machine. After the flip (UEFI + lanzaboote, M4) the binding
+   becomes real — the re-enrollment above is what activates that.
 7. First boot: lanzaboote's `autoGenerateKeys` / `autoEnrollKeys` (already
    configured in `modules/nixos/boot.nix`, `includeMicrosoftKeys = true`,
    `autoReboot = false`) generate and enroll the boot keys. The key bundle is

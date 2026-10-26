@@ -127,7 +127,8 @@ nh home switch                                   # portable home-manager config
 
 The home-manager layer is decrypted by the `sops-nix` user service into
 `$XDG_RUNTIME_DIR/secrets/` at login; the NixOS layer is decrypted during
-activation (`sops-install-secrets`).
+activation of `nixos-rebuild switch` — there is **no** `sops-install-secrets`
+systemd unit to check.
 
 ## Usage Examples
 
@@ -272,11 +273,15 @@ Commit the re-encrypted files; the flake only sees git-tracked content.
 
 ### System secrets not available (NixOS layer)
 
-- `systemctl status sops-install-secrets` — a failed unit here means the host
-  key cannot decrypt: either it is not the enrolled key or the `.sops.yaml` /
-  `updatekeys` commit was not the one deployed (the flake only sees git).
 - `sudo test -s /run/secrets-for-users/user-password && echo system-ok` is the
-  canonical check (`neededForUsers` puts it there).
+  canonical check (`neededForUsers` puts it there), and the activation output of
+  the `nixos-rebuild switch` that should have decrypted it is the real proof.
+- There is **no** `sops-install-secrets.service` — NixOS-level sops runs during
+  activation, not as a unit, so `systemctl status` on that name proves nothing.
+  Runtime trace only: `journalctl -b | grep -i sops`.
+- If decryption failed, the host key cannot decrypt: either it is not the
+  enrolled key or the `.sops.yaml` / `updatekeys` commit was not the one
+  deployed (the flake only sees git).
 
 ### Permission denied
 
