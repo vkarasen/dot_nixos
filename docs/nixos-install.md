@@ -242,11 +242,12 @@ nh os switch .#troy
       likely someone derived it from `~/.ssh/id_ed25519`, which is not a
       recipient in `.sops.yaml`.
 3. **hibernate** — `resume_offset` is **per-host** via `my.boot.resumeOffset`
-   (`boot.kernelParams`, applied only when non-null): troy = `533760`; for
-   `sarasti` it stays `null` until, after first boot, you compute
-   `sudo btrfs inspect-internal map-swapfile -r /swap/swapfile` and set
-   `my.boot.resumeOffset` in `modules/hosts/sarasti.nix`. If the swapfile is
-   ever recreated (e.g. size change), recompute and update the host value.
+   (`boot.kernelParams`, applied only when non-null): troy = `533760` and
+   `sarasti` = `533760` too — the two hosts have identical disko swapfile
+   layouts, so the measured offset is the same (`sudo btrfs
+   inspect-internal map-swapfile -r /swap/swapfile`, measured 2026-10-26). If
+   the swapfile is ever recreated (e.g. size change), recompute on that host
+   and update its `my.boot.resumeOffset` in `modules/hosts/<name>.nix`.
 4. **Secure Boot** (lanzaboote) — **only when `my.boot.mode == "uefi"`**.
    Configured (`autoGenerateKeys` + `autoEnrollKeys`); keys auto-generate on
    first boot and systemd-boot enrolls them. The one manual step is entering
@@ -914,18 +915,24 @@ uefi, see `docs/boot-modes.md`).
 ### Step 9 — hibernation [SARASTI or DRIVER]
 
 `sarasti` is wired-only with no lid, so suspend/hibernate are manual — but the
-`resume_offset` must still be set once, or resume after hibernate has no swap
-location:
+`resume_offset` must still be set, or resume after hibernate has no swap
+location. It **is** set: `my.boot.resumeOffset = 533760;` in
+`modules/hosts/sarasti.nix` — the same value as troy, because both hosts have
+identical disko swapfile layouts. Only recompute it if the swapfile is
+recreated (see step 4):
 
-1. **[SARASTI]** Compute the swapfile offset:
+1. **[REFERENCE]** The offset was measured with:
    ```bash
    sudo btrfs inspect-internal map-swapfile -r /swap/swapfile
    ```
-2. **[DRIVER]** Set `my.boot.resumeOffset = <that number>;` in
-   `modules/hosts/sarasti.nix` (it is `null` until then, so no
-   `resume_offset=` kernel param is emitted), commit, rebuild.
-3. **Test it**: on sarasti, run `systemctl hibernate`. It should power off and
-   come back on the next power-on with your session intact. Verify the resume
+2. **[DONE]** `my.boot.resumeOffset = 533760;` is set in
+   `modules/hosts/sarasti.nix`, so `boot.kernelParams` carries
+   `resume_offset=533760`. Only the **offset** is manual: `boot.resumeDevice =
+   "/dev/mapper/cryptroot"` is already set in `modules/nixos/boot.nix`, so the
+   `resume=` kernel parameter is present too.
+3. **Still to be done by the user (not yet verified)**: test it on sarasti —
+   run `systemctl hibernate`. It should power off and come back on the next
+   power-on with your session intact. Verify the resume
    actually consumed the swap image — the only reliable check is the *previous*
    boot's log:
    ```bash
@@ -934,9 +941,8 @@ location:
    A line mentioning `PM: Image successfully loaded` (or `resume=` / the
    `resume_offset`) means it resumed; a plain cold boot with no such line means
    it silently ignored the swapfile and you got a clean boot instead of a
-   resume.
-   Only the **offset** is manual: `boot.resumeDevice =
-   "/dev/mapper/cryptroot"` is already set in `modules/nixos/boot.nix`, so the
-   `resume=` kernel parameter is always present once `my.boot.resumeOffset` is.
-4. Recompute whenever the swapfile is recreated (size change, reinstall).
+   resume. **This post-hibernate check has not been run yet** — the offset is
+   set from the layout measurement, not from a confirmed resume.
+4. Recompute whenever the swapfile is recreated (size change, reinstall),
+   using the command in step 1.
 

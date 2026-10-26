@@ -71,9 +71,10 @@
     # Legacy BIOS/CSM for the dual-boot phase (Windows is legacy on its own
     # MBR disk); flip to "uefi" + Secure Boot once Windows is retired.
     my.boot.mode = "legacy";
-    # Hibernation swapfile offset: set after first install with
-    # `btrfs inspect-internal map-swapfile -r /swap/swapfile`
-    # (my.boot.resumeOffset stays null until then).
+    # Hibernation swapfile offset (resume_offset= kernel param). Measured
+    # 2026-10-26 with `sudo btrfs inspect-internal map-swapfile -r
+    # /swap/swapfile`; recompute if the swapfile is recreated.
+    my.boot.resumeOffset = 533760;
     # VERIFY this by-id path at install time (ls -l /dev/disk/by-id/): the
     # 2 TB WD_BLACK SN770, NOT the 256 GB WD SN730 (the other NVMe).
     # Form is `nvme-<model>_<serial>` (the no-suffix link, not the `_1`

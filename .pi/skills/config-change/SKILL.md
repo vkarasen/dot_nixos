@@ -30,7 +30,8 @@ alone.
   `my.is_private`. Three are **HOST-level hardware/install** facts, set in the
   host file (never in `modules/nixos/`): `my.boot.mode` (`uefi` | `legacy`),
   `my.disks.mainDevice` (the whole system disk, by-id preferred), and
-  `my.boot.resumeOffset` (hibernation swapfile offset, `null` = not wired).
+  `my.boot.resumeOffset` (hibernation swapfile offset; `null` = not wired —
+  both troy and sarasti are set to `533760`).
   Two more — `my.gui.enable` and `my.laptop.enable` — are
   *derived*: set true by the `desktop` / `laptop` aspect when it is imported,
   not hand-set at the top level.
@@ -226,10 +227,10 @@ toggle. See `docs/boot-modes.md` for the migration.
   `cryptpersist` with `/persist` + `/home`. Never assume `nvme0n1` here —
   verify with `ls -l /dev/disk/by-id/` or you repartition the wrong drive.
   Disk numbering table: `docs/boot-modes.md` "Disk numbering".
-- **`my.boot.resumeOffset` is `null`** (no `resume_offset=` kernel param), so
-  hibernation is not wired yet. After first boot compute
-  `btrfs inspect-internal map-swapfile -r /swap/swapfile` and set it in
-  `modules/hosts/sarasti.nix`.
+- **`my.boot.resumeOffset = 533760`** — same as troy, because both hosts have
+  identical disko swapfile layouts (measured 2026-10-26 with
+  `sudo btrfs inspect-internal map-swapfile -r /swap/swapfile`). Recompute and
+  update `modules/hosts/sarasti.nix` only if `/swap` is recreated.
 - **No laptop aspect, no wifi**: wired desktop — there is no lid, battery, or
   `hypridle` idle-suspend wiring; all of that is troy-only.
 - **GPU is AMD RDNA2 (RX 6750 XT)**: VA-API comes from mesa (`radeonsi`) via

@@ -49,7 +49,7 @@ host file** — `modules/hosts/<name>.nix`, inside that host's
 | option | type | meaning |
 |---|---|---|
 | `my.boot.mode` | `enum ["uefi" "legacy"]`, default `"uefi"` | Which boot chain + partition layout the host installs for. Drives `boot.nix` and `disks.nix`. |
-| `my.boot.resumeOffset` | `nullOr int`, default `null` | Physical offset of the btrfs swapfile → `boot.kernelParams`' `resume_offset=` for hibernation. `null` = hibernation not wired yet on this host. Compute after install: `btrfs inspect-internal map-swapfile -r /swap/swapfile`. |
+| `my.boot.resumeOffset` | `nullOr int`, default `null` | Physical offset of the btrfs swapfile → `boot.kernelParams`' `resume_offset=` for hibernation. `null` = hibernation not wired on this host. Both current hosts are set (`533760`); recompute after install or whenever the swapfile is recreated: `btrfs inspect-internal map-swapfile -r /swap/swapfile`. |
 | `my.disks.mainDevice` | `str`, **no default** | Whole system disk for disko (and, in legacy mode, the GRUB target). Use a stable `/dev/disk/by-id/...` path. No default on purpose: a host that imports the disks aspect must name its disk, so a default can never silently wipe the wrong device. Verify at install time with `ls -l /dev/disk/by-id/`. |
 | `my.disks.persistDevice` | `nullOr str`, default `null` | Whole second disk holding `/persist` + `/home` as a separate LUKS2 `cryptpersist`. `null` = they stay subvolumes of `cryptroot` (single-disk hosts). Also a by-id path; disko formats it, so verify at install time too. |
 | `my.disks.skipPersist` | `bool`, default `false` | `true` = keep `persistDevice` **out of disko** while still declaring its LUKS device + `/persist`/`/home` mounts. The only safe way to reinstall the system disk without formatting the persistent one (the legacy → uefi flip); set it **temporarily** and revert afterwards. |
@@ -59,7 +59,7 @@ host file** — `modules/hosts/<name>.nix`, inside that host's
 | host | mode | `my.disks.mainDevice` | `my.disks.persistDevice` | `my.boot.resumeOffset` |
 |---|---|---|---|---|
 | `troy` (ThinkPad T14s Gen 1) | `uefi` | `/dev/nvme0n1` | `null` — single disk, `/persist` + `/home` are cryptroot subvolumes | `533760` |
-| `sarasti` (MSI B550-A PRO desktop) | `legacy` — dual-boots Windows | the **2 TB WD_BLACK SN770** by-id path, see `modules/hosts/sarasti.nix` | the **256 GB WD SN730** by-id path — separate `cryptpersist` disk holding `/persist` + `/home` | `null` — set after first boot |
+| `sarasti` (MSI B550-A PRO desktop) | `legacy` — dual-boots Windows | the **2 TB WD_BLACK SN770** by-id path, see `modules/hosts/sarasti.nix` | the **256 GB WD SN730** by-id path — separate `cryptpersist` disk holding `/persist` + `/home` | `533760` — same as troy, identical disko swapfile layout |
 
 `sarasti` runs legacy BIOS/CSM because the existing Windows install on its own
 MBR disk is legacy; GRUB chainloads it via os-prober and the Windows disk is
@@ -287,10 +287,12 @@ unencrypted `/boot`). Throughout this section:
    legacy install of sarasti went through it, see `docs/nixos-install.md`
    §8 step 0.5 + step 6. Re-run that procedure only if you ever deliberately
    wipe disk 4.)
-9. **Recompute `my.boot.resumeOffset`** after the reinstall — the `/swap`
-   subvolume lives on disk 3 and is recreated, so the old offset is invalid:
-   `sudo btrfs inspect-internal map-swapfile -r /swap/swapfile`, then set it in
-   `modules/hosts/sarasti.nix` and rebuild. A stale offset breaks hibernate
+9. **Recompute `my.boot.resumeOffset`** after the reinstall **only if** the
+   `/swap` subvolume was recreated — the offset is currently `533760` (the same
+   as troy, since both use the identical disko swapfile layout). If `/swap`
+   was recreated the old offset is invalid: `sudo btrfs inspect-internal
+   map-swapfile -r /swap/swapfile`, then set it in `modules/hosts/sarasti.nix`
+   and rebuild. A stale offset breaks hibernate
    resume silently (the kernel resumes from the wrong blocks).
 10. Boot menu difference: after migration generations are picked in the
     **systemd-boot** menu (signed UKIs, `configurationLimit = 10`) instead of the
