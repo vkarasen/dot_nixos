@@ -459,8 +459,11 @@ expected `setupSecrets` failure to tolerate (step 4.2).
    > does not control, and F11 is a **one-time** boot menu — so that reboot
    > falls back to the firmware's default boot order, which is still
    > **Windows**. Either set the SN770 first in firmware **before** deploying
-   > (Step 1.2 is the moment, or DEL → Settings → Boot), or stand ready to press
-   > F11 at the reboot and pick the SN770. **If Windows starts, that is the old
+   > (Step 1 is the firmware session — DEL → Settings → Boot: put the SN770 first
+   > among the legacy/CSM boot devices; it carries no bootloader until the deploy
+   > writes one, but this is the order that post-deploy reboot will follow), or
+   > stand ready to press F11 at the reboot and pick the SN770. **If Windows
+   > starts, that is the old
    > boot order — not a failed install.** Nothing was written to the Windows
    > disk; power off and boot the SN770.
 
@@ -585,7 +588,7 @@ expected `setupSecrets` failure to tolerate (step 4.2).
    **public** key is already authorized declaratively by
    `users.users.vkarasen.openssh.authorizedKeys.keys` in `modules/nixos/base.nix`,
    so nothing has to be copied just to log in — and the login password works too
-   (step 2), so sudo does not need any workaround.
+   (step 4.2), so sudo does not need any workaround.
 6. Copy the **private** key over — only needed for git-over-SSH, the zqnr.de
    build host, and `gentian` (`/home` is persistent, so it survives reboots).
    Copy the existing passphrase-less key; do not `ssh-keygen` a new one, it
