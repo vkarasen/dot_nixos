@@ -12,9 +12,22 @@
 #   - this aspect (greetd + hyprlock PAM) is a GUI/login concern, kept for every
 #     GUI host even though only laptops auto-lock
 {...}: {
-  flake.modules.nixos.lock = {...}: {
+  flake.modules.nixos.lock = {
+    config,
+    lib,
+    ...
+  }: {
     # hyprlock — enables the package and its PAM service (needed to unlock).
     programs.hyprlock.enable = true;
+
+    # programs.hyprlock drags in services.hypridle as a dependency, but hypridle
+    # is only meaningful where its config exists: ~/.config/hypr/hypridle.conf
+    # is written by the home laptop aspect (modules/home/laptop.nix, selected only
+    # on laptop hosts). Unconfigured, it exits, hits the start-limit and leaves a
+    # failed unit on every desktop boot. So track the NixOS-side laptop flag:
+    # true on laptops (nixos.laptop sets my.laptop.enable, which only laptop
+    # hosts import) and false on desktops, which lock manually (see the header).
+    services.hypridle.enable = lib.mkForce config.my.laptop.enable;
 
     # Unlock the user's gnome-keyring with the login password, so nm-applet
     # can read stored wifi PSKs without a separate keyring-unlock prompt.

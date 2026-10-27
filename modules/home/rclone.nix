@@ -269,9 +269,18 @@
       # switch syncs now instead of waiting for the next timer tick. `--no-block`
       # keeps a slow first seed from stalling activation (the unit runs detached).
       # daemon-reload first so the freshly-written units are known to systemd.
+      # Guarded like writeRcloneConfig above: home-manager-vkarasen.service can
+      # start before user@<uid>.service (observed on sarasti, by ~0.6s), and
+      # systemctl --user then has no bus to reach — so activation must not fail
+      # on it. The units are WantedBy default.target anyway, so they still start
+      # with the user manager once it comes up; nothing is lost here.
       home.activation.rcloneSyncNow = lib.hm.dag.entryAfter ["writeRcloneConfig"] ''
-        $DRY_RUN_CMD ${pkgs.systemd}/bin/systemctl --user daemon-reload
-        ${lib.concatMapStringsSep "\n" (name: "$DRY_RUN_CMD ${pkgs.systemd}/bin/systemctl --user start --no-block rclone-${name}.service") (lib.attrNames (lib.filterAttrs (_: t: t.enable) syncTargets))}
+        if ${pkgs.systemd}/bin/systemctl --user is-system-running >/dev/null 2>&1; then
+          $DRY_RUN_CMD ${pkgs.systemd}/bin/systemctl --user daemon-reload
+          ${lib.concatMapStringsSep "\n" (name: "$DRY_RUN_CMD ${pkgs.systemd}/bin/systemctl --user start --no-block rclone-${name}.service") (lib.attrNames (lib.filterAttrs (_: t: t.enable) syncTargets))}
+        else
+          echo 'rclone: user systemd not up yet; mounts start via default.target'
+        fi
       '';
 
       # Expose canonical mount paths to shells and agent tooling.

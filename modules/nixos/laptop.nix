@@ -6,6 +6,12 @@
 # the units no-op gracefully.
 {...}: {
   flake.modules.nixos.laptop = {pkgs, ...}: {
+    # NixOS-side counterpart of the home aspect's `my.laptop.enable = true`
+    # (modules/home/laptop.nix): the home setter is invisible to the NixOS
+    # module system, so mirror the flag here — importing this aspect IS the
+    # laptop statement on this side too. Consumers: modules/nixos/lock.nix
+    # (hypridle only where its config is written).
+    my.laptop.enable = true;
     # Power profiles (power-profiles-daemon): expose power-saver / balanced /
     # performance and auto-apply a default on AC transitions. ppd takes over
     # the ACPI platform_profile knob from the firmware DYTC auto mode, so the
