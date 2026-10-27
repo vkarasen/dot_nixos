@@ -28,5 +28,9 @@
     # Bluetooth hardware itself is enabled in modules/nixos/base.nix; this
     # wires the desktop pairing UI (blueman-manager/applet) + polkit.
     services.blueman.enable = true;
+
+    # A short press of the power button suspends-then-hibernates instead of a hard power-off.
+    # The hibernate delay is the systemd default (3 h); the laptop aspect overrides it to 15 min on laptop hosts (modules/nixos/laptop.nix).
+    services.logind.settings.Login.HandlePowerKey = "suspend-then-hibernate";
   };
 }

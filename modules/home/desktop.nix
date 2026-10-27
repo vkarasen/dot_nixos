@@ -81,9 +81,35 @@ in {
           'Screenshot: Fullscreen — Shift+PrtSc' \
           'Screenshot: Active window — Alt+PrtSc' \
           'System: Lock screen — SUPER+ESC' \
+          'System: Power menu — SUPER+P' \
           'System: Exit Hyprland — SUPER+M' \
           'Help: Show keybindings — SUPER+/' \
         | fuzzel --dmenu --prompt 'Keys ' --width 70 --lines 40
+      '';
+
+      # Power menu (SUPER+P): a fuzzel picker over the six session actions.
+      # systemctl is called by absolute path (as in modules/home/laptop.nix) so
+      # the script never depends on the ambient PATH; fuzzel/hyprlock are picked
+      # up from it the same way hypr-cheatsheet does.
+      power-menu = pkgs.writeShellScriptBin "power-menu" ''
+        choice="$(
+          printf '%s\n' \
+            'Lock' \
+            'Suspend' \
+            'Suspend then hibernate' \
+            'Hibernate' \
+            'Reboot' \
+            'Power off' \
+            | fuzzel --dmenu --prompt 'Power ' --width 40 --lines 6 || true
+        )"
+        case "$choice" in
+          'Lock') hyprlock ;;
+          'Suspend') /run/current-system/sw/bin/systemctl suspend ;;
+          'Suspend then hibernate') /run/current-system/sw/bin/systemctl suspend-then-hibernate ;;
+          'Hibernate') /run/current-system/sw/bin/systemctl hibernate ;;
+          'Reboot') /run/current-system/sw/bin/systemctl reboot ;;
+          'Power off') /run/current-system/sw/bin/systemctl poweroff ;;
+        esac
       '';
 
       # Screenshot helper: captures the fullscreen or the active window,
@@ -320,6 +346,7 @@ in {
           grim # screenshots
           brightnessctl # screen/keyboard backlight for the Fn keys
           hypr-cheatsheet # SUPER+/ keybinding cheatsheet
+          power-menu # SUPER+P session menu (lock / suspend / reboot / power off)
           screenshot # Shift+PrtSc = fullscreen, Alt+PrtSc = window (region is Flameshot)
           flameshot # PrtSc = interactive region (drag + adjust + Enter)
           networkmanagerapplet # nm-applet: tray wifi applet for connecting to new networks
@@ -330,6 +357,13 @@ in {
           mission-center # CPU/GPU/fan/system monitoring dashboard (GUI)
           nixdatifier.packages.${pkgs.system}.nixdatifier # NixOS generation tracker (Qt6)
         ];
+
+        # Power menu entry so it is also reachable from the fuzzel launcher.
+        xdg.desktopEntries.power-menu = {
+          name = "Power Menu";
+          exec = "power-menu";
+          terminal = false;
+        };
 
         # Flameshot's tray icon is disabled declaratively, so it applies on any
         # host and survives a wipe. force = true lets activation overwrite any
@@ -905,6 +939,12 @@ in {
                 _args = [
                   (lib.generators.mkLuaInline ''mod .. " + ESCAPE"'')
                   (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("hyprlock")'')
+                ];
+              }
+              {
+                _args = [
+                  (lib.generators.mkLuaInline ''mod .. " + P"'')
+                  (lib.generators.mkLuaInline ''hl.dsp.exec_cmd("power-menu")'')
                 ];
               }
               {
