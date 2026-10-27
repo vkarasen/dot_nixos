@@ -395,6 +395,20 @@
             default = null;
             description = "Thinking level for agents on this tier (null = omit).";
           };
+          subagentOnlyExtensions = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [];
+            description = ''
+              Extension paths/specs pi-subagents loads into every child of
+              this tier in addition to any bundle `extensions:`. Unlike
+              `extensions:`, this is additive — it never disables ambient
+              extension discovery — and it survives a non-empty
+              `extensions:` list. Use it for extension-registered providers
+              and other ambient-only packages the tier's children require,
+              so the tier's provider/model pair and the extension that
+              serves it cannot drift.
+            '';
+          };
         };
       });
       default = {};
@@ -418,7 +432,8 @@
         field, replace a whole tier, or add new tiers with a plain definition
         and inherit everything it did not mention. Do not wrap an override in
         mkForce; it is not needed. List-valued fields are replaced, not
-        appended — restate the full list to extend one.
+        appended — restate the full list to extend one (this includes
+        `subagentOnlyExtensions`).
       '';
     };
 

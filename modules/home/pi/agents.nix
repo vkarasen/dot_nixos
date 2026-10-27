@@ -113,6 +113,12 @@
     # to `pi --extension`, so packages need the `npm:` prefix (bare names
     # are resolved as filesystem paths and fail the child launch).
     #
+    # A tier's `subagentOnlyExtensions` is the escape hatch: it is added to
+    # every child on that tier WITHOUT disabling ambient discovery, so an
+    # extension-registered provider (ambient in `settings.packages`) still
+    # loads in a child whose bundle sets `extensions:`. Unlike `extensions:`
+    # it is additive-only and cannot disable ambient extensions.
+    #
     # MCP access is declared via `mcpTools` (rendered as `mcp:<server>`
     # selectors in the tools allowlist), resolved against Pi's built-in MCP
     # — no extension is required. Server names must use underscores, not

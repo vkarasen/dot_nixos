@@ -23,7 +23,7 @@ Three Nix options, all declared in `modules/options.nix`:
 
 | Option | What it is |
 |---|---|
-| `my.pi.modelTiers` | Named model/thinking bands. Agents pick a whole price/capability band, never a raw model. |
+| `my.pi.modelTiers` | Named model/thinking/extension bands. Agents pick a whole price/capability band, never a raw model. |
 | `my.pi.capabilityBundles` | Reusable units declaring skills, extensions, tools, MCP selections **and the policy prose that goes with them**, together — so "tool allowlisted but its provider not loaded" cannot be expressed. |
 | `my.pi.agents` | tier × bundles + a role prompt. Rendered to `~/.pi/agent/agents/<name>.md`. |
 
@@ -164,6 +164,27 @@ my.pi.modelTiers.worker.thinking = "high";
 my.pi.modelTiers.corp-cheap = { model = "…"; provider = "github-copilot"; thinking = "low"; };
 ```
 
+### 2c. Extension-registered providers: `subagentOnlyExtensions`
+
+If a tier's `provider` is served by a pi **extension** rather than a
+built-in provider, put that extension's path/spec on the tier itself:
+
+```nix
+my.pi.modelTiers.worker.subagentOnlyExtensions = [ "/abs/path/to/my-provider-ext" ];
+```
+
+This is the escape hatch you want, because a bundle's `extensions:` list
+**replaces** ambient extensions (`--no-extensions` + only the listed ones).
+`subagentOnlyExtensions` is different in three ways:
+
+- **additive** — it never disables ambient extension discovery;
+- it **survives** a non-empty `extensions:` on the agent's bundle;
+- it is emitted for **every** child on the tier, so the tier's
+  `provider`/`model` and the extension that serves them can never drift.
+
+Same list semantics as every other list field: replaced, not appended —
+restate the full list to extend it. Default `[]` (nothing emitted).
+
 ---
 
 ## 3. Merge semantics — the one thing that will surprise you
@@ -176,7 +197,7 @@ Base defaults are applied **per field** (`perField` in
 | a whole tier/bundle/agent | replaces that key; **siblings survive** |
 | one field of one key | overrides that field; other fields inherited |
 | a brand-new key | added; base keys survive |
-| a **list** field (`skills`, `extensions`, `tools`, `bundles`) | **replaces the list.** Restate the full list to extend. |
+| a **list** field (`skills`, `extensions`, `tools`, `bundles`, `subagentOnlyExtensions`) | **replaces the list.** Restate the full list to extend. |
 
 List-replaces-rather-than-appends is intentional — corporate must be able to
 *drop* base skills (the vault skills, for instance, have no corporate

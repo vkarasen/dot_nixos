@@ -105,6 +105,11 @@
         "inheritSkills: ${lib.boolToString spec.inheritSkills}"
       ]
       ++ lib.optional (tier.thinking != null) "thinking: ${tier.thinking}"
+      ++ (
+        if (tier.subagentOnlyExtensions or []) == []
+        then []
+        else ["subagentOnlyExtensions:"] ++ map (e: "  - ${e}") (tier.subagentOnlyExtensions or [])
+      )
       ++ lib.optional (skillNames != []) "skills: ${lib.concatStringsSep ", " skillNames}"
       ++ lib.optional (skillNames != []) "skillPath: ../subagent-skills"
       ++ lib.optional (extensionNames != []) "extensions: ${lib.concatStringsSep ", " extensionNames}"

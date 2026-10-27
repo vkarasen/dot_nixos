@@ -220,7 +220,8 @@ prevents misfires. Trimming attacks the routing signal. The only real lever is
 - **No workflow engine.** `pi-extensible-workflows` evaluated and dropped — the
   need is context management, not deterministic orchestration.
 - **Agent = tier × capabilities × role**, not "brain regions" grouped by either
-  capability or task. Tier = model + thinking. Capabilities = a bundle declaring
+  capability or task. Tier = model + thinking (+ `subagentOnlyExtensions` for
+  providers served by an extension). Capabilities = a bundle declaring
   skills + extensions + tools + MCP *together*, so "tool allowlisted but its
   provider not loaded" is unrepresentable. Role = posture + policy prompt.
 - **A bundle owns its prerequisites, including `bash`.** The mirror of the rule
@@ -281,6 +282,16 @@ AGENTS.md shrinks to match, so the result looks self-consistent. `perField` in
 agents.nix pushes the default down to each field, and is idempotent so a field
 that already carries its own `mkDefault` is not double-wrapped (that produces
 `mkDefault (mkDefault x)`, and the module system unwraps only one level).
+
+**Each tier also carries `subagentOnlyExtensions`** (list of strings, default
+`[]`), rendered into every child's frontmatter as a `subagentOnlyExtensions:`
+block. It exists because a bundle's `extensions:` list *replaces* ambient
+extensions (`--no-extensions` + only the listed ones), which would make an
+extension-registered provider vanish from a child whose bundle sets any
+`extensions:`. `subagentOnlyExtensions` is additive: it never disables ambient
+discovery, it survives a non-empty `extensions:` list, and it applies to every
+child on the tier — so the tier's `provider`/`model` and the extension serving
+them cannot drift. Like every other list field it is replaced, not appended.
 
 Verified against a simulated corporate flake that repointed the orchestrator
 tier to copilot, tweaked one field of another tier, added a new tier, added a

@@ -185,11 +185,15 @@ corporate flake. This is the aspect that owns your corporate pi settings:
           # you always drop into an orchestrator and delegate from there.
           # Setting them here would win on priority and silently decouple the
           # session you type into from the tier that routes delegation.
-          # Repoint the tier instead — see SUBAGENTS.md in this skill:
+          # Repoint the tier instead — see SUBAGENTS.md §2c in this skill:
           #   my.pi.modelTiers.orchestrator = {
           #     model = "claude-sonnet-5";
           #     provider = "github-copilot";
           #     thinking = "medium";
+          #     # Tier-level additive escape hatch for extension-registered
+          #     # providers: added to every child, never disables ambient
+          #     # extension discovery (unlike a bundle's `extensions`).
+          #     subagentOnlyExtensions = [];
           #   };
 
           packages = [

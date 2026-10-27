@@ -172,6 +172,7 @@ definition wins per field — never wrap an override in `mkForce`.
 # A new tier (a whole model/thinking band):
 my.pi.modelTiers.corp-cheap = {
   model = "gpt-4o-mini"; provider = "github-copilot"; thinking = "low";
+  subagentOnlyExtensions = [];            # additive, never disables ambient
 };
 
 # A new bundle (skills + extensions + tools + mcp + policy, together):
@@ -202,11 +203,15 @@ Rules that bite (full detail in `skills/corporate-pi-wiring/SUBAGENTS.md`):
 - Unknown tier or bundle key throws at build time (`_agents.nix`).
 - `tools` is a strict allowlist over builtin AND extension tools; an extension
   tool needs its provider in a bundle's `extensions`, else the launch fails.
+  A bundle's `extensions` REPLACES ambient extensions in the child, so an
+  extension-registered provider would vanish there — put it on the tier with
+  `subagentOnlyExtensions` instead (additive, applies to every child on the
+  tier, never disables ambient discovery).
 - `permission` overrides the global write/edit deny — writers need it.
 - `bash` is never gated; the only way to deny it is to leave it out of `tools`.
 - The `orchestrator` tier also sets the session's default model/thinking.
-- List fields (skills, extensions, tools, bundles) REPLACE rather than append —
-  restate the full list to extend one.
+- List fields (skills, extensions, tools, bundles, subagentOnlyExtensions)
+  REPLACE rather than append — restate the full list to extend one.
 
 Verify: `git add -NA && nix flake check`, then
 `nix build .#homeConfigurations.vkarasen.activationPackage --no-link` and
