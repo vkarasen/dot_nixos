@@ -101,10 +101,22 @@
     environment.systemPackages = [pkgs.libva-utils pkgs.ssh-to-age];
     # Optional GPU monitoring after first boot: pkgs.radeontop / pkgs.nvtop.
 
-    # Hardware scan (kernel modules, cpu governor, firmware) is captured after
-    # first boot with `nixos-generate-config --no-filesystems` and folded in
-    # here — see docs/nixos-install.md. Don't import a full hardware-config:
-    # disko already declares filesystems/LUKS/swap, and a full scan would clash.
+    # --- Hardware scan (captured with nixos-generate-config --no-filesystems
+    # on 2026-10-26) ---
+    # Only the deltas versus the shared boot aspect are listed; these lists
+    # merge with boot.nix rather than replacing it. Don't import a full
+    # hardware-config: disko already declares filesystems/LUKS/swap, and a
+    # full scan would clash.
+    # `ahci`: SATA controller — the legacy-Windows MBR boot disk and the NTFS
+    # data disks (E:/F:). `usbhid`: stage-1 USB keyboard for the LUKS
+    # passphrase fallback; this is a desktop with no built-in keyboard.
+    boot.initrd.availableKernelModules = ["ahci" "usbhid"];
+    # Virtualisation host support (AMD-V).
+    boot.kernelModules = ["kvm-amd"];
+    # AMD microcode; base.nix enables redistributable firmware, so the
+    # generate-config `mkDefault config.hardware.enableRedistributableFirmware`
+    # guard is already satisfied by a plain `true`.
+    hardware.cpu.amd.updateMicrocode = true;
   };
 
   # Host-specific *home* config. Empty for now: a desktop has no laptop Fn

@@ -674,6 +674,9 @@ expected `setupSecrets` failure to tolerate (step 4.2).
    ```bash
    sudo nixos-generate-config --no-filesystems --show-hardware-config
    ```
+   It needs root on btrfs hosts and prints three harmless `Not a Btrfs
+   subvolume` errors from the swap probe (observed 2026-10-26); run it with
+   `sudo` and redirect to a file.
 2. **Mount `C:` read-only before the rebuild** — os-prober can only find a
    Windows install that is mounted when `update-grub` runs, and the rebuild is
    what regenerates `/boot/grub/grub.cfg`:
