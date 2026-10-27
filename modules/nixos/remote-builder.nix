@@ -7,6 +7,9 @@
     nix = {
       distributedBuilds = true;
 
+      # Per-host build machines are appended by setting nix.buildMachines in
+      # the host's flake.modules.nixos.<name> module (lists concatenate) — e.g.
+      # troy adds sarasti as overflow in modules/hosts/troy.nix.
       buildMachines = [
         {
           hostName = "zqnr.de";

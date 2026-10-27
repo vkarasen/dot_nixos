@@ -105,8 +105,9 @@ trust this summary.
   Setup Mode first). Any bootloader/TPM/enrollment change is a reviewer-gate
   change. See `docs/boot-modes.md`.
 - **Heavy builds offload to a remote builder** (`modules/nixos/remote-builder.nix`):
-  route `nixos-rebuild`, large `nix build`, and `nixos-test` there, not the
-  laptop CPU.
+  route `nixos-rebuild`, large `nix build`, and `nixos-test` there (gentian,
+  `zqnr.de`), not the laptop CPU. Troy also lists **sarasti** as an overflow
+  builder (`speedFactor 0.5`, used last); sarasti itself has no overflow.
 
 ### Host `troy` (`my.host == "troy"`)
 

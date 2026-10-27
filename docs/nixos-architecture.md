@@ -144,6 +144,19 @@ measurements to `/run/log/systemd/tpm2-measure.log`.)
   collides in the shared home-manager buildEnv; the desktop aspect overrides
   ghostty to drop the duplicate entry and keep `x/xterm-ghostty`.
 
+## Build hosts
+
+- **gentian** (`zqnr.de`, over `ssh-ng`) is the **shared** remote builder for
+  **both** hosts — declared once in `modules/nixos/remote-builder.nix`, which
+  troy and sarasti each select. 8 jobs; `nixos-test benchmark big-parallel kvm`.
+- **troy only** also appends **sarasti** (`sarasti.fritz.box`) as an overflow
+  builder via `nix.buildMachines` in `modules/hosts/troy.nix`, with
+  `speedFactor = 0.5` — below the 1 of local/gentian, so it is chosen last,
+  only when both are busy. sarasti has no overflow builder of its own.
+- gentian's `publicHostKey` is **pinned** in `remote-builder.nix`: a gentian
+  reinstall (new host key) breaks the builder silently until that string is
+  updated.
+
 ## TPM2 unlock
 
 - LUKS **key slot 2** is bound to **PCR 7** (Secure Boot state).

@@ -48,6 +48,23 @@
     # is unchanged by the move.
     my.boot.mode = "uefi";
     my.boot.resumeOffset = 533760;
+
+    # Extra build machine, concatenated with the shared gentian entry
+    # (modules/nixos/remote-builder.nix). speedFactor 0.5 = overflow only,
+    # below the local/gentian default of 1.
+    nix.buildMachines = [
+      {
+        hostName = "sarasti.fritz.box";
+        protocol = "ssh-ng";
+        sshUser = "vkarasen";
+        sshKey = "/home/vkarasen/.ssh/id_ed25519";
+        publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUh4bzJFSjBFZ0JjNzRTeWU5ZWNOUSs3Q0RnWi9FOHVuSGFrNlZmN2wrWFI=";
+        system = "x86_64-linux";
+        maxJobs = 8;
+        speedFactor = 0.5;
+        supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
+      }
+    ];
     my.disks.mainDevice = "/dev/nvme0n1";
     # Single-disk host: /persist and /home stay on cryptroot (no second disk).
     my.disks.persistDevice = null;

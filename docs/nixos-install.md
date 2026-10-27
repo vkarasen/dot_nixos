@@ -259,8 +259,13 @@ nh os switch .#troy
 
 ## 7. Remote builder (zqnr.de)
 
-Wired in `modules/nixos/remote-builder.nix`. Troy delegates builds over SSH using
-`~/.ssh/id_ed25519` (verified passphrase-less). Verify delegation:
+Wired in `modules/nixos/remote-builder.nix`, selected by **both** troy and
+sarasti: both delegate builds over SSH to **gentian** (`zqnr.de`) using
+`~/.ssh/id_ed25519` (verified passphrase-less). Troy additionally uses
+**sarasti** (`sarasti.fritz.box`) as an overflow builder via `nix.buildMachines`
+in `modules/hosts/troy.nix` — `speedFactor = 0.5`, i.e. below the local/gentian
+default of 1, so it is picked last, only when local + gentian are both busy.
+Verify delegation:
 
 ```bash
 nix build .#nixosConfigurations.troy.config.system.build.toplevel --print-build-logs --rebuild
@@ -269,7 +274,10 @@ nix build .#nixosConfigurations.troy.config.system.build.toplevel --print-build-
 
 Notes: `maxJobs` (8 cores) and `supportedFeatures` (`nixos-test benchmark
 big-parallel kvm`) were confirmed directly against gentian. The key file must
-remain at `~/.ssh/id_ed25519` (it lives in persistent `/home`).
+remain at `~/.ssh/id_ed25519` (it lives in persistent `/home`). The gentian
+`publicHostKey` is **pinned** in `remote-builder.nix` — a gentian reinstall
+generates a new host key and silently breaks that builder until the pinned
+string is updated.
 
 ## 8. sarasti (legacy BIOS desktop)
 
