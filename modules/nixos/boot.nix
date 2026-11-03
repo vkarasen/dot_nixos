@@ -52,10 +52,6 @@
       configurationLimit = 10;
     };
 
-    # systemd in stage-1: required for the rollback service and the TPM2
-    # systemd-cryptenroll unlock. Default on nixos-unstable; kept explicit.
-    boot.initrd.systemd.enable = true;
-
     # Minimal modules to reach the LUKS+btrfs root on first boot. The full
     # hardware scan is captured post-boot via `nixos-generate-config
     # --no-filesystems` (docs/nixos-install.md §5) and folded in here.
