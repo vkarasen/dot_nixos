@@ -448,6 +448,27 @@
             fails. Always async and let completion wake the session.
         '';
 
+        "06-async-settling" = ''
+          # Answering while subagents are still running
+
+          Children launch async and their completion wakes this session. When
+          any launched child for the current question is still running, do NOT
+          write a final user-facing answer to the overall question. A partial
+          answer followed later by more subagent work fragments the
+          conversation, and the user misses the parts you already gave. Instead:
+
+          - Yield after launching: return control with at most a one-line
+            status ("research in flight — will report when it settles"). Let
+            the child's completion wake the session; do not sleep or poll.
+          - Answer once, in full: when every launched child for the question
+            has settled, write ONE consolidated answer covering the whole
+            original question end to end, re-stating any partial results you
+            showed earlier. Never assume the user caught an earlier partial.
+          - If a child's contact_supervisor request needs an answer
+            mid-flight, answer only that child; do not use it as a chance to
+            deliver the main answer early.
+        '';
+
         "00-nix-workspace" = ''
           # Nix workspace exploration policy
 
