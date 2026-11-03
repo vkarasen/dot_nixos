@@ -49,6 +49,17 @@
     # etc.). DisplayPort alt-mode video itself doesn't need it.
     services.hardware.bolt.enable = true;
     services.fwupd.enable = true; # firmware updates
+    # fwupd-refresh.timer can fire mid-activation, while the daemon has just
+    # been restarted at a new version but the client unit is still the old one
+    # (the transient `fwupdmgr` exit-4 / version-skew failure). Order the
+    # refresh after the daemon and pull it in, so refresh never runs against a
+    # mismatched fwupd. These lists are appended to the upstream unit's own
+    # `Wants=network-online.target` / `After=network-online.target` (the unit
+    # is emitted as a drop-in over the packaged one), so nothing is replaced.
+    systemd.services.fwupd-refresh = {
+      wants = ["fwupd.service"];
+      after = ["fwupd.service"];
+    };
     # thermald is deliberately NOT enabled: the ThinkPad EC + thinkpad_acpi
     # DYTC handle thermal management, and thermald's own platform check
     # declines to run here.

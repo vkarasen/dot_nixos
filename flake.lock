@@ -435,11 +435,11 @@
     "hyprmoncfg": {
       "flake": false,
       "locked": {
-        "lastModified": 1793631649,
-        "narHash": "sha256-YFDFM1C6BYhUnWEgkX8YQgbtFGL2wgX1VN1wRzBFdyI=",
+        "lastModified": 1792510791,
+        "narHash": "sha256-qhLSbyaqrvWQzmkIB7lUVFDvWLqNotFIgdTIAEHSrgs=",
         "owner": "crmne",
         "repo": "hyprmoncfg",
-        "rev": "0e684afd110bd1aad607c482125135c1a4dc1ebd",
+        "rev": "90a377c6073dde8a74ea91253c2016d3045aca84",
         "type": "github"
       },
       "original": {
