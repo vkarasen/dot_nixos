@@ -1,10 +1,11 @@
 # SOPS configuration file
 # This file defines which keys can decrypt which secrets.
 #
-# The only recipients are machine host keys: each NixOS host's ed25519 SSH host
-# key is enrolled as an age recipient, so secrets can be decrypted on that host
-# without any user-held key. The age public key is derived from the host's
-# OpenSSH public key with `ssh-to-age < /persist/etc/ssh/ssh_host_ed25519_key.pub`.
+# Recipients are machine keys: each NixOS host's ed25519 SSH host key is enrolled
+# as an age recipient, and the standalone home-manager machine `gentian` is
+# enrolled with its user age key (~/.config/sops/age/keys.txt). The age public key
+# of a host is derived from its OpenSSH public key with
+# `ssh-to-age < /persist/etc/ssh/ssh_host_ed25519_key.pub`.
 #
 # Adding a host: pre-generate /persist/etc/ssh/ssh_host_ed25519_key, derive its
 # age recipient with ssh-to-age, add it to `keys` and to both creation rules
@@ -14,6 +15,8 @@ keys:
   # Machine host keys
   - &troy age1rvvnm79598hhtepm3lm3y2rvfkpp4v33mzlzzkky3urajqc925vs56zruh # Troy (derived from /persist/etc/ssh/ssh_host_ed25519_key)
   - &sarasti age1j3cqugcgnsyldrdx7l7wxg93yx0g6kldusvg5pg3jqkw6y7t6uyqv4ce5l # sarasti (derived from /persist/etc/ssh/ssh_host_ed25519_key, pre-generated for nixos-anywhere --extra-files)
+  # Standalone home-manager machine (private HM config only, no NixOS host key)
+  - &gentian age1f948vk9ek354n4k4kfgwx2fdd2my5m5l5gkdqc9nct970u7q9g5savtl7w # gentian (~/.config/sops/age/keys.txt)
 
 creation_rules:
   # Rules for secrets in the modules/home/sops/secrets/ directory
@@ -22,6 +25,7 @@ creation_rules:
       - age:
           - *troy
           - *sarasti
+          - *gentian
 
   # Rules for private pi skills and policies (sops-encrypted markdown)
   - path_regex: modules/home/pi/skills-private/[^/]+\.md$
@@ -29,3 +33,4 @@ creation_rules:
       - age:
           - *troy
           - *sarasti
+          - *gentian
