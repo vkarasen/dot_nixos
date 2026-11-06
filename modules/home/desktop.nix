@@ -135,7 +135,7 @@ in {
             window) grim -g "$(hyprctl -j activewindow | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')" "$out" ;;
             *) echo "usage: screenshot {screen|window}" >&2; exit 1 ;;
           esac
-          wl-copy "$out"
+          wl-copy --type image/png < "$out"
           notify-send -a screenshot -i "$out" "Screenshot" "Copied to clipboard"
         '';
       };
