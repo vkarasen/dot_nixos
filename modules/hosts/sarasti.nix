@@ -18,6 +18,7 @@
     config.flake.modules.nixos.desktop
     config.flake.modules.nixos.gnome-keyring
     config.flake.modules.nixos.steam
+    config.flake.modules.nixos.solaar
     config.flake.modules.nixos.monitoring
     config.flake.modules.nixos.lock
   ];
