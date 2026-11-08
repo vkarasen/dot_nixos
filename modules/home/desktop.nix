@@ -547,6 +547,9 @@ in {
                   format = "{icon} {volume}%";
                   format-muted = " muted";
                   format-icons = [" " " "];
+                  # Scroll over the module to change volume (waybar's built-in
+                  # pulseaudio scroll behaviour; default step is 1.0 = 1%).
+                  scroll-step = 5;
                   on-click = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
                 };
 
