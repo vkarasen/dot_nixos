@@ -32,5 +32,21 @@
     # A short press of the power button suspends-then-hibernates instead of a hard power-off.
     # The hibernate delay is the systemd default (3 h); the laptop aspect overrides it to 15 min on laptop hosts (modules/nixos/laptop.nix).
     services.logind.settings.Login.HandlePowerKey = "suspend-then-hibernate";
+
+    # logind only reads logind.conf at start or when reloaded (it is a
+    # Type=notify-reload unit, ReloadSignal=SIGHUP), so etc-activation alone
+    # would leave running logind on the old settings until the next boot.
+    # Reload it during switch, after `etc` has written /etc/systemd/logind.conf,
+    # so services.logind.settings changes apply immediately. Guarded so a
+    # switch on a non-booted/foreign system does not fail activation.
+    system.activationScripts.reload-logind = {
+      text = ''
+        # logind reads /etc/systemd/logind.conf only at start or on SIGHUP; reload
+        # it so HandlePowerKey / suspend-then-hibernate changes apply without a
+        # reboot. Guarded: a dry-run or non-booted switch must not fail.
+        ${pkgs.systemd}/bin/systemctl reload systemd-logind || true
+      '';
+      deps = ["etc"];
+    };
   };
 }

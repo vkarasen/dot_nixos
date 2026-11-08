@@ -52,8 +52,10 @@
     };
 
     # The lid is handled by the lid-grace-watch timer below (delayed suspend),
-    # so logind must not act on it. NOTE: logind.conf changes need a
-    # `systemctl reload systemd-logind` (the switch activation does not do it).
+    # so logind must not act on it. NOTE: running logind only re-reads
+    # logind.conf on SIGHUP — the nixos.desktop aspect's `reload-logind`
+    # activation script now does that after `etc` on every switch, so these
+    # settings apply without a manual reload/reboot.
     services.logind.settings.Login.HandleLidSwitch = "ignore";
     services.logind.settings.Login.HandleLidSwitchExternalPower = "ignore";
     services.logind.settings.Login.HandleLidSwitchDocked = "ignore";
