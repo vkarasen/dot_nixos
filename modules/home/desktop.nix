@@ -51,7 +51,7 @@ in {
           'Window: Focus window/column (vim) — SUPER+h/j/k/l' \
           'Window: Move window / swap column (vim) — SUPER+Shift+h/j/k/l' \
           'Window: Swap window — SUPER+Ctrl+h/j/k/l' \
-          'Window: Promote window to master column (scrolling) — SUPER+P' \
+          'Window: Promote window to master column (scrolling) — SUPER+Shift+P' \
           'Window: Resize column by one width (scrolling) — SUPER+minus / SUPER+equal' \
           'Window: Fit and expand focused column (scrolling) — SUPER+Shift+F' \
           'Window: Move column left / right (scrolling) — SUPER+Ctrl+Shift+h / SUPER+Ctrl+Shift+l' \
@@ -1135,17 +1135,21 @@ in {
             hl.bind(mod .. " + SHIFT + k", layout_bind({ scrolling = hl.dsp.layout("consume_or_expel prev"), dwindle = hl.dsp.window.move({ direction = "u" }) }))
             hl.bind(mod .. " + SHIFT + l", layout_bind({ scrolling = hl.dsp.layout("swapcol r"), dwindle = hl.dsp.window.move({ direction = "r" }) }))
 
-            -- scrolling-only verbs. These are the raw layout dispatchers, so
-            -- they are silent no-ops on the dwindle workspace (1).
-            hl.bind(mod .. " + p", hl.dsp.layout("promote"))
-            hl.bind(mod .. " + minus", hl.dsp.layout("colresize -conf"))
-            hl.bind(mod .. " + equal", hl.dsp.layout("colresize +conf"))
-            hl.bind(mod .. " + SHIFT + f", hl.dsp.layout("fit expand"))
+            -- Scrolling-only verbs. Routed through `layout_bind` with only a
+            -- `scrolling` entry, so on any other layout (`dwindle` on
+            -- workspace 1) `tbl[ws.tiled_layout]` is nil and the bind is a
+            -- true no-op instead of dispatching an unknown layoutmsg.
+            -- NOTE: SUPER+SHIFT+P, not SUPER+P — keybinds are case-insensitive
+            -- in Hyprland, so `+ p` collided with the SUPER+P power menu above.
+            hl.bind(mod .. " + SHIFT + p", layout_bind({ scrolling = hl.dsp.layout("promote") }))
+            hl.bind(mod .. " + minus", layout_bind({ scrolling = hl.dsp.layout("colresize -conf") }))
+            hl.bind(mod .. " + equal", layout_bind({ scrolling = hl.dsp.layout("colresize +conf") }))
+            hl.bind(mod .. " + SHIFT + f", layout_bind({ scrolling = hl.dsp.layout("fit expand") }))
 
             -- Move the focused column left/right as a whole (scrolling only;
             -- distinct from SUPER+SHIFT+h/l, which swap column contents).
-            hl.bind(mod .. " + CTRL + SHIFT + h", hl.dsp.layout("move -col"))
-            hl.bind(mod .. " + CTRL + SHIFT + l", hl.dsp.layout("move +col"))
+            hl.bind(mod .. " + CTRL + SHIFT + h", layout_bind({ scrolling = hl.dsp.layout("move -col") }))
+            hl.bind(mod .. " + CTRL + SHIFT + l", layout_bind({ scrolling = hl.dsp.layout("move +col") }))
 
             -- Fuzzy window picker (fuzzel over `hyprctl clients`).
             hl.bind(mod .. " + o", hl.dsp.exec_cmd("hypr-window-picker"))
