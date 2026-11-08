@@ -36,9 +36,19 @@
       polarity = "dark";
       base16Scheme = "${pkgs.base16-schemes}/share/themes/catppuccin-mocha.yaml";
 
-      fonts.monospace = {
-        package = pkgs.nerd-fonts.noto;
-        name = "NotoMono Nerd Font Mono";
+      fonts = {
+        monospace = {
+          package = pkgs.nerd-fonts.noto;
+          name = "NotoMono Nerd Font Mono";
+        };
+        # One step smaller than the stylix defaults (12/10/10): a global
+        # preference. `terminal` is left unset on purpose — Ghostty is not a
+        # stylix target here and owns its own font-size.
+        sizes = {
+          applications = 11;
+          desktop = 9;
+          popups = 9;
+        };
       };
 
       targets = {

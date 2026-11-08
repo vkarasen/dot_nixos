@@ -59,6 +59,10 @@
           "browser.sessionstore.restore_on_demand" = true;
           "browser.sessionhistory.max_total_viewers" = 2;
 
+          # One step smaller than Firefox's default 16 (global preference).
+          # Deliberately no devPixelsPerPx override.
+          "font.size.variable.x-western" = 15;
+
           # firefox-gnome-theme optional contrast prefs (plain prefs, read by
           # the theme CSS Stylix's firefoxGnomeTheme target already imports —
           # see modules/home/stylix.nix).

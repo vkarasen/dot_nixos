@@ -448,7 +448,7 @@ in {
             settings = {
               theme = "catppuccin-mocha"; # built-in theme
               font-family = "NotoMono Nerd Font Mono";
-              font-size = 11;
+              font-size = 10;
               window-padding-x = 8;
               window-padding-y = 4;
               cursor-style = "bar";
