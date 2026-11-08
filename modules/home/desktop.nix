@@ -252,81 +252,6 @@ in {
           hyprctl dispatch "hl.dsp.focus({ window = \"address:''${addrs[$idx]}\" })"
         '';
       };
-
-      # Outer-edge workspace switcher: bumping the mouse into the right edge of
-      # the rightmost monitor advances a workspace; the left edge of the
-      # leftmost monitor goes back. Polls hyprctl in global logical coordinates
-      # (cursorpos + monitors -j), so inner edges between displays never fire
-      # and any arrangement works. Runs as the hypr-edge-switcher systemd user
-      # service below. Deliberately a plain writeShellScriptBin (no `set -e`)
-      # so a transient hyprctl failure during a compositor restart cannot kill
-      # the loop.
-      hypr-edge-switcher = pkgs.writeShellScriptBin "hypr-edge-switcher" ''
-        export PATH="${lib.makeBinPath [pkgs.hyprland pkgs.jq pkgs.coreutils]}:$PATH"
-        INTERVAL=0.05
-        EDGE=2
-        DWELL=4
-        DEADBAND=50
-        COOLDOWN_MS=500
-
-        edges() {
-          local m
-          m="$(hyprctl monitors -j 2>/dev/null)" || return 1
-          LEFT="$(printf '%s' "$m" | jq -r '[.[].x] | min')"
-          RIGHT="$(printf '%s' "$m" | jq -r '[.[] | .x + .width] | max')"
-        }
-
-        LEFT=0; RIGHT=0
-        edges || sleep 2
-
-        refresh=0
-        in_edge=0
-        dwell=0
-        armed=1
-        last_fire=0
-
-        while true; do
-          sleep "$INTERVAL"
-
-          refresh=$((refresh + 1))
-          if [ "$refresh" -ge 20 ]; then refresh=0; edges || continue; fi
-
-          pos="$(hyprctl cursorpos 2>/dev/null)" || continue
-          x="$(printf '%s' "$pos" | cut -d, -f1)"
-          [ -n "$x" ] || continue
-
-          if [ "$in_edge" -ne 0 ]; then
-            if [ "$in_edge" -eq 1 ] && [ "$x" -ge "$((RIGHT - EDGE))" ]; then
-              dwell=$((dwell + 1))
-            elif [ "$in_edge" -eq -1 ] && [ "$x" -le "$((LEFT + EDGE))" ]; then
-              dwell=$((dwell + 1))
-            else
-              in_edge=0; dwell=0
-            fi
-          elif [ "$armed" -eq 1 ]; then
-            if [ "$x" -ge "$((RIGHT - EDGE))" ]; then in_edge=1; dwell=0
-            elif [ "$x" -le "$((LEFT + EDGE))" ]; then in_edge=-1; dwell=0
-            fi
-          fi
-
-          if [ "$in_edge" -ne 0 ] && [ "$dwell" -ge "$DWELL" ]; then
-            now_ms="$(date +%s%3N || printf 0)"
-            if [ "$((now_ms - last_fire))" -ge "$COOLDOWN_MS" ]; then
-              last_fire="$now_ms"; armed=0
-              if [ "$in_edge" -eq 1 ]; then
-                hyprctl dispatch 'hl.dsp.focus({ workspace = "e+1" })' 2>/dev/null
-              else
-                hyprctl dispatch 'hl.dsp.focus({ workspace = "e-1" })' 2>/dev/null
-              fi
-            fi
-            in_edge=0; dwell=0
-          fi
-
-          if [ "$armed" -eq 0 ] && [ "$x" -gt "$((LEFT + DEADBAND))" ] && [ "$x" -lt "$((RIGHT - DEADBAND))" ]; then
-            armed=1
-          fi
-        done
-      '';
     in {
       imports = [
         stylixAspect
@@ -353,7 +278,6 @@ in {
           audio-sink-status # waybar sound-routing widget status emitter
           audio-sink-select # click handler: fuzzel menu to switch the default output
           hypr-window-picker # fuzzy window switcher (fuzzel over `hyprctl clients`)
-          hypr-edge-switcher # outer-edge bump = previous/next workspace
           mission-center # CPU/GPU/fan/system monitoring dashboard (GUI)
           nixdatifier.packages.${pkgs.system}.nixdatifier # NixOS generation tracker (Qt6)
         ];
@@ -758,24 +682,6 @@ in {
             Persistent = true;
           };
           Install.WantedBy = ["timers.target"];
-        };
-
-        # Outer-edge workspace switcher daemon. Modeled on hyprmoncfgd: a
-        # simple systemd user service tied to the graphical session, restarting
-        # on failure. The script sets its own PATH (hyprctl + jq + coreutils).
-        systemd.user.services.hypr-edge-switcher = {
-          Unit = {
-            Description = "Hyprland outer-edge workspace switcher";
-            After = ["graphical-session.target"];
-            PartOf = ["graphical-session.target"];
-          };
-          Service = {
-            Type = "simple";
-            ExecStart = "${hypr-edge-switcher}/bin/hypr-edge-switcher";
-            Restart = "on-failure";
-            RestartSec = 2;
-          };
-          Install = {WantedBy = ["default.target"];};
         };
 
         wayland.windowManager.hyprland = {

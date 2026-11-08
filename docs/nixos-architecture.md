@@ -132,7 +132,7 @@ measurements to `/run/log/systemd/tpm2-measure.log`.)
   `SUPER+o` fuzzy window picker; `SUPER+ALT+h/l` focus monitor (`+SHIFT` moves
   the workspace there); PrtSc region capture (Flameshot), `SHIFT+PrtSc`
   fullscreen and `ALT+PrtSc` window (the `screenshot` helper).
-- Gestures: a 3-finger horizontal swipe switches workspace (native `hl.gesture`), and bumping the outermost screen edge switches workspace (the `hypr-edge-switcher` systemd user service).
+- Gestures: a 3-finger horizontal swipe switches workspace (native `hl.gesture`).
 - The Hyprland config is **Lua** (`hl.*`: `hl.config`, `hl.bind`, `hl.dsp.*`) —
   the stateVersion 26.05 default `configType`; nothing pins `hyprlang`. The
   generated file is `hyprland.lua`, not `hyprland.conf`.
