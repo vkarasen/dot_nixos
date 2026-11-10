@@ -68,6 +68,13 @@
       "tpm_tis"
     ];
 
+    # The ACPI "tiny power button" driver races button.ko for the power button
+    # on each boot. When it wins, it sends SIGRTMIN+4 straight to PID 1
+    # (si_code=SI_KERNEL), ordering an immediate poweroff that bypasses logind
+    # — so HandlePowerKey=suspend-then-hibernate never fires. Blacklist it so
+    # button.ko always owns the button and logind's HandlePowerKey applies.
+    boot.blacklistedKernelModules = ["tiny_power_button"];
+
     # Hibernate: resume from the LUKS-encrypted btrfs swapfile. resume_offset
     # is per-host (my.boot.resumeOffset) — recompute with
     # `btrfs inspect-internal map-swapfile -r /swap/swapfile` if the swapfile
