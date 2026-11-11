@@ -23,6 +23,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Pin v0.57.2 (not nixpkgs#hyprland): ships aquamarine 9887f39 with the
+    # single-monitor disconnect fix (Hyprland #16884 / aquamarine #386).
+    hyprland = {
+      url = "github:hyprwm/Hyprland/v0.57.2";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";

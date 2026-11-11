@@ -16,7 +16,7 @@
     pi-bun = final.callPackage ./_pi-bun.nix {};
   };
   default-overlay =
-    inputs.nixpkgs.lib.composeManyExtensions [stable-overlay pi-bun-overlay];
+    inputs.nixpkgs.lib.composeManyExtensions [stable-overlay pi-bun-overlay inputs.hyprland.overlays.hyprland-packages];
 in {
   imports = [inputs.flake-parts.flakeModules.modules];
 
