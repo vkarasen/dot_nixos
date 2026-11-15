@@ -439,8 +439,14 @@ in {
 
                 # Keyboard layout indicator: shows the active XKB layout and
                 # cycles it on click (same action as the SUPER+Shift+Space bind).
+                # Deliberately no `keyboard-name`: the value is host-specific
+                # (troy's built-in "at-translated-set-2-keyboard" vs sarasti's
+                # "daskeyboard"), and a name matching no device makes waybar
+                # 0.15.0 silently drop every `activelayout` event, freezing the
+                # icon at the initial layout. Omitted, the module accepts all
+                # events and tracks whichever keyboard last switched — always
+                # the one `switchxkblayout current` toggled.
                 "hyprland/language" = {
-                  keyboard-name = "at-translated-set-2-keyboard";
                   format = " {short}";
                   on-click = "hyprctl switchxkblayout current next";
                   tooltip-format = "Keyboard layout: {long}";
