@@ -20,7 +20,7 @@
       src = inputs.hyprmoncfg;
       subPackages = ["cmd/hyprmoncfg" "cmd/hyprmoncfgd"];
       proxyVendor = true;
-      vendorHash = "sha256-97z4+U/SumG5sidy62SW43E+Bi6FpvJKCI6wqwXts2g=";
+      vendorHash = "sha256-paGi3+WTNUu/1v/l7VIaZrYHMQxqOjx8IprGErsA8TI=";
       # buildGoModule already injects CGO_ENABLED into `env`; the derivation-arg
       # form conflicts, so override it in `env` instead.
       env.CGO_ENABLED = "0";
