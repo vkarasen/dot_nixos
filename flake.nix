@@ -2,8 +2,8 @@
   description = "I am a very special flake";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?shallow=1&ref=nixos-unstable";
-    nixpkgs-stable.url = "github:nixos/nixpkgs?shallow=1&ref=nixos-26.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-26.05";
 
     nixdatifier = {
       url = "github:Muddyblack/nixdatifier";

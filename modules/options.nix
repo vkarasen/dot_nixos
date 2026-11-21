@@ -700,6 +700,21 @@
         subvolumes of the main cryptroot (single-disk hosts, e.g. troy).
       '';
     };
+    options.my.disks.swapSize = lib.mkOption {
+      type = lib.types.str;
+      default = "32G";
+      description = ''
+        Size of the btrfs hibernation swapfile at /swap/swapfile (disko's
+        swap.swapfile.size). Changing this does NOT recreate the swapfile on
+        its own — disko only creates it when it does not already exist — so a
+        size change is a manual live step: `swapoff /swap/swapfile`, delete the
+        file, recreate it at the new size (`btrfs filesystem mkswapfile --size
+        <size> /swap/swapfile`), `swapon`, then RE-COMPUTE `my.boot.resumeOffset`
+        with `btrfs inspect-internal map-swapfile -r /swap/swapfile` and update
+        the host file. Hibernation resume is broken between recreating the
+        swapfile and updating resumeOffset (see docs/hibernation.md).
+      '';
+    };
     options.my.disks.skipPersist = lib.mkOption {
       type = lib.types.bool;
       default = false;

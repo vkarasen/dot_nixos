@@ -110,7 +110,7 @@
                           "/swap" = {
                             mountpoint = "/swap";
                             mountOptions = ["nodatacow" "compress=none" "noatime"];
-                            swap.swapfile.size = "32G";
+                            swap.swapfile.size = config.my.disks.swapSize;
                           };
                           # Steam library: a separate subvolume so games (re-downloadable
                           # runtime state) stay out of home snapshots/backups. The root

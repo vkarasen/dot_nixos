@@ -30,7 +30,11 @@
     services.blueman.enable = true;
 
     # A short press of the power button suspends-then-hibernates instead of a hard power-off.
-    # The hibernate delay is the systemd default (3 h); the laptop aspect overrides it to 15 min on laptop hosts (modules/nixos/laptop.nix).
+    # The hibernate delay is the systemd 262 default (2 h — src/sleep/sleep.c
+    # DEFAULT_HIBERNATE_DELAY_USEC_NO_BATTERY = 2 * USEC_PER_HOUR); the laptop
+    # aspect overrides it to 15 min on laptop hosts (modules/nixos/laptop.nix).
+    # The smart wrapper in modules/nixos/sleep.nix reads the same value from
+    # /etc/systemd/sleep.conf at runtime.
     services.logind.settings.Login.HandlePowerKey = "suspend-then-hibernate";
 
     # logind only reads logind.conf at start or when reloaded (it is a

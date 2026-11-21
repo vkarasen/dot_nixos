@@ -97,7 +97,6 @@
       };
       alsa.enable = true;
       pulse.enable = true;
-      jack.enable = true;
     };
 
     # Nerd font for terminal nerd-symbol rendering.

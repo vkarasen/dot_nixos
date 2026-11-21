@@ -19,6 +19,7 @@
     config.flake.modules.nixos.steam
     config.flake.modules.nixos.monitoring
     config.flake.modules.nixos.lock
+    config.flake.modules.nixos.sleep
   ];
 
   # Home-manager aspects this host opts into. `core` is the universal tooling;

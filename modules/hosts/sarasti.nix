@@ -21,6 +21,7 @@
     config.flake.modules.nixos.solaar
     config.flake.modules.nixos.monitoring
     config.flake.modules.nixos.lock
+    config.flake.modules.nixos.sleep
   ];
 
   # No laptop (wired desktop). Wifi via a USB dongle is optional — the wifi
@@ -73,9 +74,10 @@
     # MBR disk); flip to "uefi" + Secure Boot once Windows is retired.
     my.boot.mode = "legacy";
     # Hibernation swapfile offset (resume_offset= kernel param). Measured
-    # 2026-10-26 with `sudo btrfs inspect-internal map-swapfile -r
-    # /swap/swapfile`; recompute if the swapfile is recreated.
-    my.boot.resumeOffset = 533760;
+    # 2026-11-19 with `sudo btrfs inspect-internal map-swapfile -r
+    # /swap/swapfile` against the current 64G swapfile; recompute if the
+    # swapfile is recreated.
+    my.boot.resumeOffset = 37586273;
     # VERIFY this by-id path at install time (ls -l /dev/disk/by-id/): the
     # 2 TB WD_BLACK SN770, NOT the 256 GB WD SN730 (the other NVMe).
     # Form is `nvme-<model>_<serial>` (the no-suffix link, not the `_1`
@@ -83,6 +85,22 @@
     # first live-ISO check; these strings are read off the live installer,
     # never assembled by hand.
     my.disks.mainDevice = "/dev/disk/by-id/nvme-WD_BLACK_SN770_2TB_23426M405177";
+    # Hibernation swapfile size. Bumped 32G -> 64G because zswap reserves
+    # swap slots over days of uptime and the old 32G left too little headroom
+    # for /sys/power/image_size (~12.5G on a 32G box). NOTE: this only takes
+    # effect after a manual live recreate (disko won't touch an existing
+    # swapfile) and REQUIRES recomputing my.boot.resumeOffset afterwards —
+    # done 2026-11-19: the 64G swapfile was recreated live and resumeOffset
+    # updated to the newly-measured 37586273 (see docs/hibernation.md).
+    # The warnIf is a build-time gate: it fires if resumeOffset is ever set
+    # back to the stale 32G value. The runtime counterpart is the
+    # resume_offset check in the nixos.sleep wrapper, which REFUSES to
+    # hibernate while live and configured offsets disagree.
+    my.disks.swapSize =
+      lib.warnIf
+      (config.my.boot.resumeOffset == 533760)
+      "sarasti: my.disks.swapSize=64G but my.boot.resumeOffset is still 533760 (the old 32G swapfile). Recreate the swapfile at 64G, recompute the offset (btrfs inspect-internal map-swapfile -r /swap/swapfile) and update resumeOffset BEFORE hibernating — see docs/hibernation.md."
+      "64G";
     # Second persistent disk for /persist + /home, so reinstalling the SN770
     # leaves user data intact. VERIFY this by-id path at install time
     # (ls -l /dev/disk/by-id/): the 256 GB WD SN730, NOT the 2 TB SN770

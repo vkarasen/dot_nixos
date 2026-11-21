@@ -98,6 +98,11 @@
     boot.kernel.sysctl = {
       "vm.vfs_cache_pressure" = 50;
       "vm.page-cluster" = 0;
+      # Lower than the kernel default (60): keep the active set in RAM and
+      # push the inactive set to swap less eagerly, so the 32G/64G swapfile
+      # survives multi-day uptimes before hibernation needs it (see
+      # docs/hibernation.md).
+      "vm.swappiness" = 20;
     };
 
     # Erase-on-boot: roll the ephemeral root subvolume back to its blank
