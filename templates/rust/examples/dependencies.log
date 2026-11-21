@@ -1,0 +1,5 @@
+1700000000000 INFO lb      hits=41000
+1700000000100 INFO router  hits=12000 parent=lb
+1700000000200 INFO gateway hits=8000 parent=router
+1700000000300 INFO api     hits=6400 parent=gateway
+1700000000400 INFO cache   hits=9900 parent=router

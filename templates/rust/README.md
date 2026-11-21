@@ -17,6 +17,15 @@ build.
 - **two toolchains** — stable plus a dated-pinned nightly, in parallel.
 - **8 checks**, four build targets, devshell with nextest/deny/audit.
 
+> **Understanding the project.** This template ships a guided tour as an agent
+> skill at [`templates/rust/.pi/skills/project-tour/SKILL.md`](.pi/skills/project-tour/SKILL.md)
+> (`.pi/skills/project-tour/SKILL.md` once the template is materialized). It
+> explains *why* each crate was chosen, where the architecture/business-logic
+> line falls, how the library keeps its zero-cost claims, and how the nix side
+> is wired. Ask your agent to load the `project-tour` skill — e.g. "load the
+> project-tour skill and explain the aggregate command" — instead of asking it
+> to reverse-engineer the tree.
+
 ## What is `tally`?
 
 A toolkit for one line-oriented log format:
@@ -66,6 +75,287 @@ honours the global `--format json|yaml|toml`, `-v/-vv/-vvv` and `-L <LEVEL>`.
 | `clap` + `miette` | argument groups and fancy diagnostics |
 | `tokio` (CLI only) | concurrent file/stdin reading; the library never links it |
 | `insta` + `rstest` + `proptest` | snapshots, table tests, round-trip properties |
+
+## Examples
+
+Three input files under [`examples/`](examples/) are enough to exercise every
+subcommand:
+
+| file | shape | shows off |
+|---|---|---|
+| `examples/basic.log` | 10 records, 4 components, all six levels, mostly flat | `parse`, `aggregate`, `convert`, `inspect` |
+| `examples/dependencies.log` | a clean 5-node DAG via `parent=` (`lb → router → {gateway → api, cache}`) | `graph` toposort, `--scc` |
+| `examples/cycle.log` | a 2-node cycle (`a parent=b`, `b parent=a`) | `graph` cycle detection |
+
+The examples below were run from `templates/rust/` (after
+`git init && git add -A` there). Replace the `cargo run -p tally --` prefix
+with `nix run .# --` to run the packaged binary instead, e.g.
+`nix run .# -- parse --files examples/basic.log`. Inside `nix develop .#` the
+`cargo run -p tally -- …` prefix is the shortest form.
+
+### Parse and echo the canonical form
+
+```bash
+cargo run -p tally -- parse --files examples/basic.log
+```
+
+```text
+1700000000000 INFO engine hits=3 latency_ms=12
+1700000000100 WARN engine latency_ms=840 retries=2
+1700000000200 ERROR engine queue_depth=97
+1700000000300 DEBUG engine latency_ms=7
+1700000000400 INFO router hits=1042
+1700000000500 INFO router latency_ms=31 parent=engine
+1700000000600 TRACE router queue_depth=0
+1700000000700 INFO cache hits=998 latency_ms=2
+1700000000800 FATAL cache queue_depth=512 retries=5
+1700000000900 WARN metrics hits=17
+```
+
+Every record is re-rendered: attributes are sorted by key (`hits=3
+latency_ms=12`), the level is upper-case on the wire. That is the round-trip
+property the `proptest` suite pins down.
+
+### Verbosity: `-v` ladder vs `-L`
+
+Logs go to **stderr**, records to stdout, so the two never mix in a pipe. The
+ladder (from `clap-verbosity-flag`, default = `ERROR`) is:
+
+| flag | max level |
+|---|---|
+| _(none)_ | `ERROR` |
+| `-v` | `WARN` |
+| `-vv` | `INFO` |
+| `-vvv` | `DEBUG` |
+| `-vvvv` | `TRACE` |
+| `-q` | `OFF` (all logging muted) |
+
+The ladder is a single counter: `-v` and `-q` move it in opposite directions
+from the `ERROR` baseline, so `-q` is one step below the default and mutes the
+subscriber entirely (further `-q` flags stay at `OFF`). `--quiet` is long form
+for `-q`. `-q` and `-v` **conflict** — clap rejects the combination:
+
+```text
+$ cargo run -p tally -- parse --files examples/basic.log -q -v
+error: the argument '--quiet...' cannot be used with '--verbose...'
+```
+
+`--pretty` switches the formatter from compact to multi-line: each event gets
+its own indented block with the source location underneath (it keeps the same
+level filter, it only changes the shape). With `--pretty -vv`:
+
+```text
+  2026-11-21T19:40:56.527056Z  INFO cli: parsing records, command: "parse"
+    at crates/tally/src/commands/parse.rs:23
+
+  2026-11-21T19:40:56.527483Z  INFO cli: parsed records, count: 10
+    at crates/tally/src/commands/parse.rs:25
+…
+```
+
+`-L/--log-level <LEVEL>` is a hard override (it takes precedence over `-v` and
+still lets `RUST_LOG` refine it). At `DEBUG` the two commands look the same:
+
+```bash
+cargo run -p tally -- parse --files examples/basic.log -vvv
+cargo run -p tally -- parse --files examples/basic.log -L debug
+```
+
+```text
+2026-11-21T19:26:23.078738Z  INFO cli: parsing records command="parse"
+2026-11-21T19:26:23.079254Z  INFO cli: parsed records count=10
+1700000000000 INFO engine hits=3 latency_ms=12
+…
+```
+
+Note the **target** column, which is how library events stay distinguishable
+from the CLI's own:
+
+- `cli` — emitted by `crates/tally/src/commands/*.rs` (the `parse`, `aggregate`,
+  `graph`, `convert`, `inspect` handlers).
+- `tally_core::…` — emitted by the library, one per module path:
+  `tally_core::build::typestate` at `DEBUG` (visible from `-vvv`, e.g.
+  `aggregate`), `tally_core::grammar` at `TRACE` (visible from `-vvvv`).
+
+`aggregate -vvv` shows both targets interleaved:
+
+```text
+2026-11-21T19:26:25.149497Z  INFO cli: aggregating command="aggregate" matrix=false by=Component
+2026-11-21T19:26:25.150790Z DEBUG tally_core::build::typestate: pipeline aggregated records=10 groups=4 by=Component
+2026-11-21T19:26:25.150824Z  INFO cli: summary built groups=4
+```
+
+### Aggregate: summary
+
+```bash
+cargo run -p tally -- aggregate --files examples/basic.log --summary --by component
+```
+
+```json
+{
+  "cache": 2,
+  "engine": 4,
+  "metrics": 1,
+  "router": 3
+}
+```
+
+`--by level` swaps the grouping key:
+
+```bash
+cargo run -p tally -- aggregate --files examples/basic.log --summary --by level
+```
+
+```json
+{
+  "DEBUG": 1,
+  "ERROR": 1,
+  "FATAL": 1,
+  "INFO": 4,
+  "TRACE": 1,
+  "WARN": 2
+}
+```
+
+The default output is pretty-printed JSON (`--format json`); `--format yaml`
+and `--format toml` swap the encoder. `--threshold <PERCENT>` drops records
+below a severity percentage first (the six levels are evenly spaced, so
+`TRACE` is `0` and `FATAL` is `100`).
+
+### Aggregate: matrix
+
+```bash
+cargo run -p tally -- aggregate --files examples/basic.log --matrix --format yaml
+```
+
+```yaml
+components:
+- cache
+- engine
+- metrics
+- router
+levels:
+- TRACE
+- DEBUG
+- INFO
+- WARN
+- ERROR
+- FATAL
+counts:
+- - 0
+  - 0
+  - 1
+  - 0
+  - 0
+  - 1
+…
+```
+
+Rows are the sorted components, columns are `Level::ALL` order; the output is
+self-describing because the CLI encodes the axes next to the counts (the
+`--format json` default is the same object, just multi-line JSON).
+`--summary` and `--matrix` are mutually exclusive and one is required.
+
+### Graph: topological order, SCCs, and cycles
+
+```bash
+cargo run -p tally -- graph --files examples/dependencies.log
+```
+
+```json
+[
+  "lb",
+  "router",
+  "cache",
+  "gateway",
+  "api"
+]
+```
+
+Edges point `parent → child`, so the order is the order components can be
+brought up. `--scc` reports strongly connected components instead:
+
+```bash
+cargo run -p tally -- graph --files examples/dependencies.log --scc --format yaml
+```
+
+```yaml
+- - cache
+- - api
+- - gateway
+- - router
+- - lb
+```
+
+A cycle is a hard error (exit status 1), rendered by `miette`'s fancy handler:
+
+```bash
+cargo run -p tally -- graph --files examples/cycle.log
+```
+
+```text
+Error:   × dependency cycle involving component `b`
+```
+
+> **These three outputs are illustrative, not canonical.** The exact
+topological order, the order of the `--scc` groups, and the particular
+component petgraph names in a cycle diagnostic are all algorithm-determined
+internals of `petgraph` (and its `toposort`/`tarjan_scc` implementations). They
+can differ between `petgraph` versions and between runs, so assert on *membership*
+(the set of nodes, the existence of an error) rather than on these exact lines.
+
+### Convert
+
+```bash
+cargo run -p tally -- convert --files examples/basic.log --format yaml
+```
+
+```yaml
+- ts_ms: 1700000000000
+  level: info
+  component: engine
+  attrs:
+    hits: '3'
+    latency_ms: '12'
+- ts_ms: 1700000000100
+  level: warn
+  component: engine
+  attrs:
+    latency_ms: '840'
+    retries: '2'
+…
+```
+
+Note that `level` is **lower-case** under serde (`info`) while `parse` renders
+it upper-case (`INFO`) — the wire form and the structured form are deliberately
+different. `convert` is the round-trip entry point: `convert --format json`
+emits exactly the shape that `crates/tally/tests/serde.rs` feeds back in to
+prove the type invariants hold through serde too.
+
+### Inspect
+
+```bash
+cargo run -p tally -- inspect --files examples/basic.log --threshold 85
+```
+
+```text
+1700000000800 FATAL cache queue_depth=512 retries=5 (2 attributes)
+severity rank: 5/5
+{
+  "ts_ms": 1700000000800,
+  "level": "fatal",
+  "component": "cache",
+  "attrs": {
+    "queue_depth": "512",
+    "retries": "5"
+  }
+}
+```
+
+`--threshold 85` keeps only `FATAL` (`5 × 20 = 100 ≥ 85`), so the first
+surviving record is the last line. Lower it to see an earlier record:
+`--threshold 60` stops at the `WARN` on line 2. Without `--threshold` the first
+record is reported.
 
 ## Quick start
 

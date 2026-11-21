@@ -1,0 +1,10 @@
+1700000000000 INFO  engine  latency_ms=12 hits=3
+1700000000100 WARN  engine  latency_ms=840 retries=2
+1700000000200 ERROR engine  queue_depth=97
+1700000000300 DEBUG engine  latency_ms=7
+1700000000400 INFO  router  hits=1042
+1700000000500 INFO  router  latency_ms=31 parent=engine
+1700000000600 TRACE router  queue_depth=0
+1700000000700 INFO  cache   hits=998 latency_ms=2
+1700000000800 FATAL cache   queue_depth=512 retries=5
+1700000000900 WARN  metrics hits=17

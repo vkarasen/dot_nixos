@@ -1,0 +1,2 @@
+1700000000000 INFO a hits=1 parent=b
+1700000000100 INFO b hits=2 parent=a
