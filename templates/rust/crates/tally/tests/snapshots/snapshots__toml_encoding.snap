@@ -1,0 +1,28 @@
+---
+source: crates/tally/tests/snapshots.rs
+expression: toml_document()
+---
+[[records]]
+ts_ms = 1700000000000
+level = 'info'
+component = 'engine'
+
+[records.attrs]
+latency_ms = '12'
+parent = 'scheduler'
+
+[[records]]
+ts_ms = 1700000000001
+level = 'warn'
+component = 'scheduler'
+
+[records.attrs]
+retries = '3'
+
+[[records]]
+ts_ms = 1700000000002
+level = 'fatal'
+component = 'db'
+
+[records.attrs]
+disk = 'full'

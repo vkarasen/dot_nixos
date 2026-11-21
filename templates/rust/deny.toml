@@ -8,7 +8,10 @@ wildcards = "deny"
 
 [licenses]
 version = 2
-allow = ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "Unicode-3.0"]
+# All entries are OSI-approved and FSF-free. The two beyond the permissive
+# baseline come from the dependency tree: Zlib (foldhash, via petgraph's
+# hashbrown) and ISC (is_ci, via miette's supports-color).
+allow = ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "Unicode-3.0", "Zlib", "ISC"]
 confidence-threshold = 0.93
 
 [sources]

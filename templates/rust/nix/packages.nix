@@ -30,7 +30,7 @@
         // {
           cargoArtifacts = craneLib.buildDepsOnly (args // {doCheck = false;});
           doCheck = false;
-          meta = rust.meta // {mainProgram = "my-cli";};
+          meta = rust.meta;
         });
 
     # Dynamic aarch64 glibc cross build: rustc emits a dynamically linked ELF,
@@ -49,7 +49,7 @@
         // {
           inherit (rust) cargoArtifacts;
           doCheck = false;
-          meta = rust.meta // {mainProgram = "my-cli";};
+          meta = rust.meta;
         });
 
       # 2. native static musl, stable toolchain
@@ -60,7 +60,7 @@
         // {
           cargoArtifacts = rust.craneLib.buildDepsOnly (aarch64DynamicArgs // {doCheck = false;});
           doCheck = false;
-          meta = rust.meta // {mainProgram = "my-cli";};
+          meta = rust.meta;
         });
 
       # 4. powerpc64le static musl, cross, NIGHTLY toolchain

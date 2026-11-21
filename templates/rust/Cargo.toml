@@ -1,12 +1,48 @@
 [workspace]
 resolver = "2"
-members = ["crates/my-lib", "crates/my-cli"]
+members = ["crates/tally-core", "crates/tally"]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.88"
 license = "MIT"
-description = "Example Rust workspace: a greeting library and CLI"
+description = "Structured log line toolkit: a parsing/aggregation library and CLI"
+
+# Nix-side identity, read by nix/_lib.nix. Keeping the package/binary name here
+# means a crate rename is a one-line change instead of a hunt through the Nix
+# files: `pname` and `meta.mainProgram` are both derived from `name`.
+[workspace.metadata.package]
+name = "tally"
+
+# Single source of truth for every dependency version in the workspace.
+[workspace.dependencies]
+# --- tally-core ------------------------------------------------------------
+serde = { version = "1", features = ["derive"] }
+winnow = "1"
+bon = "3"
+nutype = { version = "0.8", features = ["serde"] }
+rayon = "1"
+thiserror = "2"
+petgraph = "0.8"
+ndarray = { version = "0.17", features = ["rayon"] }
+trait-variant = "0.1"
+
+# --- tally (binary only) ---------------------------------------------------
+clap = { version = "4", features = ["derive"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "io-util", "io-std"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+clap-verbosity-flag = { version = "3", default-features = false, features = ["tracing"] }
+miette = { version = "7", features = ["fancy"] }
+serde_json = "1"
+toml = "1"
+serde_yaml = { package = "yaml_serde", version = "0.10" }
+
+# --- dev-dependencies (shared) ---------------------------------------------
+rstest = "0.28"
+proptest = "1"
+insta = { version = "1", features = ["json", "yaml", "toml"] }
 
 [workspace.lints.clippy]
 all = "warn"

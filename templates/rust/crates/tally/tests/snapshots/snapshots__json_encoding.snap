@@ -1,0 +1,31 @@
+---
+source: crates/tally/tests/snapshots.rs
+expression: fixture()
+---
+[
+  {
+    "ts_ms": 1700000000000,
+    "level": "info",
+    "component": "engine",
+    "attrs": {
+      "latency_ms": "12",
+      "parent": "scheduler"
+    }
+  },
+  {
+    "ts_ms": 1700000000001,
+    "level": "warn",
+    "component": "scheduler",
+    "attrs": {
+      "retries": "3"
+    }
+  },
+  {
+    "ts_ms": 1700000000002,
+    "level": "fatal",
+    "component": "db",
+    "attrs": {
+      "disk": "full"
+    }
+  }
+]

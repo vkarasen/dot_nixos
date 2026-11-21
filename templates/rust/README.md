@@ -5,11 +5,67 @@ generated-and-committed lockfile pair, an 8-check verification suite, four
 build targets (native dynamic, native musl static, two cross builds) and a
 reproducible fenix devshell.
 
+The workspace it ships is deliberately *not* a hello-world: **`tally-core`** (a
+library) and **`tally`** (a CLI over it) form a small but complete program that
+exercises the whole toolchain — parsing, parallel aggregation, a graph algorithm
+and async I/O — so every check and every cross target has something real to
+build.
+
 - **flake-parts + import-tree** — one file per concern under `nix/`.
 - **crane** — incremental `cargoArtifacts` so dependency builds are cached.
 - **fenix** — toolchain pinned by `rust-toolchain.toml`, not by nixpkgs.
 - **two toolchains** — stable plus a dated-pinned nightly, in parallel.
 - **8 checks**, four build targets, devshell with nextest/deny/audit.
+
+## What is `tally`?
+
+A toolkit for one line-oriented log format:
+
+```text
+<ts_ms> <LEVEL> <component> [key=value ...]
+
+1700000000000 INFO engine parent=scheduler latency_ms=12
+```
+
+- `ts_ms` — unsigned milliseconds since the Unix epoch.
+- `LEVEL` — `TRACE|DEBUG|INFO|WARN|ERROR|FATAL` (parsed case-insensitively,
+  rendered upper-case on the wire, serialised lower-case).
+- `component` — a non-empty token, no whitespace.
+- `key=value` — keys are `[a-z][a-z0-9_]*`, values are non-empty tokens. The
+  key `parent` is reserved: it records a dependency edge.
+
+| crate | role |
+|---|---|
+| `crates/tally-core` | library: grammar, model, engine, numeric, graph, async source, typestate pipeline |
+| `crates/tally` | CLI: five subcommands, format conversion, logging |
+
+```bash
+nix run .# -- parse --files app.log               # echo records in canonical form
+nix run .# -- aggregate --files app.log --summary # counts per component
+nix run .# -- aggregate --files app.log --matrix  # components x levels matrix
+nix run .# -- graph --files app.log               # topological dependency order
+nix run .# -- graph --files app.log --scc         # strongly connected components
+nix run .# -- convert --files app.log --format yaml
+nix run .# -- inspect --files app.log --threshold 60
+cat app.log | nix run .# -- parse --stdin -vv
+```
+
+Every subcommand takes either `--stdin` or `--files <FILE>...` (never both) and
+honours the global `--format json|yaml|toml`, `-v/-vv/-vvv` and `-L <LEVEL>`.
+
+### Crates on display
+
+| crate | what the template demonstrates with it |
+|---|---|
+| `winnow` | a `Partial`-based streaming grammar (`LineParser`) |
+| `nutype` + `serde` | invariants enforced at construction *and* deserialisation |
+| `bon` | a struct builder (`Record`) and a function builder (`count_by`) |
+| `rayon` + `ndarray` | scatter/fold/reduce into a map and into a dense matrix |
+| `petgraph` | dependency graph, toposort, strongly connected components |
+| `trait-variant` | an `async fn` trait the library defines and the CLI implements |
+| `clap` + `miette` | argument groups and fancy diagnostics |
+| `tokio` (CLI only) | concurrent file/stdin reading; the library never links it |
+| `insta` + `rstest` + `proptest` | snapshots, table tests, round-trip properties |
 
 ## Quick start
 
@@ -17,8 +73,7 @@ reproducible fenix devshell.
 nix flake init -t <this-flake>#rust      # materialize into an empty dir
 git init && git add -A                   # flake.lock/Cargo.lock are committed
 
-nix run .#                               # build + run ./bin (prints "Hello, world!")
-nix run .# -- --help                     # Usage: my-cli [NAME]
+nix run .# -- --help                     # the five subcommands
 nix develop .#                           # rustc/cargo/rustfmt/clippy + nextest/deny/audit
 nix flake check                          # the 8 checks below
 nix build .#static                       # static musl binary (native arch)
@@ -26,9 +81,9 @@ nix build .#aarch64-dynamic              # dynamic cross to ARM aarch64 (glibc)
 nix build .#powerpc64le-static           # static musl cross to ppc64le (nightly)
 ```
 
-Replace the `my-lib` / `my-cli` crates (and the `my-cli` references in
-`nix/packages.nix` + the bin name in `crates/my-cli/Cargo.toml`) with your
-own.
+To make it your own, rename the two crates and set
+`[workspace.metadata.package].name` in `Cargo.toml` — `pname` and
+`meta.mainProgram` are derived from it, so the Nix side needs no edit.
 
 ## Dendritic layout
 
@@ -54,15 +109,15 @@ Every file under `nix/` is therefore a flake-parts module:
 containing `/_`, so the helper is never registered as a top-level module. It is
 consumed *by reference* — each aspect does
 `import ./_lib.nix {inherit inputs pkgs lib system;}` and gets back
-`{toolchain, craneLib, src, commonArgs, cargoArtifacts, meta, nightlyToolchain,
-nightlyCraneLib}` plus the shared `lib` and `pkgs`. Add new shared values there,
-not in a new top-level module.
+`{toolchain, craneLib, src, commonArgs, cargoArtifacts, meta, packageName,
+nightlyToolchain, nightlyCraneLib}` plus the shared `lib` and `pkgs`. Add new
+shared values there, not in a new top-level module.
 
 ## Non-Nix config files
 
 | file | purpose |
 |---|---|
-| `Cargo.toml` | workspace members, shared `[workspace.package]` + `[workspace.lints.clippy]` |
+| `Cargo.toml` | workspace members, shared `[workspace.package]`, dependency versions, `[workspace.lints.clippy]`, and `[workspace.metadata.package].name` (drives `pname`/`mainProgram`) |
 | `rust-toolchain.toml` | toolchain source of truth: channel, components, targets |
 | `rustfmt.toml` | rustfmt style, consumed by the `fmt` check |
 | `clippy.toml` | clippy `msrv`, consumed by the `clippy` check |
