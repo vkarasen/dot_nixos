@@ -10,10 +10,12 @@
         "ARM"
         "NVDA"
         "AMD"
+        "ANT"
         "AAPL"
         "MSFT"
         "GOOG"
         "META"
+        "SPCX"
         "SPY"
         "GC=F"
       ];
