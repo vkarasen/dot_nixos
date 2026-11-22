@@ -62,8 +62,12 @@ in {
           'Workspace: Go to workspace 3 — SUPER+3' \
           'Workspace: Go to workspace 4 — SUPER+4' \
           'Workspace: Go to workspace 5 — SUPER+5' \
-          'Workspace: Previous / next workspace — SUPER+CTRL+Left / Right' \
+          'Workspace: Previous / next workspace (skips private) — SUPER+CTRL+Left / Right' \
           'Workspace: Last workspace (back-and-forth) — SUPER+A' \
+          'Workspace: Private workspace — SUPER+9' \
+          'Workspace: Send window to private workspace — SUPER+Shift+9' \
+          'Scratch: Toggle scratchpad — SUPER+S' \
+          'Scratch: Send window to scratchpad — SUPER+Shift+S' \
           'Gesture: 3-finger horizontal swipe switches workspace' \
           'Gesture: Bump leftmost/rightmost screen edge to switch workspace' \
           'Workspace: Send window to workspace — SUPER+Shift+1..5' \
@@ -235,8 +239,8 @@ in {
         ];
         text = ''
           clients="$(hyprctl clients -j)"
-          mapfile -t addrs < <(jq -r '.[].address' <<< "$clients")
-          mapfile -t disp  < <(jq -r '.[] | ((.class // "") + " — " + (.title // ""))' <<< "$clients")
+          mapfile -t addrs < <(jq -r '.[] | select(.workspace.name != "9") | .address' <<< "$clients")
+          mapfile -t disp  < <(jq -r '.[] | select(.workspace.name != "9") | ((.class // "") + " — " + (.title // ""))' <<< "$clients")
 
           if [ "''${#disp[@]}" -eq 0 ]; then exit 0; fi
 
@@ -423,6 +427,7 @@ in {
                 "hyprland/workspaces" = {
                   format = "{name}";
                   on-click = "activate";
+                  ignore-workspaces = ["9"]; # hide the private workspace from the bar
                 };
 
                 clock = {
@@ -772,13 +777,20 @@ in {
               };
             };
 
-            # Workspace-specific layout override (the hybrid half). Rendered
-            # as hl.workspace_rule({ workspace = "1", layout = "dwindle" });
-            # every other workspace uses the scrolling default above.
-            workspace_rule = {
-              workspace = "1";
-              layout = "dwindle";
-            };
+            # Workspace-specific layout overrides (the hybrid half). Rendered
+            # as hl.workspace_rule({ ... }). Workspace 1 keeps dwindle; the
+            # private workspace 9 is pinned to scrolling (explicit; matches the
+            # default); every other workspace uses the scrolling default above.
+            workspace_rule = [
+              {
+                workspace = "1";
+                layout = "dwindle";
+              }
+              {
+                workspace = "9";
+                layout = "scrolling";
+              }
+            ];
 
             # Environment variables — rendered as hl.env("VAR", "value").
             env = [
@@ -907,20 +919,36 @@ in {
                 ];
               }
 
-              # Adjacent workspace (macOS ctrl+left/right style). SUPER + CTRL +
-              # Left/Right steps to the previous/next existing workspace. The
-              # arrow keys are unbound; the letter chords (SUPER+CTRL+h/l) are
-              # already taken by window swap.
+              # Private workspace 9: SUPER+9 focuses it, SUPER+SHIFT+9 sends
+              # the active window there silently (follow = false). Hidden from
+              # waybar (ignore-workspaces), the SUPER+o picker, and the
+              # cycle/swipe (cycle_skip9 in extraConfig).
               {
                 _args = [
-                  (lib.generators.mkLuaInline ''mod .. " + CTRL + left"'')
-                  (lib.generators.mkLuaInline ''hl.dsp.focus({ workspace = "e-1" })'')
+                  (lib.generators.mkLuaInline ''mod .. " + 9"'')
+                  (lib.generators.mkLuaInline ''hl.dsp.focus({ workspace = "9" })'')
                 ];
               }
               {
                 _args = [
-                  (lib.generators.mkLuaInline ''mod .. " + CTRL + right"'')
-                  (lib.generators.mkLuaInline ''hl.dsp.focus({ workspace = "e+1" })'')
+                  (lib.generators.mkLuaInline ''mod .. " + SHIFT + 9"'')
+                  (lib.generators.mkLuaInline ''hl.dsp.window.move({ workspace = "9", follow = false })'')
+                ];
+              }
+
+              # Scratchpad (special workspace "private") — plain access, no
+              # special treatment: SUPER+S toggles it over the current
+              # workspace, SUPER+SHIFT+S sends the active window there silently.
+              {
+                _args = [
+                  (lib.generators.mkLuaInline ''mod .. " + S"'')
+                  (lib.generators.mkLuaInline ''hl.dsp.workspace.toggle_special("private")'')
+                ];
+              }
+              {
+                _args = [
+                  (lib.generators.mkLuaInline ''mod .. " + SHIFT + S"'')
+                  (lib.generators.mkLuaInline ''hl.dsp.window.move({ workspace = "special:private", follow = false })'')
                 ];
               }
 
@@ -1128,6 +1156,42 @@ in {
               end
             end
 
+            -- Cycle to the previous/next existing numbered workspace, skipping
+            -- the private workspace 9 (and any special workspaces). Hyprland's
+            -- native e±1 has no per-workspace exclusion, so this reimplements
+            -- it over hl.get_workspaces(). dir = 1 (next) or -1 (previous).
+            local function cycle_skip9(dir)
+              local active = hl.get_active_workspace()
+              local ids = {}
+              for _, ws in ipairs(hl.get_workspaces()) do
+                -- Keep only numbered workspaces: specials carry a negative id
+                -- (or nil) and named workspaces a nil id, so both are dropped.
+                if ws.id ~= nil and ws.id >= 0 and ws.addressable_name ~= "9" then
+                  table.insert(ids, ws.id)
+                end
+              end
+              if #ids == 0 then return end
+              table.sort(ids)
+              local idx
+              for i, id in ipairs(ids) do
+                if active and id == active.id then idx = i end
+              end
+              local target
+              if idx then
+                local n = #ids
+                idx = ((idx - 1 + dir) % n) + 1
+                target = ids[idx]
+              else
+                target = (dir >= 0) and ids[1] or ids[#ids]
+              end
+              hl.dispatch(hl.dsp.focus({ workspace = tostring(target) }))
+            end
+
+            -- Adjacent-workspace cycling (replaces the old settings.bind e±1
+            -- entries): SUPER+CTRL+Left/Right, skipping workspace 9.
+            hl.bind(mod .. " + CTRL + left", function() cycle_skip9(-1) end)
+            hl.bind(mod .. " + CTRL + right", function() cycle_skip9(1) end)
+
             -- focus (vim): column focus when scrolling, window focus on dwindle
             hl.bind(mod .. " + h", layout_bind({ scrolling = hl.dsp.layout("focus l"), dwindle = hl.dsp.focus({ direction = "l" }) }))
             hl.bind(mod .. " + j", layout_bind({ scrolling = hl.dsp.layout("focus d"), dwindle = hl.dsp.focus({ direction = "d" }) }))
@@ -1161,13 +1225,14 @@ in {
             hl.bind(mod .. " + o", hl.dsp.exec_cmd("hypr-window-picker"))
 
             -- 3-finger horizontal swipe cycles through existing workspaces
-            -- (e±1, wrapping like SUPER+CTRL+Left/Right). The native `workspace`
+            -- (skipping private workspace 9, wrapping like
+            -- SUPER+CTRL+Left/Right -> cycle_skip9). The native `workspace`
             -- swipe action only supports monitor/relative prefixes (no wrap),
-            -- so these use Lua callbacks to dispatch e±1 directly. This is a
+            -- so these use Lua callbacks. This is a
             -- discrete swipe->switch trigger, not a finger-following swipe.
             -- Swipe left = next, swipe right = previous (macOS-style).
-            hl.gesture({ fingers = 3, direction = "left",  action = function() hl.dispatch(hl.dsp.focus({ workspace = "e+1" })) end })
-            hl.gesture({ fingers = 3, direction = "right", action = function() hl.dispatch(hl.dsp.focus({ workspace = "e-1" })) end })
+            hl.gesture({ fingers = 3, direction = "left",  action = function() cycle_skip9(1) end })
+            hl.gesture({ fingers = 3, direction = "right", action = function() cycle_skip9(-1) end })
           '';
         };
       };

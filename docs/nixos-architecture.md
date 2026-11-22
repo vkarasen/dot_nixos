@@ -120,16 +120,24 @@ measurements to `/run/log/systemd/tpm2-measure.log`.)
 - Launch: log in on **tty1** → `~/.bash_profile` runs `exec start-hyprland` (no
   display manager). Quitting Hyprland returns to the login prompt.
 - Layout: `general.layout = "scrolling"` (niri-like columns) is the default,
-  with `workspace_rule` pinning **workspace 1 to dwindle** so every other
-  workspace scrolls.
+  with `workspace_rule` (a list) pinning **workspace 1 to dwindle** (so every
+  other regular workspace scrolls) and the **private workspace 9 to scrolling**
+  (explicit; matches the default).
 - Keybinds: `SUPER+Return` ghostty, `SUPER+Space` fuzzel, `SUPER+Q` close,
   `SUPER+V` float, `SUPER+F` fullscreen, `SUPER+M` exit, `SUPER+ESC` lock,
-  `SUPER+1..5` workspaces (`SUPER+SHIFT+1..5` sends the window); `SUPER+CTRL+Left/Right` steps to the previous/next workspace; `SUPER+A` toggles to the last workspace. Layout-aware
+  `SUPER+1..5` workspaces (`SUPER+SHIFT+1..5` sends the window); `SUPER+9`
+  focuses the private workspace 9 and `SUPER+SHIFT+9` sends the active window
+  there (hidden from the waybar bar, the `SUPER+o` picker, and the
+  `SUPER+CTRL+Left/Right`/swipe cycle — but still reachable via `SUPER+A`
+  back-and-forth); `SUPER+S` toggles the scratchpad (special workspace
+  `private`) and `SUPER+SHIFT+S` sends the active window there;
+  `SUPER+CTRL+Left/Right` steps to the previous/next workspace (skipping 9);
+  `SUPER+A` toggles to the last workspace. Layout-aware
   vim focus `SUPER+h/j/k/l` and move `SUPER+SHIFT+h/j/k/l` (column verbs while
   scrolling, `focus`/`window.move` on dwindle); `SUPER+CTRL+h/j/k/l` swaps
   windows; scrolling-only `SUPER+Shift+p` promote, `SUPER+minus`/`SUPER+equal`
   colresize, `SUPER+SHIFT+f` fit expand, `SUPER+CTRL+SHIFT+h/l` move column;
-  `SUPER+o` fuzzy window picker; `SUPER+ALT+h/l` focus monitor (`+SHIFT` moves
+  `SUPER+o` fuzzy window picker (excludes private workspace 9); `SUPER+ALT+h/l` focus monitor (`+SHIFT` moves
   the workspace there); PrtSc region capture (Flameshot), `SHIFT+PrtSc`
   fullscreen and `ALT+PrtSc` window (the `screenshot` helper).
 - Gestures: a 3-finger horizontal swipe switches workspace (native `hl.gesture`).
