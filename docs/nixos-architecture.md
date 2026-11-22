@@ -128,11 +128,11 @@ measurements to `/run/log/systemd/tpm2-measure.log`.)
   `SUPER+1..5` workspaces (`SUPER+SHIFT+1..5` sends the window); `SUPER+9`
   focuses the private workspace 9 and `SUPER+SHIFT+9` sends the active window
   there (hidden from the waybar bar, the `SUPER+o` picker, and the
-  `SUPER+CTRL+Left/Right`/swipe cycle — but still reachable via `SUPER+A`
-  back-and-forth); `SUPER+S` toggles the scratchpad (special workspace
-  `private`) and `SUPER+SHIFT+S` sends the active window there;
-  `SUPER+CTRL+Left/Right` steps to the previous/next workspace (skipping 9);
-  `SUPER+A` toggles to the last workspace. Layout-aware
+  `SUPER+CTRL+Left/Right`/swipe cycle); `SUPER+S` toggles the scratchpad
+  (special workspace `private`, opening a terminal into it when empty) and
+  `SUPER+SHIFT+S` sends the active window there; `SUPER+CTRL+Left/Right` steps
+  to the previous/next workspace (skipping 9); `SUPER+A` toggles to the last workspace
+  (never the private workspace 9). Layout-aware
   vim focus `SUPER+h/j/k/l` and move `SUPER+SHIFT+h/j/k/l` (column verbs while
   scrolling, `focus`/`window.move` on dwindle); `SUPER+CTRL+h/j/k/l` swaps
   windows; scrolling-only `SUPER+Shift+p` promote, `SUPER+minus`/`SUPER+equal`

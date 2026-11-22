@@ -63,10 +63,10 @@ in {
           'Workspace: Go to workspace 4 — SUPER+4' \
           'Workspace: Go to workspace 5 — SUPER+5' \
           'Workspace: Previous / next workspace (skips private) — SUPER+CTRL+Left / Right' \
-          'Workspace: Last workspace (back-and-forth) — SUPER+A' \
+          'Workspace: Last workspace (skips private) — SUPER+A' \
           'Workspace: Private workspace — SUPER+9' \
           'Workspace: Send window to private workspace — SUPER+Shift+9' \
-          'Scratch: Toggle scratchpad — SUPER+S' \
+          'Scratch: Toggle scratchpad (terminal if empty) — SUPER+S' \
           'Scratch: Send window to scratchpad — SUPER+Shift+S' \
           'Gesture: 3-finger horizontal swipe switches workspace' \
           'Gesture: Bump leftmost/rightmost screen edge to switch workspace' \
@@ -936,28 +936,13 @@ in {
                 ];
               }
 
-              # Scratchpad (special workspace "private") — plain access, no
-              # special treatment: SUPER+S toggles it over the current
-              # workspace, SUPER+SHIFT+S sends the active window there silently.
-              {
-                _args = [
-                  (lib.generators.mkLuaInline ''mod .. " + S"'')
-                  (lib.generators.mkLuaInline ''hl.dsp.workspace.toggle_special("private")'')
-                ];
-              }
+              # Scratchpad (special workspace "private"): SUPER+SHIFT+S sends
+              # the active window there silently. The toggle lives in
+              # extraConfig (toggle_scratch) so it can no-op when empty.
               {
                 _args = [
                   (lib.generators.mkLuaInline ''mod .. " + SHIFT + S"'')
                   (lib.generators.mkLuaInline ''hl.dsp.window.move({ workspace = "special:private", follow = false })'')
-                ];
-              }
-
-              # Last workspace (tmux-style back-and-forth): jump to the
-              # previously focused workspace; a second press returns.
-              {
-                _args = [
-                  (lib.generators.mkLuaInline ''mod .. " + a"'')
-                  (lib.generators.mkLuaInline ''hl.dsp.focus({ workspace = "previous" })'')
                 ];
               }
 
@@ -1191,6 +1176,35 @@ in {
             -- entries): SUPER+CTRL+Left/Right, skipping workspace 9.
             hl.bind(mod .. " + CTRL + left", function() cycle_skip9(-1) end)
             hl.bind(mod .. " + CTRL + right", function() cycle_skip9(1) end)
+
+            -- Back-and-forth (SUPER+A) that never lands on the private
+            -- workspace 9. hl.get_last_workspace() is the same "previous" the
+            -- focus dispatcher uses, but returned as a value so we can veto 9.
+            local function back_and_forth()
+              local active = hl.get_active_workspace()
+              local prev = hl.get_last_workspace()
+              if prev and prev.id ~= nil and prev.id >= 0 and prev.addressable_name ~= "9" then
+                hl.dispatch(hl.dsp.focus({ workspace = prev.addressable_name }))
+              elseif active and active.addressable_name == "9" then
+                -- On the private workspace with no valid previous: leave to 1.
+                hl.dispatch(hl.dsp.focus({ workspace = "1" }))
+              end
+              -- else: no valid target and not on 9 -> stay put (no-op)
+            end
+            hl.bind(mod .. " + a", function() back_and_forth() end)
+
+            -- Toggle the scratchpad. When toggling into an EMPTY scratch, seed
+            -- it with a terminal so it isn't a blank overlay: the terminal is
+            -- clear "you're in the scratch" feedback and a launchpad. (New
+            -- windows spawned while a special is open land in that special.)
+            local function toggle_scratch()
+              local ws = hl.get_workspace("special:private")
+              hl.dispatch(hl.dsp.workspace.toggle_special("private"))
+              if ws == nil then
+                hl.exec_cmd(terminal, { workspace = "special:private silent" })
+              end
+            end
+            hl.bind(mod .. " + S", function() toggle_scratch() end)
 
             -- focus (vim): column focus when scrolling, window focus on dwindle
             hl.bind(mod .. " + h", layout_bind({ scrolling = hl.dsp.layout("focus l"), dwindle = hl.dsp.focus({ direction = "l" }) }))
