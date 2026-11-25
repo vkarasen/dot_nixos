@@ -49,17 +49,18 @@
     # etc.). DisplayPort alt-mode video itself doesn't need it.
     services.hardware.bolt.enable = true;
     services.fwupd.enable = true; # firmware updates
-    # fwupd-refresh.timer can fire mid-activation, while the daemon has just
-    # been restarted at a new version but the client unit is still the old one
-    # (the transient `fwupdmgr` exit-4 / version-skew failure). Order the
-    # refresh after the daemon and pull it in, so refresh never runs against a
-    # mismatched fwupd. These lists are appended to the upstream unit's own
-    # `Wants=network-online.target` / `After=network-online.target` (the unit
-    # is emitted as a drop-in over the packaged one), so nothing is replaced.
-    systemd.services.fwupd-refresh = {
-      wants = ["fwupd.service"];
-      after = ["fwupd.service"];
-    };
+    # fwupd's hourly metadata refresh (fwupd-refresh.timer) is disabled: it can
+    # fire inside the seconds-long window where switch-to-configuration has
+    # stopped fwupd.service but not yet reloaded units, and fwupd hard-fails
+    # when client and daemon versions differ (exit 4 on activation). No
+    # ordering fix closes this — the two units are restarted on opposite sides
+    # of daemon-reload — so the trigger is removed. Metadata is refreshed once
+    # per version bump (the unit text changes, so switch-to-configuration runs
+    # it against the new daemon).
+    # To use fwupd manually: `fwupdmgr refresh`, then `fwupdmgr get-updates` /
+    # `fwupdmgr update`.
+    systemd.timers.fwupd-refresh.wantedBy = lib.mkForce [];
+    systemd.services.fwupd-refresh.after = ["fwupd.service"];
     # thermald is deliberately NOT enabled: the ThinkPad EC + thinkpad_acpi
     # DYTC handle thermal management, and thermald's own platform check
     # declines to run here.
