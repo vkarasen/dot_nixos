@@ -17,6 +17,7 @@
       config.flake.modules.homeManager.external
       config.flake.modules.homeManager.shellPackages
       config.flake.modules.homeManager.television
+      config.flake.modules.homeManager.tack
       config.flake.modules.homeManager.tickrs
       config.flake.modules.homeManager.worktrunk
       config.flake.modules.homeManager.scratch
