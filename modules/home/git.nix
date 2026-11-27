@@ -26,6 +26,9 @@
         pi-aware-editor
       ];
 
+      # Exposed for tooling that reads $GITHUB_TOKEN (evaluated per shell).
+      home.sessionVariables.GITHUB_TOKEN = "$(${pkgs.gh}/bin/gh auth token 2>/dev/null)";
+
       programs = {
         gh = {
           enable = true;
