@@ -7,7 +7,7 @@
     "firefox-addons": "git+https://gitlab.com/rycee/nur-expressions.git?ref=master&rev=c83f1fa2548ad34b88ad7ebc0dff52be8c909ebd",
     "flake-parts": "github:hercules-ci/flake-parts",
     "hm-wrapper-modules": "github:sini/hm-wrapper-modules",
-    "home-manager": "github:nix-community/home-manager/master?rev=03885bcd0b477bdecebebc57b213b0f8f0826d51",
+    "home-manager": "github:nix-community/home-manager/master",
     "hyprland": "github:hyprwm/Hyprland/v0.57.2",
     "hyprmoncfg": "github:crmne/hyprmoncfg?rev=ec5202443f685d43d3d6f97518b681284568375b",
     "impermanence": "github:nix-community/impermanence",
@@ -17,7 +17,7 @@
     "nix-std": "github:chessai/nix-std",
     "nixdatifier": "github:Muddyblack/nixdatifier?rev=6692c30d7565b9fb468d61bc8e3c529cfd3efb09",
     "nixpkgs": "github:nixos/nixpkgs/nixos-unstable",
-    "nixpkgs-stable": "github:nixos/nixpkgs/nixos-26.05?rev=94c3211b0ee8ba969a3f12eb4aff8ba0f72971dd",
+    "nixpkgs-stable": "github:nixos/nixpkgs/nixos-26.05",
     "nixvim": "github:nix-community/nixvim",
     "sops-nix": "github:Mic92/sops-nix?rev=7c637afdccdf9bcf35c4a2d67b58a77c1fd843a4",
     "stylix": "github:nix-community/stylix?rev=44aafe27b8b3427201dd53c6a464c196b6a956dd",
@@ -93,9 +93,9 @@
     "type": "github",
     "owner": "nix-community",
     "repo": "home-manager",
-    "rev": "03885bcd0b477bdecebebc57b213b0f8f0826d51",
-    "narHash": "sha256-RtgZbV+4BDtJqMImbiPJri3fmVDbCbrz/B0cuPQUJQY=",
-    "lastModified": 1795340038,
+    "rev": "54f903fdaaf5d5720ed36706fe75332af69eb793",
+    "narHash": "sha256-J1iQ1QMnkFwZFXnlPt2t3Qx7TsGjw08/0L3QMqNt+Wg=",
+    "lastModified": 1795748630,
     "public": true
   },
   "hyprland": {
@@ -187,9 +187,9 @@
     "type": "github",
     "owner": "nixos",
     "repo": "nixpkgs",
-    "rev": "94c3211b0ee8ba969a3f12eb4aff8ba0f72971dd",
-    "narHash": "sha256-IEuDsf80ubivfpidbRsIm30HVo7PZIdZt1stRsbaY4Y=",
-    "lastModified": 1795258312,
+    "rev": "5b31ff946309736077f0c4ee23bb85d0a0a1c181",
+    "narHash": "sha256-CiSQ3/bsP5gXG2SQzOgwhqwl9MkBRhQQqJd3YmpaYL4=",
+    "lastModified": 1795502373,
     "public": true
   },
   "nixvim": {
