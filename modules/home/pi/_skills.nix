@@ -23,7 +23,7 @@
   # Wrap an external skill source directory (one that already contains
   # SKILL.md, e.g. from a flake input) into a skill derivation. Lets us consume
   # a skill from another repo without copying its contents into this one: the
-  # source of truth stays the pinned flake input and updates on `nix flake update`.
+  # source of truth stays the pinned flake input and updates on `tack update <pin>`.
   mkSourceSkill = name: src:
     pkgs.runCommandLocal "${name}-skill" {} ''
       mkdir -p "$out"

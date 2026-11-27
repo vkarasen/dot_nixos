@@ -41,6 +41,37 @@ alone.
   (e.g. nixdatifier's `flakePath`) read it; set to `null` to let a consumer
   autodetect.
 
+## Flake inputs (tack)
+
+Flake inputs are NOT declared in `flake.nix`. They live in:
+
+- `.tack/pins.toml` — pin definitions (url, type, follows, group, freeze)
+- `.tack/pins.lock.json` — locked revs/narHashes (committed; don't hand-edit)
+
+Key `pins.toml` fields:
+
+- `follows = { nixpkgs = "nixpkgs" }` — make this pin's own `nixpkgs` input
+  point at your `nixpkgs` pin instead of fetching its own copy. Prefer a
+  `group` (not `follows`) when pins should co-update but keep their own deps
+  (e.g. nixvim).
+- `url = "github:owner/repo?rev=<sha>"` — pin an exact commit hash.
+- `signers` / `[signers]` — require a pin's locked commit to be signed by a
+  named key before it re-locks.
+
+Manage them with the `tack` CLI (on PATH via the `tack` home aspect):
+
+- `tack update [<pin>]` — bump to latest; frozen pins are skipped unless named explicitly
+- `tack update core` — bump the `core` group (nixpkgs + nixpkgs-stable + home-manager + nixvim) together
+- `tack freeze <pin>` / `tack unfreeze <pin>` — pin at the current rev / resume following
+- `tack add <url>` / `tack rm <pin>` — add or remove a pin
+- `tack tree` / `tack dedup` / `tack verify` — inspect the graph, duplicates, signatures
+
+`flake.lock` is vestigial (gitignored); the old `nix flake lock --update-input` workflow is gone.
+
+nixvim: keep its own nixpkgs — do NOT add a `follows` for it (nixvim warns in 26.11). It's in the `core` group so it co-updates with nixpkgs instead.
+
+For anything deeper, run `tack --help` / `tack help <cmd>`, or read https://github.com/manic-systems/tack (docs/).
+
 ## The live map (never a frozen inventory)
 
 - `ls modules/home/ modules/nixos/` **is** the aspect index — it regenerates as

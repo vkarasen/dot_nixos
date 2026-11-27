@@ -84,7 +84,7 @@ so there is no snapshot file to refresh by hand. To pick up newer upstream
 settings, bump the pin and rebuild:
 
 ```bash
-nix flake lock --update-input tridactyl
+tack update tridactyl
 nh home switch
 ```
 
@@ -170,7 +170,7 @@ snapshot to refresh by hand. To move to a newer Firefox, bump the nixpkgs pin
 and rebuild:
 
 ```bash
-nix flake lock --update-input nixpkgs
+tack update nixpkgs
 nh home switch
 ```
 

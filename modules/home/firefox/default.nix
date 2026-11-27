@@ -10,7 +10,7 @@
 # pulls it. Selection for this host happens in modules/hosts/troy.nix.
 #
 # The add-on packages come from rycee's firefox-addons flake input (declared
-# in flake.nix): pinned .xpi derivations that expose `addonId` in passthru,
+# in .tack/pins.toml): pinned .xpi derivations that expose `addonId` in passthru,
 # the contract home-manager's `extensions.packages` reads.
 {inputs, ...}: {
   flake.modules.homeManager.firefox = {

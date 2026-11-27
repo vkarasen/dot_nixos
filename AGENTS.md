@@ -16,9 +16,21 @@ module**, auto-imported by [`import-tree`](https://github.com/vic/import-tree).
 `flake.nix` is a thin entry point and should stay that way:
 
 ```nix
-outputs = inputs:
-  inputs.flake-parts.lib.mkFlake {inherit inputs;} (inputs.import-tree ./modules);
+outputs = { self, ... }@args:
+  let
+    tack = (import ./.tack) { overrides = args.tackOverrides or { }; };
+    inputs = tack // { self = self'; };
+    self' = self // { inherit inputs; };
+  in
+    tack.flake-parts.lib.mkFlake { inherit inputs; self = self'; } (tack.import-tree ./modules);
 ```
+
+Inputs are declared in `.tack/pins.toml`, with locked revs in
+`.tack/pins.lock.json`, and are managed with `tack add` / `rm` / `update` /
+`freeze` rather than `nix flake lock --update-input`. A `core` group
+co-updates `nixpkgs`, `nixpkgs-stable`, `home-manager` and `nixvim` in one
+step, so the toolchain never drifts apart. `nixvim` deliberately has no
+`follows` — it keeps its own nixpkgs.
 
 Functionality is grouped into **aspects**: each file declares modules into the
 flake-parts module store under `flake.modules.<class>.<name>`, where `<class>`
@@ -31,7 +43,7 @@ standalone portable config opts into the universal `homeManager.core` bundle.
 ## Layout
 
 ```
-flake.nix                         # thin: inputs + mkFlake (import-tree ./modules)
+flake.nix                         # thin: tack import + mkFlake (import-tree ./modules)
 modules/
   flake/                          # flake-level wiring (NOT aspects)
     parts.nix                     # opt into flake.modules.<class>; systems; allowUnfree pkgs + flake.overlays (stable, pi-bun); formatter
