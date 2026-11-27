@@ -21,6 +21,7 @@
     "nixvim": "github:nix-community/nixvim",
     "sops-nix": "github:Mic92/sops-nix?rev=7c637afdccdf9bcf35c4a2d67b58a77c1fd843a4",
     "stylix": "github:nix-community/stylix?rev=44aafe27b8b3427201dd53c6a464c196b6a956dd",
+    "tack": "github:manic-systems/tack",
     "tridactyl": "github:tridactyl/tridactyl"
   },
   "agent-stuff": {
@@ -217,6 +218,15 @@
     "rev": "44aafe27b8b3427201dd53c6a464c196b6a956dd",
     "narHash": "sha256-u9VYWK6f9T8ZuMliRvX4LUuvJ/k5+6M5y35cZgsyJ8A=",
     "lastModified": 1795038909,
+    "public": true
+  },
+  "tack": {
+    "type": "github",
+    "owner": "manic-systems",
+    "repo": "tack",
+    "rev": "673997981720feebb3870645932b6cfe6657db9f",
+    "narHash": "sha256-iRVnAKvQh5vC76QppovlxTklJf98EA+GYEY91loasy4=",
+    "lastModified": 1795748364,
     "public": true
   },
   "tridactyl": {

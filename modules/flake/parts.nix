@@ -1,5 +1,6 @@
 # Flake-parts skeleton: opt into flake.modules.<class> storage, declare
-# systems, and configure a single allowUnfree pkgs (with the `stable` and `pi-bun` overlays)
+# systems, and configure a single allowUnfree pkgs (with the `stable`, `pi-bun`
+# and `tack` overlays)
 # shared by every perSystem output and home configuration.
 # The overlays are also exposed as flake.overlays.* so downstream flakes
 # (the corporate flake) can apply them to their own nixpkgs.
@@ -15,6 +16,12 @@
   # has to resolve there.
   pi-bun-overlay = final: prev: {
     pi-bun = final.callPackage ./_pi-bun.nix {};
+  };
+  # The tack 2.0.0 binary from the tack flake, so the on-PATH `tack` matches
+  # the `.tack/` files (nixpkgs ships 0.1.1, which cannot read them: group
+  # updates, `$declared`, `resolver out of date`).
+  tack-overlay = final: prev: {
+    tack = inputs.tack.packages.${final.system}.tack;
   };
   # The hyprland flake builds these packages with their deps in `buildInputs`,
   # but nixpkgs' recipes for the same packages put them in
@@ -45,6 +52,7 @@
   default-overlay = lib.composeManyExtensions [
     stable-overlay
     pi-bun-overlay
+    tack-overlay
     inputs.hyprland.overlays.hyprland-packages
     hypr-deps-propagation-overlay
   ];
@@ -57,6 +65,7 @@ in {
   flake.overlays = {
     stable = stable-overlay;
     pi-bun = pi-bun-overlay;
+    tack = tack-overlay;
     default = default-overlay;
   };
 

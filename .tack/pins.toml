@@ -167,3 +167,6 @@ nixpkgs = "nixpkgs"
 [inputs.tridactyl]
 url = "github:tridactyl/tridactyl"
 type = "fetch"
+
+[inputs.tack]
+url = "github:manic-systems/tack"
