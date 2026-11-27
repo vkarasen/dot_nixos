@@ -68,6 +68,10 @@ Manage them with the `tack` CLI (on PATH via the `tack` home aspect):
 
 `flake.lock` is vestigial (gitignored); the old `nix flake lock --update-input` workflow is gone.
 
+After `tack add` / `tack rm`, or a tack version bump, regenerate the committed
+resolver and commit it with `tack init --resolver` (tack prints
+`resolver is out of date` when it's stale).
+
 nixvim: keep its own nixpkgs — do NOT add a `follows` for it (nixvim warns in 26.11). It's in the `core` group so it co-updates with nixpkgs instead.
 
 For anything deeper, run `tack --help` / `tack help <cmd>`, or read https://github.com/manic-systems/tack (docs/).
