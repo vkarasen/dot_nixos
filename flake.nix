@@ -1,112 +1,23 @@
 {
   description = "I am a very special flake";
 
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-26.05";
+  # Inputs are managed by tack (.tack/pins.toml + .tack/pins.lock.json). This
+  # flake deliberately declares no `inputs`: use `tack update` / `tack freeze` /
+  # `tack add` / `tack rm` instead of `nix flake lock --update-input`.
+  #
+  # flake-parts defaults `self` to `inputs.self`, and perSystem derives
+  # `inputs'`/`pkgs` from `self.inputs` — so we thread `self` through mkFlake
+  # and rebind `self.inputs` to the tack input set (mirrors flake-parts'
+  # extras/partitions.nix).
 
-    nixdatifier = {
-      url = "github:Muddyblack/nixdatifier";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    flake-parts.url = "github:hercules-ci/flake-parts";
-    import-tree.url = "github:vic/import-tree";
-
-    catppuccin = {
-      url = "github:catppuccin/nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    home-manager = {
-      url = "github:nix-community/home-manager/master";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # Pin v0.57.2 (not nixpkgs#hyprland): ships aquamarine 9887f39 with the
-    # single-monitor disconnect fix (Hyprland #16884 / aquamarine #386).
-    hyprland = {
-      url = "github:hyprwm/Hyprland/v0.57.2";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    nix-index-database = {
-      url = "github:nix-community/nix-index-database";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # rycee's firefox-addons: pinned Firefox add-on packages (uBlock Origin,
-    # SponsorBlock, ...). Each package exposes `addonId` in passthru, which is
-    # what home-manager's programs.firefox extension mechanism consumes.
-    firefox-addons = {
-      url = "git+https://gitlab.com/rycee/nur-expressions.git?ref=master&dir=pkgs/firefox-addons";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    nixvim = {
-      url = "github:nix-community/nixvim";
-    };
-
-    sops-nix = {
-      url = "github:Mic92/sops-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    ast-bro = {
-      url = "github:aeroxy/ast-bro";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    nix-std.url = "github:chessai/nix-std";
-
-    # Skill collection by the nix-search-tv maintainer; consumed as a plain
-    # source tree (flake = false) so aspects can point pi at skills/* without
-    # copying the files into this repo.
-    agent-stuff = {
-      url = "github:0xferrous/agent-stuff";
-      flake = false;
-    };
-
-    hm-wrapper-modules = {
-      url = "github:sini/hm-wrapper-modules";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.home-manager.follows = "home-manager";
-    };
-
-    disko = {
-      url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    impermanence = {
-      url = "github:nix-community/impermanence";
-    };
-
-    lanzaboote = {
-      url = "github:nix-community/lanzaboote/v1.1.0";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    stylix = {
-      url = "github:nix-community/stylix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    hyprmoncfg = {
-      url = "github:crmne/hyprmoncfg";
-      flake = false;
-    };
-
-    # Tridactyl source (plain tree, flake = false): pinned so the generated
-    # `:set` settings index is reproducible at build time.
-    tridactyl = {
-      url = "github:tridactyl/tridactyl";
-      flake = false;
-    };
-  };
-
-  # Dendritic pattern: every file under ./modules is a flake-parts module,
-  # auto-imported by import-tree. flake.nix stays a thin entry point.
-  outputs = inputs:
-    inputs.flake-parts.lib.mkFlake {inherit inputs;} (inputs.import-tree ./modules);
+  outputs = { self, ... }@args:
+    let
+      tack = (import ./.tack) { overrides = args.tackOverrides or { }; };
+      inputs = tack // { self = self'; };
+      self' = self // { inherit inputs; };
+    in
+      tack.flake-parts.lib.mkFlake {
+        inherit inputs;
+        self = self';
+      } (tack.import-tree ./modules);
 }
